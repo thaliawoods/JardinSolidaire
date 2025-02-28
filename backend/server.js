@@ -1,33 +1,33 @@
 const express = require('express');
+const connection = require('./db'); 
+
 const app = express();
-const port = 5001;
+app.use(express.json());
 
-// Temporarily commenting out the DB connection
-/*
-const mysql = require('mysql2');
-require('dotenv').config();
-
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
+app.get('/api/jardins', (req, res) => {
+  const query = 'SELECT * FROM jardins'; 
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Erreur de récupération des jardins:', err);
+      return res.status(500).send('Erreur serveur');
+    }
+    res.json(results);
+  });
 });
 
-connection.connect((err) => {
-  if (err) {
-    console.error('Error connecting to the database:', err.stack);
-    return;
-  }
-  console.log('Connected to the database');
-});
-*/
-
-// Your other server routes and logic
-app.get('/', (req, res) => {
-  res.send('Hello, JardinSolidaire Backend!');
+app.post('/api/jardins', (req, res) => {
+  const { nom, description, photo_url } = req.body;
+  const query = 'INSERT INTO jardins (nom, description, photo_url) VALUES (?, ?, ?)';
+  connection.query(query, [nom, description, photo_url], (err, results) => {
+    if (err) {
+      console.error('Erreur lors de l\'ajout d\'un jardin:', err);
+      return res.status(500).send('Erreur serveur');
+    }
+    res.status(201).send('Jardin ajouté avec succès');
+  });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+const PORT = process.env.PORT || 5002;
+app.listen(PORT, () => {
+  console.log(`Serveur lancé sur le port ${PORT}`);
 });
