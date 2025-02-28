@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    image: node:18
+    container_name: jardin_backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5000:5000"
+    command: ["npm", "run", "dev"]
+    depends_on:
+      - db
+
+  frontend:
+    image: node:18
+    container_name: jardin_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    command: ["npm", "start"]
+    depends_on:
+      - backend
+
+  db:
+    image: mysql:8
+    container_name: jardin_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: jardin_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
