@@ -37,3 +37,7 @@ npm install
 - Run :
 
 npm run dev
+
+
+- pour que chacune lance ses conteneurs docker:
+docker-compose up -d
