@@ -1,12 +1,9 @@
-version: '3.8'
-
 services:
   backend:
-    image: node:18
+    build: ./backend
+    image: jardin_backend:latest
     container_name: jardin_backend
     working_dir: /app
-    volumes:
-      - ./backend:/app
     ports:
       - "5002:5000"
     command: ["npm", "run", "dev"]
@@ -14,14 +11,13 @@ services:
       - db
 
   frontend:
-    image: node:18
+    build: ./frontend
+    image: jardin_frontend:latest
     container_name: jardin_frontend
     working_dir: /app
-    volumes:
-      - ./frontend:/app
     ports:
-      - "3000:3000"
-    command: ["npm", "start"]
+      - "5173:5173"
+    command: ["npm", "run", "dev"]
     depends_on:
       - backend
 
