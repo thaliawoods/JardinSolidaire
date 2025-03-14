@@ -1,0 +1,24 @@
+{
+  "name": "jardinsolidaire",
+  "version": "1.0.0",
+  "description": "Projet RNCP",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hanaevernon/JardinSolidaire.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Hanaevernon/JardinSolidaire/issues"
+  },
+  "homepage": "https://github.com/Hanaevernon/JardinSolidaire#readme",
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "prisma": "^6.5.0"
+  }
+}
