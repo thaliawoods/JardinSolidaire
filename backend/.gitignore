@@ -12,8 +12,8 @@ dist
 dist-ssr
 *.local
 
-/backend/.env.dev.*
-/backend/.env.production
+.env.dev
+.env.production
 
 
 # Editor directories and files
