@@ -1,7 +1,7 @@
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import HomeImage from "@/components/HomeImage";
-import HomeText from "@/components/HomeText";
+import Navbar from "../components/Navbar/Navbar";
+import Footer from "../components/Footer/Footer";
+import HomeImage from "@/components/HomeImage/HomeImage";
+import HomeText from "@/components/HomeText/HomeText";
 
 export default function Home() {
   return (

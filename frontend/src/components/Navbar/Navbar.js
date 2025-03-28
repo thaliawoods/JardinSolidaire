@@ -11,12 +11,14 @@ const Navbar = () => {
   return (
     <nav className="w-full bg-green-600 text-white fixed top-0 left-0 z-50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center">
+        {/* Section gauche : icône et texte enveloppés dans un Link vers la page d'accueil */}
+        <Link href="/" className="flex items-center">
           <FontAwesomeIcon icon={faSeedling} size="lg" className="mr-2" />
           <span className="text-xl font-bold">JardinSolidaire</span>
-        </div>
+        </Link>
 
         <div className="flex items-center">
+          {/* Boutons verts visibles en tablette (md) et desktop */}
           <div className="hidden md:flex space-x-4 mr-4">
             <button className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded">
               J&apos;ai un jardin
@@ -25,6 +27,7 @@ const Navbar = () => {
               Je veux jardiner
             </button>
           </div>
+          {/* Menu burger */}
           <div onClick={() => setMenuOpen(!menuOpen)} className="cursor-pointer">
             {menuOpen ? (
               <FontAwesomeIcon icon={faTimes} size="lg" />
@@ -35,6 +38,7 @@ const Navbar = () => {
         </div>
       </div>
 
+      {/* Menu déroulant pour mobile, tablette et desktop */}
       {menuOpen && (
         <div className="bg-green-600 w-full absolute top-16 left-0">
           <ul className="flex flex-col space-y-2 p-4">
