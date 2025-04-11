@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -18,9 +17,11 @@ const Navbar = () => {
 
         <div className="flex items-center">
           <div className="hidden md:flex space-x-4 mr-4">
+          <Link href="/ajouter-jardin">
             <button className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded">
               J&apos;ai un jardin
             </button>
+            </Link>
             <button className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded">
               Je veux jardiner
             </button>
