@@ -10,6 +10,8 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
+# on compile Next.js !
+RUN npm run build
 
 EXPOSE 5173
 
