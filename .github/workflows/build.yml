@@ -9,18 +9,24 @@ on:
       - main
 
 jobs:
-  build:
+  docker-build:
     runs-on: ubuntu-latest
 
     steps:
-      # Clone ton code
+      # Clone le repo
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up Docker Buildx (pour builder plusieurs images)
+      # Setup Docker Buildx (pour builder correctement avec Docker Compose)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      #  Build avec Docker Compose (sans lancer les containers)
+      # Check Docker version
+      - name: Check Docker version
+        run: |
+          docker version
+          docker compose version
+
+      # Build les images Docker via docker-compose
       - name: Build Docker Compose services
         run: docker compose build
