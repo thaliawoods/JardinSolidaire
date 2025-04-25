@@ -7,7 +7,7 @@ on:
   pull_request:
     branches:
       - main
-      
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,4 +23,4 @@ jobs:
 
       #  Build avec Docker Compose (sans lancer les containers)
       - name: Build Docker Compose services
-        run: docker-compose build
+        run: docker compose build
