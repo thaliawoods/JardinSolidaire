@@ -1,0 +1,18 @@
+name: Build Docker Images - Jardinsolidaire
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Clone ton code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Docker Buildx (pour builder plusieurs images)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      #  Build avec Docker Compose (sans lancer les containers)
+      - name: Build Docker Compose services
+        run: docker-compose build
