@@ -85,7 +85,7 @@ export default function AjouterJardin() {
         {/* Champs texte */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nom de l'annonce :</label>
+            <label className="block text-sm font-medium text-gray-700">Nom de l&apos;annonce :</label>
             <input
               type="text"
               name="nom"
