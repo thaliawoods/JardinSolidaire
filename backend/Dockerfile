@@ -14,8 +14,6 @@ RUN npm install
 COPY . .
 
 
-RUN npm run build
-
 # Exposer le port sur lequel tourne le backend (5000 dans ton cas)
 EXPOSE 5000
 
