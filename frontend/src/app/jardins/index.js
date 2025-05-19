@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from "react"
 import Link from "next/link";
-// import Slider from "react-slick";
+import Slider from "react-slick";
 
 
 const ListeJardins = () => {
