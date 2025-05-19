@@ -7,7 +7,6 @@ const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
-const cors = require('cors');
 const jardinsRoutes = require('./routes/jardins');
 const jardiniersRoutes = require('./routes/jardiniers');
 
