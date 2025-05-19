@@ -1,0 +1,30 @@
+{
+  "name": "jardinsolidaire",
+  "version": "1.0.0",
+  "description": "Projet RNCP",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hanaevernon/JardinSolidaire.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Hanaevernon/JardinSolidaire/issues"
+  },
+  "homepage": "https://github.com/Hanaevernon/JardinSolidaire#readme",
+  "dependencies": {
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@prisma/client": "^6.5.0",
+    "next": "^15.2.4",
+    "prisma": "^6.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sass": "^1.86.0"
+  }
+}

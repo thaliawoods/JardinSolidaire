@@ -1,0 +1,73 @@
+name: Tests Frontend & Backend
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jardin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Cloner le repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # Installer les dépendances Backend
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: |
+          npm install
+
+      # Générer Prisma Client & Migrations
+      - name: Setup Prisma
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/jardin
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      # Lancer les tests backend
+      - name: Run Backend Tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/jardin
+        run: npm test
+
+      # Installer les dépendances Frontend
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: |
+          npm install
+
+      # Lancer les tests frontend
+      - name: Run Frontend Tests
+        working-directory: frontend
+        run: npm test
+            
