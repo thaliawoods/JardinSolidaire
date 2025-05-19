@@ -53,7 +53,7 @@ services:
     container_name: prisma_cli
     working_dir: /app
     volumes:
-      - .:/app
+      - ./backend:/app
     command: sh -c "npm install && npx prisma generate && tail -f /dev/null"
     depends_on:
       - db

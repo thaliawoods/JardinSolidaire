@@ -13,6 +13,7 @@ RUN npm install
 # Copier le reste des fichiers backend
 COPY . .
 
+RUN npx prisma generate
 
 # Exposer le port sur lequel tourne le backend (5000 dans ton cas)
 EXPOSE 5000
