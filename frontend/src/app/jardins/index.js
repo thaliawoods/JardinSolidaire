@@ -1,88 +1,33 @@
 'use client'
-import React, { useState} from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link";
+// import Slider from "react-slick";
 
-// Données locales ici directement
-const jardins = [
-  {
-    id: 1,
-    nom: "Jardin fleuris",
-    description: "Potager communautaire dans le centre-ville.",
-    photoUrl: "/assets/jardin 1.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "centre",
-    type: 'potager'
-  },
-  {
-    id: 2,
-    nom: "Joli jardin de fleurs",
-    description: "Serre urbaine avec accès libre aux habitants.",
-    photoUrl: "/assets/jardin 2.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "nord",
-    type: 'serre'
-  },
-  {
-    id: 3,
-    nom: "Grand jardin",
-    description: "Jardin plein sud, cultivé en permaculture.",
-    photoUrl: "/assets/jardin 3.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "sud",
-    type: 'fleur'
-  },
-  {
-    id: 4,
-    nom: "La Prairie ",
-    description: "Espace vert avec zone de compost et serre.",
-    photoUrl: "/assets/jardin 4.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "centre",
-    type: 'pelouse'
-  },
-  {
-    id: 5,
-    nom: "Jardin de potager",
-    description: "Potager communautaire dans le centre-ville.",
-    photoUrl: "/assets/jardin 5.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "centre",
-    type: 'potager'
-  },
-  {
-    id: 6,
-    nom: "La Serre Enchantée",
-    description: "Serre urbaine avec accès libre aux habitants.",
-    photoUrl: "/assets/jardin 6.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "nord",
-    type: 'serre'
-  },
-  {
-    id: 7,
-    nom: "Jardin Soleil",
-    description: "Jardin plein sud, cultivé en permaculture.",
-    photoUrl: "/assets/jardin 7.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "sud",
-    type: 'fleur'
-  },
-  {
-    id: 8,
-    nom: "Jardin vert",
-    description: "Espace vert avec zone de compost et serre.",
-    photoUrl: "/assets/jardin 8.jpg",
-    adresse: "75000 Paris",
-    quartier: "centre",
-    type: 'pelouse'
-  }
-]
 
 const ListeJardins = () => {
     const [favoris, setFavoris] = useState([])
     const [search, setSearch] = useState('')
     const [quartier, setQuartier] = useState ('')
     const [type, setType] = useState ('')
+    const [jardins, setJardins] = useState([])
+
+
+    useEffect(() => {
+      const query = new URLSearchParams()
+
+      if (search) query.append('search', search)
+      if (quartier) query.append('quartier', quartier)
+      if (type) query.append('type', type)
+
+        fetch(`http://localhost:5000/api/jardins?${query.toString()}`)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("📸 Données jardins reçues :", data);
+          setJardins(data);
+        })
+        .catch((err) => console.error('❌ Erreur chargement jardins', err));
+    }, [search, quartier, type]);
+
 
     const toggleFavori = (id) => {
         setFavoris((prev) => 
@@ -149,36 +94,54 @@ const ListeJardins = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {jardins
         .filter((jardin) => 
-          jardin.nom.toLowerCase().includes(search.toLowerCase()) &&
+          jardin.titre.toLowerCase().includes(search.toLowerCase()) &&
           (quartier === '' || jardin.quartier === quartier) &&
           (type === '' || jardin.type === type)
         )
         .map((jardin) => (
           <Link
-            key={jardin.id}
-            href={`/jardins/${jardin.id}`}
+            key={jardin.id_jardin}
+            href={`/jardins/${jardin.id_jardin}`}
             className="block"
           >
           <div className="bg-green-100 rounded-2xl overflow-hidden shadow-md relative group hover:shadow-xl transition">
             
         
             {/* Image */}
-            <img
-              src={jardin.photoUrl}
-              alt={jardin.nom}
-              className="h-48 w-full object-cover"
-            />
+            <div className="h-48 overflow-hidden">
+            {Array.isArray(jardin.photos) && jardin.photos.length > 0 ? (
+              <Slider dots infinite speed={500} slidesToShow={1} slidesToScroll={1}>
+                {jardin.photos.map((photo, index) => (
+                  <img
+                    key={index}
+                    src={photo}
+                    alt={`Photo ${index + 1}`}
+                    className="h-48 w-full object-cover"
+                  />
+                ))}
+              </Slider>
+            ) : (
+              <img
+                src="/assets/default.jpg"
+                alt="Image par défaut"
+                className="h-48 w-full object-cover"
+              />
+            )}
+          </div>
+
 
             {/* Texte */}
             <div className="px-3 py-2 text-sm text-gray-700">
             {/* Titre + cœur */}
             <div className="flex justify-between items-start mb-1">
-                <h2 className="font-bold text-base text-green-900">{jardin.nom}</h2>
+                <h2 className="font-bold text-base text-green-900">{jardin.titre}</h2>
                 <button
-                onClick={() => toggleFavori(jardin.id)}
+                onClick={(e) =>{e.preventDefault();
+                 toggleFavori(jardin.id_jardin);
+                }}
                 className="text-xl transition-transform transform hover:scale-125"
                 >
-                {favoris.includes(jardin.id) ? (
+                {favoris.includes(jardin.id_jardin) ? (
                     <span className="text-pink-500">♥</span>
                 ) : (
                     <span className="text-gray-400">♡</span>
