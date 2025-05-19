@@ -1,0 +1,33 @@
+# nom du workflow
+name: Build Docker Images 
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Clone le repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Docker Buildx (pour builder correctement avec Docker Compose)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Check Docker version
+      - name: Check Docker version
+        run: |
+          docker version
+          docker compose version
+
+      # Build les images Docker via docker-compose
+      - name: Build Docker Compose services
+        run: docker compose build
