@@ -33,13 +33,24 @@
 // });
 
 const express = require('express');
+const cors = require('cors');
+const jardinsRoutes = require('./routes/jardins');
+const jardiniersRoutes = require('./routes/jardiniers');
+
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/jardins', jardinsRoutes);
+app.use('/api/jardiniers', jardiniersRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Backend is running!');
+  res.send('Backend avec Prisma est en ligne ✅');
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Serveur lancé sur le port ${PORT}`);
 });
+
