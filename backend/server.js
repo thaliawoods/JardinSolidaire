@@ -4,15 +4,25 @@ const { PrismaClient } = require('@prisma/client');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 
-const app = express();
+
 const prisma = new PrismaClient();
-const PORT = 5000;
+
+const cors = require('cors');
+const jardinsRoutes = require('./routes/jardins');
+const jardiniersRoutes = require('./routes/jardiniers');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+
+app.use('/api/jardins', jardinsRoutes);
+app.use('/api/jardiniers', jardiniersRoutes);
 
 app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.send('Backend is running!');
+  res.send('Backend avec Prisma est en ligne ✅');
 });
 
 // Connexion sécurisée
@@ -97,5 +107,6 @@ app.post('/register', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Serveur lancé sur le port ${PORT}`);
 });
+
