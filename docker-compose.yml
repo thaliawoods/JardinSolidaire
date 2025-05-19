@@ -16,7 +16,7 @@ services:
     container_name: jardin_frontend
     working_dir: /app
     ports:
-      - "5173:5173"
+      - "3000:3000"
     command: ["npm", "run", "dev"]
     depends_on:
       - backend
