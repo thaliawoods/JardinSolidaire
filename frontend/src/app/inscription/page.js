@@ -251,7 +251,7 @@ export default function Inscription() {
               required
             />
 
-            <button type="submit" style={styles.button}>S'inscrire</button>
+            <button type="submit" style={styles.button}>S&apos;inscrire</button>
             {errorMessage && (
                 <p style={{ color: 'red', fontSize: '16px', marginTop: '10px', textAlign: 'center' }}>
                     {errorMessage}
