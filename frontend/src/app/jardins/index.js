@@ -19,15 +19,23 @@ const ListeJardins = () => {
       if (quartier) query.append('quartier', quartier)
       if (type) query.append('type', type)
 
-        fetch(`http://localhost:5000/api/jardins?${query.toString()}`)
-        .then((res) => res.json())
-        .then((data) => {
-          console.log("📸 Données jardins reçues :", data);
-          setJardins(data);
-        })
-        .catch((err) => console.error('❌ Erreur chargement jardins', err));
-    }, [search, quartier, type]);
 
+    fetch('http://localhost:5000/api/jardins?' + new URLSearchParams({ search, quartier, type }))
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      console.log('API payload:', data);
+      // Si votre backend renvoie { jardins: [...] }
+      const liste = Array.isArray(data) ? data : data.jardins;
+      setJardins(liste || []);
+    })
+    .catch(err => {
+      console.error('❌ Erreur chargement jardins', err);
+      setJardins([]);
+    });
+}, [search, quartier, type]);
 
     const toggleFavori = (id) => {
         setFavoris((prev) => 

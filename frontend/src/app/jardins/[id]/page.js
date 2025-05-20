@@ -2,115 +2,48 @@
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-// Simule les données locales
-const jardins = [
-  {
-    id: 1,
-    nom: "Jardin fleuris",
-    description: "Potager communautaire dans le centre-ville.",
-    photos: ["/assets/jardin 1.jpg", "/assets/jardin 2.jpg",
-    "/assets/jardin 3.jpg",
-    "/assets/jardin 4.jpg"],
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "centre",
-    type: 'potager'
-  },
-  {
-    id: 2,
-    nom: "Joli jardin de fleurs",
-    description: "Serre urbaine avec accès libre aux habitants.",
-    photos: ["/assets/jardin 1.jpg", "/assets/jardin 2.jpg",
-      "/assets/jardin 3.jpg",
-      "/assets/jardin 4.jpg"],
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "nord",
-    type: 'serre'
-  },
-  {
-    id: 3,
-    nom: "Grand jardin",
-    description: "Jardin plein sud, cultivé en permaculture.",
-    photos: ["/assets/jardin 1.jpg", "/assets/jardin 2.jpg",
-      "/assets/jardin 3.jpg",
-      "/assets/jardin 4.jpg"],
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "sud",
-    type: 'fleur'
-  },
-  {
-    id: 4,
-    nom: "La Prairie ",
-    description: "Espace vert avec zone de compost et serre.",
-    photoUrl: "/assets/jardin 4.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "centre",
-    type: 'pelouse'
-  },
-  {
-    id: 5,
-    nom: "Jardin de potager",
-    description: "Potager communautaire dans le centre-ville.",
-    photoUrl: "/assets/jardin 5.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "centre",
-    type: 'potager'
-  },
-  {
-    id: 6,
-    nom: "La Serre Enchantée",
-    description: "Serre urbaine avec accès libre aux habitants.",
-    photoUrl: "/assets/jardin 6.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "nord",
-    type: 'serre'
-  },
-  {
-    id: 7,
-    nom: "Jardin Soleil",
-    description: "Jardin plein sud, cultivé en permaculture.",
-    photoUrl: "/assets/jardin 7.jpg",
-    adresse: "123 Rue des Lilas, 75000 Paris",
-    quartier: "sud",
-    type: 'fleur'
-  },
-  {
-    id: 8,
-    nom: "Jardin vert",
-    description: "Espace vert avec zone de compost et serre.",
-    photoUrl: "/assets/jardin 8.jpg",
-    adresse: "75000 Paris",
-    quartier: "centre",
-    type: 'pelouse'
-  }
-  
-]
 
 export default function JardinPage() {
   const { id } = useParams()
   const [jardin, setJardin] = useState(null)
   const [mainPhoto, setMainPhoto] = useState(null)
-
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
 
 
   useEffect(() => {
-    const jardinTrouve = jardins.find(j => j.id === parseInt(id))
-    setJardin(jardinTrouve)
-    if (jardinTrouve && jardinTrouve.photos?.length > 0) {
-        setMainPhoto(jardinTrouve.photos[0])
+    async function fetchJardin() {
+      try {
+        const res = await fetch(`http://localhost:5000/api/jardins/${id}`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        setJardin(data);
+        if (Array.isArray(data.photos) && data.photos.length > 0) {
+          setMainPhoto(data.photos[0]);
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-  }, [id])
+    }
+    fetchJardin();
+  }, [id]);
 
-  if (!jardin) {
-    return <p className="p-6 text-center">Jardin introuvable</p>
-  }
-
+  if (loading)  return <p className="p-6 text-center">Chargement…</p>;
+  if (error)    return <p className="p-6 text-center text-red-500">Erreur : {error}</p>;
+  if (!jardin)  return <p className="p-6 text-center">Jardin introuvable</p>;
+  
   return (
     <div className="min-h-screen p-6 bg-white">
     {/* Nom + Actions */}
     <div className="flex justify-between items-center flex-wrap gap-4 mb-4">
-        <h1 className="text-2xl font-bold text-green-800">{jardin.nom}</h1>
+        <h1 className="text-2xl font-bold text-green-800">{jardin.titre}</h1>
         <div className="flex gap-3 text-sm">
-        <span className="text-gray-600">Propriétaire</span>
+        <span className="text-gray-600">Propriétaire : {jardin.utilisateur?.nom} {jardin.utilisateur?.prenom}</span>
         <button>Partager</button>
         <button>♥</button>
         </div>
@@ -162,6 +95,9 @@ export default function JardinPage() {
     <p className="text-sm text-green-800">Adresse : {jardin.adresse}</p>
     <p className="text-sm text-green-800">Type : {jardin.type}</p>
     <p className="text-sm text-green-800">Quartier : {jardin.quartier}</p>
+    <p className="text-sm text-green-800">Besoins : {jardin.besoins}</p>
+    <p className="text-sm text-green-800">Publié le : {new Date(jardin.date_publication).toLocaleDateString()}</p>
+    <p className="text-sm text-green-800">Note moyenne : {jardin.note_moyenne}</p>
   </div>
 
   {/* Calendrier */}
