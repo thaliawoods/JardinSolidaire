@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
       id_jardin: j.id_jardin.toString(),
       id_proprietaire: j.id_proprietaire.toString(),
     }));
-
+    console.log('🔍 jardins récupérés:', jardins);
     res.json(formatés);
   } catch (error) {
     console.error('Erreur filtrée :', error);
