@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const cors = require('cors');
@@ -9,7 +10,7 @@ const prisma = new PrismaClient();
 
 const jardinsRoutes = require('./routes/jardins');
 const jardiniersRoutes = require('./routes/jardiniers');
-
+const {hashPassword} = require('./utils')
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -77,7 +78,7 @@ app.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Un compte avec cet e-mail existe déjà.' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = hashPassword(password)
 
     const newUser = await prisma.utilisateur.create({
       data: {
