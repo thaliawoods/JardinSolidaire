@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react'
+import { removePhotoFromArray } from '@/utils/photoUtils'
 
 export default function AjouterJardin() {
   const [formData, setFormData] = useState({
@@ -41,7 +42,7 @@ export default function AjouterJardin() {
   const removePhoto = (indexToRemove) => {
     setFormData(prev => ({
       ...prev,
-      photos: prev.photos.filter((_, i) => i !== indexToRemove)
+      photos: removePhotoFromArray(prev.photos, indexToRemove)
     }))
   }
   
