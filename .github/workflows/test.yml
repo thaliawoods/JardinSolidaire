@@ -112,9 +112,7 @@ jobs:
         run: npm run dev &
 
       - name: Wait for Backend & Frontend
-        run: |
-          npx wait-on http://localhost:5000/api/jardins
-          npx wait-on http://localhost:3000
+        run: npx wait-on --timeout 60000 http://localhost:5000/api/jardins http://localhost:3000
 
       - name: Install Playwright Browsers
         working-directory: frontend
