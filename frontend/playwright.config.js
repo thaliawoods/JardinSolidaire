@@ -15,15 +15,15 @@ export default defineConfig({
   // → Lance d'abord votre backend puis votre frontend
   webServer: [
     {
-      command: 'cd backend && npm run dev',
-      port: 5000,
-      reuseExistingServer: !process.env.CI,
+      command: 'cd ../backend && npm run dev',
+      port:    5000,
+      reuseExistingServer: true,
     },
     {
-      command: 'cd frontend && npm run dev',
-      port: 3000,
-      reuseExistingServer: !process.env.CI,
-    }
+      command: 'npm run dev',       
+      port:    3000,
+      reuseExistingServer: true,
+    },
   ],
 
   // Forcer Playwright à attendre que le front soit up
