@@ -96,24 +96,11 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
 
-      - name: Start Backend
-        working-directory: backend
-        run: npm run dev &
-      
       # Frontend
       - name: Install Frontend
         working-directory: frontend
         run: npm ci
-
-      - name: Start Frontend
-        working-directory: frontend
-        env:
-          NEXT_PUBLIC_API_URL: http://localhost:5000
-        run: npm run dev &
-
-      - name: Wait for Backend & Frontend
-        run: npx wait-on --timeout 60000 http://localhost:5000 http://localhost:3000
-
+        
       - name: Install Playwright Browsers
         working-directory: frontend
         run: npx playwright install --with-deps
