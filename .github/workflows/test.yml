@@ -94,13 +94,13 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/jardin
         run: |
           npx prisma generate
-          npx prisma migrate deploy
+          npx prisma db push
 
       # Frontend
       - name: Install Frontend
         working-directory: frontend
         run: npm ci
-        
+
       - name: Install Playwright Browsers
         working-directory: frontend
         run: npx playwright install --with-deps
