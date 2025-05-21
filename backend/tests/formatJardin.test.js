@@ -1,11 +1,11 @@
 // fonctionnalité a tester
-// const formatJardins = (jardins) =>
-//   jardins.map((j) => ({
-//     ...j,
-//     // On s’assure que id_jardin et id_proprietaire sont castés en string
-//     id_jardin: j.id_jardin.toString(),
-//     id_proprietaire: j.id_proprietaire.toString(),
-//   }));
+const formatJardins = (jardins) =>
+  jardins.map((j) => ({
+    ...j,
+    // On s’assure que id_jardin et id_proprietaire sont castés en string
+    id_jardin: j.id_jardin.toString(),
+    id_proprietaire: j.id_proprietaire.toString(),
+  }));
 
   describe('formatJardins', () => {
   test('convertit les IDs numériques en chaînes de caractères', () => {
