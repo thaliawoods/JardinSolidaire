@@ -18,6 +18,9 @@ export default defineConfig({
       command: 'cd ../backend && npm run dev',
       port:    5000,
       reuseExistingServer: true,
+      env: {
+          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/jardin'
+        }
     },
     {
       command: 'npm run dev',       
