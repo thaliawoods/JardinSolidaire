@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react'
-import { removePhotoFromArray } from '@/utils/photoUtils'
+import { removePhotoFromArray } from '@/utils/removePhoto'
 
 export default function AjouterJardin() {
   const [formData, setFormData] = useState({
