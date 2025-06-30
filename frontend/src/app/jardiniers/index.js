@@ -18,7 +18,7 @@ const ListeJardiniers = () => {
       if (noteMin) query.append('note', noteMin);
       if (type)    query.append('type', type);
 
-    fetch(`http://localhost:5000/api/jardiniers?${query.toString()}`)
+    fetch(`http://localhost:5001/api/jardiniers?${query.toString()}`)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
