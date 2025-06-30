@@ -20,7 +20,7 @@ const ListeJardins = () => {
       if (type) query.append('type', type)
 
 
-    fetch('http://localhost:5000/api/jardins?' + new URLSearchParams({ search, quartier, type }))
+    fetch('http://localhost:5001/api/jardins?' + new URLSearchParams({ search, quartier, type }))
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
