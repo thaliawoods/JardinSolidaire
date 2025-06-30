@@ -16,7 +16,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'cd ../backend && npm run dev',
-      port:    5000,
+      port:    5001,
       reuseExistingServer: true,
       env: {
           DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/jardin'
