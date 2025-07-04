@@ -1,14 +1,18 @@
 'use client'
 import React, { useState } from 'react'
 import { removePhotoFromArray } from '@/utils/removePhoto'
+import { useRouter } from 'next/navigation';
+import { type } from 'os';
 
 export default function AjouterJardin() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
-    localisation: '',
+    adresse: '',
+    // type: '',
     surface: '',
-    services: '',
+    type: '',
     photos: []
   })
 
@@ -33,11 +37,35 @@ export default function AjouterJardin() {
   }
   
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log('Données du jardin ➕', formData)
-    alert("Jardin ajouté (simulation) !")
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // données locales
+    const data = {
+    id_proprietaire: 4, // Exemple : récupérer dynamiquement selon l'utilisateur connecté
+    titre: "jardin de Hanaë",
+    description: "grand jardin qui a besoin d'être tondu",
+    adresse: "86 avenue de la République, Paris",
+    superficie: 120/*parseFloat(superficie)*/,
+    // type: "pelouse",
+    type: "tondre",
+     photos: [
+    "/assets/jardin 1.jpg"
+  ], 
+  };
+    const res = await fetch("http://localhost:5000/api/jardins", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (res.ok) {
+    alert("Jardin ajouté !");
+    router.push("/jardins"); // redirection vers la liste des jardins
+  } else {
+    alert("Erreur lors de l'ajout du jardin");
   }
+};
 
   const removePhoto = (indexToRemove) => {
     setFormData(prev => ({
@@ -110,11 +138,11 @@ export default function AjouterJardin() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Localisation :</label>
+            <label className="block text-sm font-medium text-gray-700">Adresse :</label>
             <input
               type="text"
-              name="localisation"
-              value={formData.localisation}
+              name="adresse"
+              value={formData.adresse}
               onChange={handleChange}
               className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
             />
@@ -131,11 +159,22 @@ export default function AjouterJardin() {
             />
           </div>
 
+          {/* <div>
+            <label className="block text-sm font-medium text-gray-700">Type :</label>
+            <input
+              type="number"
+              name="surface"
+              value={formData.type}
+              onChange={handleChange}
+              className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
+            />
+          </div> */}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700">Services / Besoins :</label>
+            <label className="block text-sm font-medium text-gray-700">Type de Besoins :</label>
             <input
               type="text"
-              name="services"
+              name="type"
               value={formData.services}
               onChange={handleChange}
               className="mt-1 w-full border rounded px-3 py-2 text-gray-700"

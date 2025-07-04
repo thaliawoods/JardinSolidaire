@@ -1,14 +1,19 @@
 'use client'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 
 export default function JardinPage() {
+  const router = useRouter();
   const { id } = useParams()
   const [jardin, setJardin] = useState(null)
   const [mainPhoto, setMainPhoto] = useState(null)
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [confirmed, setConfirmed] = useState(false);
 
 
   useEffect(() => {
@@ -32,6 +37,33 @@ export default function JardinPage() {
     }
     fetchJardin();
   }, [id]);
+
+  const handleReservation = async () => {
+    if (!userId) return router.push('/connexion');
+
+    try {
+      const res = await fetch('http://localhost:5000/api/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_utilisateur: userId,
+          id_jardin: jardinId,
+          date_reservation: date,
+          statut: 'en_attente',
+        }),
+      });
+
+      if (res.ok) {
+        alert('Réservation effectuée ✅');
+        router.push('/reservation');
+      } else {
+        alert("Erreur lors de la réservation ❌");
+      }
+    } catch (error) {
+      console.error('Erreur réservation:', error);
+      alert("Erreur serveur");
+    }
+  };
 
   if (loading)  return <p className="p-6 text-center">Chargement…</p>;
   if (error)    return <p className="p-6 text-center text-red-500">Erreur : {error}</p>;
@@ -94,19 +126,53 @@ export default function JardinPage() {
     <p className="text-sm text-green-800">{jardin.description}</p>
     <p className="text-sm text-green-800">Adresse : {jardin.adresse}</p>
     <p className="text-sm text-green-800">Type : {jardin.type}</p>
-    <p className="text-sm text-green-800">Quartier : {jardin.quartier}</p>
     <p className="text-sm text-green-800">Besoins : {jardin.besoins}</p>
     <p className="text-sm text-green-800">Publié le : {new Date(jardin.date_publication).toLocaleDateString()}</p>
     <p className="text-sm text-green-800">Note moyenne : {jardin.note_moyenne}</p>
   </div>
 
   {/* Calendrier */}
-  <div className="mb-6">
-    <h2 className="font-bold text-lg mb-2 text-green-800">Calendrier</h2>
-    <div className="bg-pink-100 rounded p-4 text-sm text-center">
-      (📅 Calendrier à intégrer ici)
-    </div>
+<div className="mb-6">
+  <h2 className="font-bold text-lg mb-2 text-green-800">Choisissez une date</h2>
+  <div className="flex flex-col items-center gap-4 p-4 rounded-lg ">
+    <DatePicker
+      selected={selectedDate}
+      onChange={(date) => {
+        setSelectedDate(date);
+        setConfirmed(false);
+      }}
+      inline
+      minDate={new Date()}
+      calendarClassName="rounded-lg border border-green-300"
+    />
+    {/* {selectedDate && (
+      <p className="text-green-700">
+        📅 Date sélectionnée : <strong>{selectedDate.toLocaleDateString()}</strong>
+      </p>
+    )} */}
+    {selectedDate && confirmed && (
+  <button
+    className="bg-[#E3107D] hover:bg-[#c30c6a] text-white font-semibold px-6 py-2 rounded-full transition"
+    onClick={() =>
+      router.push(`/reservation?id=${jardin.id_jardin}&date=${selectedDate.toISOString()}`)
+    }
+  >
+    Réserver
+  </button>
+)}
   </div>
+</div>
+
+
+  {/* Réservation */}
+  <div className="mt-6 text-center">
+        <button
+          className="bg-[#E3107D] hover:bg-[#c30c6a] text-white font-semibold px-6 py-2 rounded-full transition"
+          onClick={() => router.push(`/reservation?id=${jardin.id_jardin}`)}
+        >
+          Réserver
+        </button>
+      </div>
 
   {/* Commentaires */}
   <div>

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import fs from 'fs';
+
 
 test.describe('Page Ajouter un Jardin', () => {
   // Chemin vers un dossier fixtures contenant au moins 6 images de test
@@ -15,8 +15,8 @@ test.describe('Page Ajouter un Jardin', () => {
   ];
 
   test.beforeEach(async ({ page }) => {
-    // Remplacez l’URL par le chemin réel de votre page
-    await page.goto('http://localhost:3000/ajouter-jardin');
+    // navigue sur la page 
+    await page.goto('/ajouter-jardin');
   });
 
   test('bloque l’ajout au-dessus de 5 photos et affiche une alerte', async ({ page }) => {
@@ -34,60 +34,68 @@ test.describe('Page Ajouter un Jardin', () => {
     // On attend que l’alerte ait été capturée
     expect(alertMessage).toBe('Tu ne peux ajouter que 5 photos maximum.');
 
-    // comme l’ajout est annulé, il n’y a **aucune** vignette
+    // comme l’ajout est annulé, il n’y a aucune photo
     await expect(page.locator('img[alt^="Photo"]')).toHaveCount(0);
   });
-
   test('ajoute correctement jusqu’à 5 photos sans alerte', async ({ page }) => {
-  let alerted = false;
-  page.on('dialog', () => { alerted = true; });
+    // 7) On prépare un flag pour vérifier qu’aucune alerte ne s’affiche
+    let alerted = false;
+    page.on('dialog', () => { alerted = true; });
 
-  const fileInput = page.locator('input[type="file"]');
-  // On n’upload que 5 fichiers
-  await fileInput.setInputFiles(files.slice(0, 5));
+    // 8) On n’uploade que 5 fichiers
+    const fileInput = page.locator('input[type="file"]');
+    await fileInput.setInputFiles(files.slice(0, 5));
 
-  expect(alerted).toBe(false);
-  await expect(page.locator('img[alt^="Photo"]')).toHaveCount(5);
-});
+    // 9) Pas d’alerte doit avoir été déclenchée
+    expect(alerted).toBe(false);
 
+    // 10) Et on doit voir exactement 5 vignettes dans la page
+    await expect(page.locator('img[alt^="Photo"]')).toHaveCount(5);
+  });
 
   test('permet de supprimer une photo via le bouton ✖', async ({ page }) => {
+    // 11) On upload 3 photos
     const fileInput = page.locator('input[type="file"]');
-
-    // Uploade 3 fichiers d’abord
     await fileInput.setInputFiles(files.slice(0, 3));
     const thumbs = page.locator('img[alt^="Photo"]');
     await expect(thumbs).toHaveCount(3);
 
-    // Clique sur la croix de la deuxième vignette
+    // 12) On clique sur la croix de la deuxième vignette (index 1)
     const removeButtons = page.locator('button:has-text("✖")');
     await removeButtons.nth(1).click();
 
-    // On s’attend à 2 vignettes restantes
+    // 13) Il ne doit rester que 2 photos visibles
     await expect(thumbs).toHaveCount(2);
 
-    // Vérifie qu’aucune alerte n’est apparue
+    // 14) On s’assure qu’aucune alerte ne s’est déclenchée à ce moment
     page.on('dialog', () => { throw new Error('Aucune alerte attendue'); });
   });
 
-  test('soumet le formulaire et affiche une alerte de confirmation', async ({ page }) => {
-    let alertMessage = '';
-    page.on('dialog', async dialog => {
-      alertMessage = dialog.message();
-      await dialog.accept();
+
+  test('upload de photos, soumission, alert & redirection', async ({ page }) => {
+    await page.route('http://localhost:5000/api/jardins', async route => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"success":true}' });
     });
 
-    // Remplit quelques champs
-    await page.fill('input[name="nom"]', 'Mon beau jardin');
-    await page.fill('textarea[name="description"]', 'Un super potager');
-    // On peut uploader moins de 5 pour tester le submit
-    const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles(files.slice(0, 2));
+    let alertMessage = '';
+    page.on('dialog', async d => { alertMessage = d.message(); await d.accept(); });
 
-    // Clique sur "Ajouter mon jardin"
-    await page.click('button:has-text("Ajouter mon jardin")');
+    // uploade deux photos
+    await page.locator('input[type="file"]').setInputFiles(files.slice(0, 2));
+    // remplit les champs
+    await page.fill('input[name="nom"]', 'Mon joli jardin');
+    await page.fill('textarea[name="description"]', 'Description test');
+    await page.fill('input[name="localisation"]', 'Paris 11e');
+    await page.fill('input[name="surface"]', '50');
+    await page.fill('input[name="services"]', 'arrosage');
+    // soumission et attente de redirection
+    await Promise.all([
+      page.waitForURL('**/jardins'),
+      page.click('button:has-text("Ajouter mon jardin")'),
+    ]);
 
-    // Vérifie le message d’alerte
-    expect(alertMessage).toBe('Jardin ajouté (simulation) !');
+    expect(alertMessage).toBe('Jardin ajouté !');
+    expect(page.url()).toContain('/jardins');
   });
+
 });

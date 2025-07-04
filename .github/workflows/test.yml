@@ -5,9 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 jobs:
-  # Job pour les tests unitaires
   unit-tests:
     runs-on: ubuntu-latest
     services:
@@ -28,7 +26,7 @@ jobs:
       matrix:
         project: [backend, frontend]
         node-version: [18]
-    name: Run ${ { matrix.project } } Unit Tests (Node ${{ matrix.node-version }})
+    name: Run ${{ matrix.project }} Unit Tests (Node ${{ matrix.node-version }})
     steps:
       - uses: actions/checkout@v3
 
@@ -41,8 +39,9 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: npm ci
 
+      # Cette étape ne s'exécute QUE pour le backend
       - name: Setup DB & Prisma (backend only)
-        if: matrix.project == 'backend'
+        if: ${{ matrix.project == 'backend' }}
         working-directory: backend
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/jardin
@@ -50,8 +49,10 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
 
+      # Lancement des tests unitaires pour backend et frontend
       - name: Run unit tests
         working-directory: ${{ matrix.project }}
+        
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/jardin
         run: npm test

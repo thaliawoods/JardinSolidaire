@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 
 const jardinsRoutes = require('./routes/jardins');
 const jardiniersRoutes = require('./routes/jardiniers');
+const reservationsRoutes = require('./routes/reservations');
 const {hashPassword} = require('./utils')
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,7 +20,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/jardins', jardinsRoutes);
 app.use('/api/jardiniers', jardiniersRoutes);
-
+app.use('/api/reservations', reservationsRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend avec Prisma est en ligne ✅');

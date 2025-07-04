@@ -22,6 +22,10 @@ router.get('/', async (req, res) => {
       ...j,
       id_jardin: j.id_jardin.toString(),
       id_proprietaire: j.id_proprietaire.toString(),
+        description: j.description,
+        adresse: j.adresse,
+        type: j.type,
+        photos: j.photos,
     }));
     console.log('🔍 jardins récupérés:', jardins);
     res.json(formatés);
