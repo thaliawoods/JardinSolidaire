@@ -10,7 +10,7 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL="postgresql://user:password@localhost:5432/jardinsolidaire"
+      - DATABASE_URL=postgresql://user:password@db:5432/jardinsolidaire
   frontend:
     build: ./frontend
     image: jardin_frontend:latest
