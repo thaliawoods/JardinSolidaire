@@ -61,7 +61,7 @@ const ListeJardins = () => {
         </div>
 
         {/* Sélecteur quartier */}
-        <select
+        {/* <select
             value={quartier}
             onChange={(e) => setQuartier(e.target.value)}
             className="px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2  w-full lg:w-[20%] text-sm text-gray-700"
@@ -70,7 +70,7 @@ const ListeJardins = () => {
             <option value="centre">Centre-ville</option>
             <option value="nord">Quartier Nord</option>
             <option value="sud">Quartier Sud</option>
-        </select>
+        </select> */}
 
         {/* Sélecteur type */}
         <select
@@ -82,6 +82,7 @@ const ListeJardins = () => {
             <option value="potager">Potager</option>
             <option value="serre">Serre</option>
             <option value="fleur">Fleur</option>
+            <option value="fleur">Tondre</option>
         </select>
 
         {/* Bouton réinitialiser */}
@@ -161,7 +162,7 @@ const ListeJardins = () => {
             <p className="text-xs leading-tight">{jardin.description}</p>
             <p className="text-xs leading-tight">{jardin.adresse}</p>
             <p className="text-xs leading-tight">{jardin.type}</p>
-            <p className="text-xs leading-tight">{jardin.quartier}</p>
+
             </div>
 
             </div>
