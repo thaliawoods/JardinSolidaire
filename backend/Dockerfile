@@ -16,8 +16,8 @@ COPY . .
 
 RUN npx prisma generate
 
-# Exposer le port sur lequel tourne le backend (5000 dans ton cas)
-EXPOSE 5000
+# Exposer le port sur lequel tourne le backend (5001 dans ton cas)
+EXPOSE 5001
 
 # Commande de démarrage (en mode dev ou prod selon ton usage)
 CMD ["npm", "run", "dev"]

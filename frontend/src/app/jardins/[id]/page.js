@@ -19,7 +19,7 @@ export default function JardinPage() {
   useEffect(() => {
     async function fetchJardin() {
       try {
-        const res = await fetch(`http://localhost:5000/api/jardins/${id}`);
+        const res = await fetch(`http://localhost:5001/api/jardins/${id}`);
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
