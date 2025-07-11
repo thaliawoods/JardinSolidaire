@@ -85,7 +85,7 @@ test.describe('Page Ajouter un Jardin', () => {
     // remplit les champs
     await page.fill('input[name="nom"]', 'Mon joli jardin');
     await page.fill('textarea[name="description"]', 'Description test');
-    await page.fill('input[name="localisation"]', 'Paris 11e');
+    await page.fill('input[name="adresse"]', 'Paris 11e');
     await page.fill('input[name="surface"]', '50');
     await page.fill('input[name="services"]', 'arrosage');
     // soumission et attente de redirection
