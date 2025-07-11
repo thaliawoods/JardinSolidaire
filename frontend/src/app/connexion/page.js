@@ -24,9 +24,17 @@ export default function Connexion() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Bienvenue ${data.user.prenom} !`);
+        if (data.user.role === 'jardinier') {
+          window.location.href = '/jardiniers';
+        } else if (data.user.role === 'proprietaire') {
+          window.location.href = '/jardins';
+        } else if (data.user.role === 'ami_du_vert') {
+          window.location.href = '/accueil';
+        } else {
+          setErrorMessage('Rôle inconnu.');
+        }
       } else {
-        setErrorMessage('Identifiant ou mot de passe incorrect.');
+        setErrorMessage(data.error || 'Identifiant ou mot de passe incorrect.');
       }
     } catch (error) {
       console.error('Erreur réseau :', error);
@@ -157,7 +165,7 @@ export default function Connexion() {
 
             <p style={styles.forgot}>
               <a
-                href="/reinitialisation"
+                href="/mdp_oublier"
                 style={{
                   color: '#6ec173',
                   textDecoration: 'none',
