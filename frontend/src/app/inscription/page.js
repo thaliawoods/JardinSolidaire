@@ -35,7 +35,7 @@ export default function Inscription() {
     }
 
     try {
-      const response = await fetch('http://localhost:5001/register', {
+      const response = await fetch('http://localhost:5001/api/inscription/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prenom, nom, email, password, role }),
