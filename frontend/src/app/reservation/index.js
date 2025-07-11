@@ -2,6 +2,9 @@
 
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
 
 const ReservationPage = () => {
   const searchParams = useSearchParams()
@@ -93,7 +96,7 @@ const ReservationPage = () => {
           <p className="text-sm mb-2 text-green-800">Connectez-vous ou inscrivez-vous pour réserver</p>
           <div className="flex gap-2">
             <button onClick={handleConnexion} className="border px-4 py-2 rounded w-full text-green-800">Se connecter</button>
-            <button onClick={handleInscription} className="border px-4 py-2 rounded w-full text-green-800">S'inscrire</button>
+            <button onClick={handleInscription} className="border px-4 py-2 rounded w-full text-green-800">S&apos;inscrire</button>
           </div>
         </div>
       ) : (

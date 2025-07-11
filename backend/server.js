@@ -14,8 +14,6 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Import des routes
-const jardinsRoutes = require('./routes/jardins');
-const jardiniersRoutes = require('./routes/jardiniers');
 const connexionRoutes = require('./routes/connexion'); // ⬅️ ajout ici*/
 const inscriptionRoutes = require('./routes/inscription');
 const mdpOublieRoutes = require('./routes/mdp_oublie');
