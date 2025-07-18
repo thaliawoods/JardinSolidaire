@@ -15,7 +15,7 @@ export default function Connexion() {
     setErrorMessage('');
 
     try {
-      const response = await fetch('http://localhost:5001/login', {
+      const response = await fetch('http://localhost:5001/api/connexion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
