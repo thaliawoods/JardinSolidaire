@@ -1,11 +1,73 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faTimes, faSeedling } from "@fortawesome/free-solid-svg-icons";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [hasAnnonce, setHasAnnonce] = useState(false);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setUser(userData);
+
+      // 🔹 Requête vers le backend pour savoir si l’utilisateur a une annonce
+      fetch(`http://localhost:5001/api/navbar?userId=${userData.id_utilisateur}&role=${userData.role}`)
+        .then((res) => res.json())
+        .then((data) => setHasAnnonce(data.hasAnnonce))
+        .catch((err) => console.error("Erreur récupération annonce :", err));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  };
+
+  const renderButtons = () => {
+    if (!user) {
+      return (
+        <>
+          <Link href="/connexion">
+            <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+              Se connecter
+            </button>
+          </Link>
+          <Link href="/inscription">
+            <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+              S’inscrire
+            </button>
+          </Link>
+        </>
+      );
+    }
+
+    if (user.role === "proprietaire") {
+      return (
+        <Link href={hasAnnonce ? "/modifier-jardin" : "/ajouter-jardin"}>
+          <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+            {hasAnnonce ? "Modifier mon jardin" : "Ajouter mon jardin"}
+          </button>
+        </Link>
+      );
+    }
+
+    if (user.role === "ami_du_vert") {
+      return (
+        <Link href={hasAnnonce ? "/modifier-jardinier" : "/ajouter-jardinier"}>
+          <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+            {hasAnnonce ? "Modifier mon annonce" : "Proposer mes services"}
+          </button>
+        </Link>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <nav className="w-full bg-green-600 text-white fixed top-0 left-0 z-50">
@@ -17,28 +79,22 @@ const Navbar = () => {
 
         <div className="flex items-center">
           <div className="hidden md:flex space-x-4 mr-4">
-            <Link href="/ajouter-jardin">
-              <button className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded">
-                J&apos;ai un jardin
-              </button>
-            </Link>
-            <Link href="/je-veux-jardiner">  
-              <button className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded">
-                Je veux jardiner
-              </button>
-            </Link>
+            {renderButtons()}
           </div>
-          <div onClick={() => setMenuOpen(!menuOpen)} className="cursor-pointer">
-            {menuOpen ? (
-              <FontAwesomeIcon icon={faTimes} size="lg" />
-            ) : (
-              <FontAwesomeIcon icon={faBars} size="lg" />
-            )}
-          </div>
+
+          {user && (
+            <div onClick={() => setMenuOpen(!menuOpen)} className="cursor-pointer">
+              {menuOpen ? (
+                <FontAwesomeIcon icon={faTimes} size="lg" />
+              ) : (
+                <FontAwesomeIcon icon={faBars} size="lg" />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {menuOpen && (
+      {menuOpen && user && (
         <div className="bg-green-600 w-full absolute top-16 left-0">
           <ul className="flex flex-col space-y-2 p-4">
             <li>
@@ -62,9 +118,9 @@ const Navbar = () => {
               </Link>
             </li>
             <li>
-              <Link href="/logout" className="block">
+              <button onClick={handleLogout} className="block text-left w-full">
                 Déconnexion
-              </Link>
+              </button>
             </li>
           </ul>
         </div>
