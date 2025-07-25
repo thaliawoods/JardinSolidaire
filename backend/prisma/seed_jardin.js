@@ -2,10 +2,25 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
+  // 🔍 On récupère les bons utilisateurs via leur email
+  const lucas = await prisma.utilisateur.findUnique({
+    where: { email: 'lucas@example.com' },
+  });
+
+  const hugo = await prisma.utilisateur.findUnique({
+    where: { email: 'hugo@example.com' },
+  });
+
+  // 🔁 Vérification basique
+  if (!lucas || !hugo) {
+    throw new Error("Lucas ou Hugo n'existe pas. Vérifie leurs emails dans seed_utilisateur.js !");
+  }
+
+  // 🪴 Insertion des jardins liés aux bons utilisateurs
   await prisma.jardin.createMany({
     data: [
       {
-        id_proprietaire: 2,
+        id_proprietaire: lucas.id_utilisateur,
         titre: 'Jardin fleuri de Lucas',
         description: 'Un jardin lumineux avec beaucoup de fleurs.',
         adresse: '25 avenue des Champs, Lyon',
@@ -20,7 +35,7 @@ async function main() {
         note_moyenne: 4.9,
       },
       {
-        id_proprietaire: 4,
+        id_proprietaire: hugo.id_utilisateur,
         titre: 'Potager de Hugo',
         description: 'Grand potager à partager avec un passionné.',
         adresse: '18 rue de l’Admin, Lille',
@@ -37,11 +52,11 @@ async function main() {
     ],
   });
 
-  console.log('Jardins insérés avec succès !');
+  console.log('✅ Jardins insérés avec succès !');
 }
 
 main()
-  .catch((e) => console.error(e))
+  .catch((e) => console.error('❌ Erreur dans la seed jardin :', e))
   .finally(async () => {
     await prisma.$disconnect();
   });

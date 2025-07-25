@@ -18,6 +18,7 @@ const connexionRoutes = require('./routes/connexion'); // ⬅️ ajout ici*/
 const inscriptionRoutes = require('./routes/inscription');
 const mdpOublieRoutes = require('./routes/mdp_oublie');
 const modifierMdpRoutes = require('./routes/modifier_mdp');
+const navbarRoute = require('./routes/navbar');
 
 // Middlewares
 app.use(cors());
@@ -32,6 +33,7 @@ app.use('/api/connexion', connexionRoutes); // ⬅️ activation route login*/
 app.use('/api/inscription', inscriptionRoutes);
 app.use('/api/mdp', mdpOublieRoutes);
 app.use('/api/modifier_mdp', modifierMdpRoutes);
+app.use('/api/utilisateur/has-annonce', navbarRoute);
 
 // Route test
 app.get('/', (req, res) => {
