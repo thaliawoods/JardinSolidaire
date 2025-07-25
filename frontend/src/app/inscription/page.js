@@ -4,6 +4,7 @@ import InputField from '../../components/Pageconnexion/InputField';
 import SelectField from '../../components/Pageinscription/SelectField';
 import Footer from '../../components/Footer/Footer';
 import Navbar from '../../components/Navbar/Navbar';
+import { useRouter } from 'next/navigation';
 
 export default function Inscription() {
   const [prenom, setPrenom] = useState('');
@@ -22,37 +23,43 @@ export default function Inscription() {
   const isValidPassword = hasUppercase && hasNumber && hasSpecialChar && hasMinLength;
   const passwordsMatch = password === confirmPassword;
   const [errorMessage, setErrorMessage] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!isValidPassword) {
-      alert("Votre mot de passe ne respecte pas les critères de sécurité.");
-      return;
-    }
-    if (!passwordsMatch) {
-      alert("Les mots de passe ne correspondent pas.");
-      return;
-    }
+  e.preventDefault();
+  if (!isValidPassword) {
+    alert("Votre mot de passe ne respecte pas les critères de sécurité.");
+    return;
+  }
+  if (!passwordsMatch) {
+    alert("Les mots de passe ne correspondent pas.");
+    return;
+  }
 
-    try {
-      const response = await fetch('http://localhost:5001/api/inscription/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prenom, nom, email, password, role }),
-      });
+  try {
+    const response = await fetch('http://localhost:5001/api/inscription/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prenom, nom, email, password, role }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (response.ok) {
-        alert(`Bienvenue ${data.user.prenom} !`);
-        } else {
-        setErrorMessage(data.error || 'Erreur lors de l’inscription');
-        }
-            } catch (error) {
-      console.error('Erreur réseau :', error);
-      alert('Impossible de contacter le serveur');
+    if (response.ok) {
+      alert(`Bienvenue ${data.user.prenom} !`);
+      if (role === 'ami_du_vert') {
+        router.push('/jardin');
+      } else if (role === 'proprietaire') {
+        router.push('/jardiniers');
+      }
+    } else {
+      setErrorMessage(data.error || 'Erreur lors de l’inscription');
     }
-  };
+  } catch (error) {
+    console.error('Erreur réseau :', error);
+    alert('Impossible de contacter le serveur');
+  }
+};
 
   const styles = {
     container: {

@@ -1,5 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["clientExtensions"]
+}
+
+generator seed {
+  provider = "node"
+  output   = "../prisma/seed.js"
 }
 
 datasource db {
@@ -44,7 +50,7 @@ model heurescumul_es {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model jardin {
   id_jardin        BigInt           @id @default(autoincrement())
-  id_proprietaire  BigInt?
+  id_proprietaire  BigInt           @unique
   titre            String?
   description      String?
   adresse          String?
@@ -55,9 +61,11 @@ model jardin {
   date_publication DateTime?        @default(now()) @db.Timestamptz(6)
   statut           String?
   note_moyenne     Float?
+
+  // Relations
   avis             avis[]
   disponibilites   disponibilites[]
-  utilisateur      utilisateur?     @relation(fields: [id_proprietaire], references: [id_utilisateur], onDelete: NoAction, onUpdate: NoAction)
+  utilisateur      utilisateur       @relation(fields: [id_proprietaire], references: [id_utilisateur], onDelete: NoAction, onUpdate: NoAction)
   reservation      reservation[]
 }
 
@@ -100,10 +108,27 @@ model utilisateur {
   telephone                                          String?
   adresse                                            String?
   note_moyenne                                       Float?
+
+  // Relations
   avis                                               avis[]
   heurescumul_es                                     heurescumul_es[]
-  jardin                                             jardin[]
+  jardin                                             jardin?           // 🔧 un seul jardin maximum
   messagerie_messagerie_id_destinataireToutilisateur messagerie[]     @relation("messagerie_id_destinataireToutilisateur")
   messagerie_messagerie_id_envoyeurToutilisateur     messagerie[]     @relation("messagerie_id_envoyeurToutilisateur")
   reservation                                        reservation[]
+  competences                                        utilisateurCompetence[]
+}
+
+model competence {
+  id_competence Int                     @id @default(autoincrement())
+  nom           String                 @unique
+  utilisateurs  utilisateurCompetence[]
+}
+
+model utilisateurCompetence {
+  id_utilisateur_competence Int         @id @default(autoincrement())
+  utilisateur         utilisateur       @relation(fields: [id_utilisateur], references: [id_utilisateur])
+  id_utilisateur       BigInt
+  competence           competence       @relation(fields: [id_competence], references: [id_competence])
+  id_competence        Int
 }
