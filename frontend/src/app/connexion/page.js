@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import InputField from '../../components/Pageconnexion/InputField';
 import Footer from '../../components/Footer/Footer';
 import Navbar from '../../components/Navbar/Navbar';
@@ -9,6 +10,7 @@ export default function Connexion() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,12 +26,10 @@ export default function Connexion() {
       const data = await response.json();
 
       if (response.ok) {
-        if (data.user.role === 'jardinier') {
-          window.location.href = '/jardiniers';
+        if (data.user.role === 'jardinier' || data.user.role === 'ami_du_vert') {
+          router.push('/jardins'); // Redirige les jardiniers/amis vers les jardins
         } else if (data.user.role === 'proprietaire') {
-          window.location.href = '/jardins';
-        } else if (data.user.role === 'ami_du_vert') {
-          window.location.href = '/accueil';
+          router.push('/jardiniers'); // Redirige les propriétaires vers les jardiniers
         } else {
           setErrorMessage('Rôle inconnu.');
         }
@@ -97,10 +97,6 @@ export default function Connexion() {
       marginTop: '-10px',
       marginBottom: '20px',
       fontSize: '16px',
-    },
-    forgotLink: {
-      color: '#6ec173',
-      textDecoration: 'none',
     },
     button: {
       padding: '14px',
@@ -178,10 +174,10 @@ export default function Connexion() {
             </p>
             <button type="submit" style={styles.button}>Se connecter</button>
             {errorMessage && (
-            <p style={{ color: 'red', fontSize: '16px', marginTop: '10px', textAlign: 'center' }}>
-              {errorMessage}
-            </p>
-          )}
+              <p style={{ color: 'red', fontSize: '16px', marginTop: '10px', textAlign: 'center' }}>
+                {errorMessage}
+              </p>
+            )}
           </form>
 
           <p style={{ ...styles.register, color: '#e3107d' }}>
@@ -202,4 +198,6 @@ export default function Connexion() {
       <Footer />
     </>
   );
-}
+};
+
+ 
