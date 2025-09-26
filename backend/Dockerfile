@@ -1,23 +1,17 @@
-# Étape 1 : image de base Node.js
 FROM node:22-alpine
-
-
-# Définir le répertoire de travail dans le conteneur
 WORKDIR /app
 
-# Copier uniquement les fichiers de dépendances en premier (optimise les builds)
+# deps first (cache-friendly)
 COPY package.json package-lock.json ./
+RUN npm ci
 
-# Installer les dépendances
-RUN npm install
-
-# Copier le reste des fichiers backend
-COPY . .
-
+# copy prisma first and generate client
+COPY prisma ./prisma
 RUN npx prisma generate
 
-# Exposer le port sur lequel tourne le backend (5001 dans ton cas)
-EXPOSE 5001
+# then copy the rest (node_modules is ignored by .dockerignore)
+COPY . .
 
-# Commande de démarrage (en mode dev ou prod selon ton usage)
-CMD ["npm", "run", "dev"]
+EXPOSE 5001
+# safety: (re)generate at runtime in case schema changed
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]
