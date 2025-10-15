@@ -1,11 +1,5 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["clientExtensions"]
-}
-
-generator seed {
-  provider = "node"
-  output   = "../prisma/seed.js"
 }
 
 datasource db {
