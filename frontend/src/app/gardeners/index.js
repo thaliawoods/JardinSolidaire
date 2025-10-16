@@ -2,6 +2,11 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import {
+  getFavGardeners,
+  addFavGardener,
+  removeFavGardener,
+} from '@/lib/favorites';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
@@ -9,11 +14,11 @@ function unwrapGardeners(raw) {
   if (Array.isArray(raw)) return raw;
   if (!raw || typeof raw !== 'object') return [];
   return (
-    raw.gardeners ??      
+    raw.gardeners ??    
     raw.gardener ??       
-    raw.jardiniers ??   
-    raw.jardinier ??    
-    raw.data ??          
+    raw.jardiniers ??     
+    raw.jardinier ??      
+    raw.data ??           // generic wrapper
     []
   );
 }
@@ -22,8 +27,8 @@ function normalizeGardeners(raw) {
   const arr = unwrapGardeners(raw);
   if (!Array.isArray(arr)) return [];
   return arr.map((item) => {
-    // EN-first
     if ('firstName' in item || 'lastName' in item || 'avatarUrl' in item) {
+      // EN-first
       return {
         id: String(item.id ?? item.id_utilisateur ?? ''),
         firstName: item.firstName ?? '',
@@ -50,12 +55,17 @@ function normalizeGardeners(raw) {
 
 export default function GardenersList() {
   const [gardeners, setGardeners] = useState([]);
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState([]); 
   const [minRating, setMinRating] = useState('');
   const [kind, setKind] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+
+  // hydrate favorites
+  useEffect(() => {
+    setFavorites(getFavGardeners().map((g) => String(g.id)));
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -83,7 +93,6 @@ export default function GardenersList() {
         }
 
         if (!alive) return;
-        console.debug('[gardeners] raw response:', data);
         const norm = normalizeGardeners(data);
         setGardeners(norm);
       } catch (e) {
@@ -110,8 +119,26 @@ export default function GardenersList() {
     });
   }, [gardeners, search, minRating]);
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  // persist snapshot on toggle
+  const toggleFavorite = (g) => {
+    const id = String(g.id);
+    setFavorites((prev) => {
+      const isFav = prev.includes(id);
+      if (isFav) {
+        removeFavGardener(id);
+        return prev.filter((x) => x !== id);
+      } else {
+        addFavGardener({
+          id,
+          firstName: g.firstName,
+          lastName: g.lastName,
+          avatarUrl: g.avatarUrl,
+          rating: g.rating,
+          address: g.address,
+        });
+        return [...prev, id];
+      }
+    });
   };
 
   const resetFilters = () => {
@@ -122,7 +149,16 @@ export default function GardenersList() {
 
   return (
     <div className="min-h-screen px-6 py-10 bg-white">
-      <h1 className="text-3xl font-bold mb-6 text-center text-green-800">Gardeners</h1>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <h1 className="text-3xl font-bold text-green-800">Gardeners</h1>
+        <Link
+          href="/favorites"
+          className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+          title="See my favorites"
+        >
+          Favorites ({favorites.length})
+        </Link>
+      </div>
 
       <div className="flex flex-wrap gap-4 mb-6">
         <div className="relative w-full lg:w-[30%]">
@@ -190,6 +226,7 @@ export default function GardenersList() {
           <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
             <article className="flex bg-green-100 rounded-xl shadow p-4 hover:shadow-md transition">
               <div className="w-32 h-32 bg-green-300 rounded shadow relative overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={g.avatarUrl || '/assets/default-avatar.jpg'}
                   alt={`${g.firstName} ${g.lastName}`}
@@ -197,11 +234,11 @@ export default function GardenersList() {
                 />
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); toggleFavorite(g.id); }}
+                  onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
                   className="absolute top-2 right-2 text-xl hover:scale-125 transition"
                   aria-label="Add/remove from favorites"
                 >
-                  {favorites.includes(g.id) ? (
+                  {favorites.includes(String(g.id)) ? (
                     <span className="text-pink-500">♥</span>
                   ) : (
                     <span className="text-gray-400">♡</span>
