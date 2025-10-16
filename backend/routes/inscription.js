@@ -1,28 +1,34 @@
+// backend/routes/inscription.js
 const express = require('express');
-const router = express.Router();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
+const router = express.Router();
 
-router.post('/register', async (req, res) => {
-  const { prenom, nom, email, password, role } = req.body;
-  console.log('🔍 Données reçues côté serveur :', req.body);
+router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-  if (!prenom || !nom || !email || !password || !role) {
-    return res.status(400).json({ error: 'Tous les champs sont requis.' });
-  }
-
+router.post('/', async (req, res) => {
   try {
-    const existingUser = await prisma.utilisateur.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Cet e-mail est déjà utilisé.' });
+    let { prenom = null, nom = null, email, mot_de_passe, role = 'user' } = req.body || {};
+    if (!email || !mot_de_passe) {
+      return res.status(400).json({ error: 'email_and_password_required' });
     }
 
-    const newUser = await prisma.utilisateur.create({
+    email = String(email).trim().toLowerCase();
+
+    const exists = await prisma.utilisateur.findUnique({ where: { email } });
+    if (exists) return res.status(409).json({ error: 'email_already_used' });
+
+    const hash = await bcrypt.hash(mot_de_passe, 10);
+
+    const user = await prisma.utilisateur.create({
       data: {
         prenom,
         nom,
         email,
-        mot_de_passe: password, // 👈 mot de passe en clair (temporaire)
+        mot_de_passe: hash,
         role,
         photo_profil: null,
         biographie: null,
@@ -30,20 +36,28 @@ router.post('/register', async (req, res) => {
         adresse: null,
         note_moyenne: null,
       },
+      select: { id_utilisateur: true, prenom: true, nom: true, email: true, role: true },
     });
 
+    // 👇 Cast BigInt to Number for JWT
+    const uid = Number(user.id_utilisateur);
+
+    const token = jwt.sign(
+      { id_utilisateur: uid },
+      process.env.JWT_SECRET || 'dev-secret',
+      { expiresIn: '7d' }
+    );
+
     res.status(201).json({
-      message: 'Inscription réussie',
-      user: {
-        prenom: newUser.prenom,
-        nom: newUser.nom,
-        email: newUser.email,
-        role: newUser.role,
-      },
+      token,
+      user: { ...user, id_utilisateur: uid }, // 👈 cast in response too
     });
-  } catch (error) {
-    console.error('Erreur serveur :', error);
-    res.status(500).json({ error: 'Erreur lors de l’inscription.' });
+  } catch (e) {
+    if (e?.code === 'P2002' && e?.meta?.target?.includes('email')) {
+      return res.status(409).json({ error: 'email_already_used' });
+    }
+    console.error('POST /inscription failed:', e?.stack || e);
+    res.status(500).json({ error: 'server_error' });
   }
 });
 
