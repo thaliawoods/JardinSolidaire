@@ -5,6 +5,8 @@ const seeds = [
   'seed_competences.js',
   'seed_jardin.js',
   'seed_reservation.js',
+  'seed_proprietaire.js',
+  'seed_jardinier.js'
 ];
 
 (async () => {
