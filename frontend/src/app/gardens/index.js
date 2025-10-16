@@ -3,28 +3,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Slider from 'react-slick';
+import {
+  getFavGardens,
+  addFavGarden,
+  removeFavGarden,
+} from '@/lib/favorites';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-
-// ---------- helpers ----------
-const STORAGE_KEY = 'favGardens';
-
-function loadFavs() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.map(String) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveFavs(ids) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-  } catch {}
-}
 
 function normalizeGardens(data) {
   if (!Array.isArray(data)) return [];
@@ -45,24 +30,18 @@ const uiToApiKind = {
   mowing: 'tondre',
 };
 
-// ---------- page ----------
 export default function GardensList() {
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState([]); // array of favorite IDs (as strings)
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState('');
   const [gardens, setGardens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
-  // load favorites once on mount
+  // hydrate favorites from localStorage
   useEffect(() => {
-    setFavorites(loadFavs());
+    setFavorites(getFavGardens().map((g) => String(g.id)));
   }, []);
-
-  // keep localStorage in sync
-  useEffect(() => {
-    saveFavs(favorites);
-  }, [favorites]);
 
   useEffect(() => {
     let alive = true;
@@ -107,18 +86,31 @@ export default function GardensList() {
     };
   }, [search, kind]);
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  // persist snapshot on toggle
+  const toggleFavorite = (g) => {
+    const id = String(g.id);
+    setFavorites((prev) => {
+      const isFav = prev.includes(id);
+      if (isFav) {
+        removeFavGarden(id);
+        return prev.filter((x) => x !== id);
+      } else {
+        addFavGarden({
+          id,
+          title: g.title,
+          address: g.address,
+          kind: g.kind,
+          photos: g.photos,
+        });
+        return [...prev, id];
+      }
+    });
   };
 
   const reset = () => {
     setSearch('');
     setKind('');
   };
-
-  const favCount = favorites.length;
 
   const filtered = useMemo(() => {
     if (!search) return gardens;
@@ -138,14 +130,13 @@ export default function GardensList() {
         <Link
           href="/favorites"
           className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
-          title="See my favorite gardens"
+          title="See my favorites"
         >
-          Favorites ({favCount})
+          Favorites ({favorites.length})
         </Link>
       </div>
 
       <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
-        {/* Search */}
         <div className="relative w-full lg:w-[30%]">
           <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
           <input
@@ -157,7 +148,6 @@ export default function GardensList() {
           />
         </div>
 
-        {/* Kind */}
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value)}
@@ -185,7 +175,6 @@ export default function GardensList() {
         {filtered.map((g) => (
           <Link key={g.id} href={`/gardens/${g.id}`} className="block">
             <div className="bg-green-100 rounded-2xl overflow-hidden shadow-md relative group hover:shadow-xl transition">
-              {/* Image */}
               <div className="h-48 overflow-hidden">
                 {g.photos.length > 0 ? (
                   <Slider dots infinite speed={500} slidesToShow={1} slidesToScroll={1}>
@@ -209,19 +198,18 @@ export default function GardensList() {
                 )}
               </div>
 
-              {/* Text */}
               <div className="px-3 py-2 text-sm text-gray-700">
                 <div className="flex justify-between items-start mb-1">
                   <h2 className="font-bold text-base text-green-900">{g.title}</h2>
                   <button
                     onClick={(e) => {
                       e.preventDefault();
-                      toggleFavorite(g.id);
+                      toggleFavorite(g);
                     }}
                     className="text-xl transition-transform transform hover:scale-125"
                     aria-label="Add to favorites"
                   >
-                    {favorites.includes(g.id) ? (
+                    {favorites.includes(String(g.id)) ? (
                       <span className="text-pink-500">♥</span>
                     ) : (
                       <span className="text-gray-400">♡</span>

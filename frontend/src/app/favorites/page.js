@@ -1,138 +1,124 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const STORAGE_KEY = 'favGardens';
-
-function loadFavs() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.map(String) : [];
-  } catch {
-    return [];
-  }
-}
-
-function normalizeGarden(g) {
-  return {
-    id: String(g.id ?? g.id_jardin ?? ''),
-    title: g.title ?? g.titre ?? '',
-    description: g.description ?? '',
-    address: g.address ?? g.adresse ?? '',
-    kind: g.kind ?? g.type ?? '',
-    photos: Array.isArray(g.photos) ? g.photos : [],
-  };
-}
+import { useEffect, useState } from 'react';
+import {
+  getFavGardens, getFavGardeners,
+  removeFavGarden, removeFavGardener, clearAllFavorites
+} from '@/lib/favorites';
 
 export default function FavoritesPage() {
-  const [ids, setIds] = useState([]);
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [gardens, setGardens] = useState([]);
+  const [gardeners, setGardeners] = useState([]);
 
-  // read IDs from localStorage
   useEffect(() => {
-    setIds(loadFavs());
+    setGardens(getFavGardens());
+    setGardeners(getFavGardeners());
   }, []);
 
-  // fetch each garden by id
-  useEffect(() => {
-    let alive = true;
-
-    async function fetchOne(id) {
-      // try EN route first
-      let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: 'no-store' });
-      if (!res.ok) {
-        res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
-      }
-      if (!res.ok) throw new Error('not_found');
-      const g = await res.json();
-      return normalizeGarden(g);
-    }
-
-    async function loadAll() {
-      if (ids.length === 0) {
-        setItems([]);
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        const results = await Promise.allSettled(ids.map(fetchOne));
-        const ok = results
-          .filter((r) => r.status === 'fulfilled')
-          .map((r) => r.value);
-        if (alive) setItems(ok);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    loadAll();
-    return () => { alive = false; };
-  }, [ids]);
-
-  const remove = (id) => {
-    const next = ids.filter((x) => x !== id);
-    setIds(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+  const removeGarden = (id) => setGardens(removeFavGarden(id));
+  const removeGardener = (id) => setGardeners(removeFavGardener(id));
+  const clearAll = () => {
+    clearAllFavorites();
+    setGardens([]);
+    setGardeners([]);
   };
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-green-800">My favorite gardens</h1>
-        <Link href="/gardens" className="text-emerald-700 underline">← Back to gardens</Link>
-      </div>
+    <main className="min-h-screen bg-white px-6 py-10">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-green-800">My favorites</h1>
+          {(gardens.length > 0 || gardeners.length > 0) && (
+            <button
+              onClick={clearAll}
+              className="px-4 py-2 rounded-full border border-gray-300 text-sm hover:bg-gray-50"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
 
-      {loading && <p className="text-gray-600">Loading…</p>}
-      {!loading && ids.length === 0 && (
-        <p className="text-gray-600">
-          You haven’t added any favorites yet. Go to <Link className="underline text-emerald-700" href="/gardens">Gardens</Link> and tap the ♥.
-        </p>
-      )}
+        {/* Gardens */}
+        <section className="mt-8">
+          <h2 className="text-xl font-semibold text-green-900 mb-4">Gardens</h2>
+          {gardens.length === 0 ? (
+            <p className="text-gray-600 text-sm">
+              No favorite gardens yet. Go to{' '}
+              <Link href="/gardens" className="underline text-[#E3107D]">Gardens</Link>.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {gardens.map((g) => (
+                <div key={g.id} className="bg-green-100 rounded-xl overflow-hidden shadow">
+                  <Link href={`/gardens/${g.id}`}>
+                    <img
+                      src={g.cover || '/assets/default.jpg'}
+                      alt={g.title}
+                      className="h-40 w-full object-cover"
+                    />
+                  </Link>
+                  <div className="p-3 text-sm">
+                    <div className="flex justify-between items-start gap-3">
+                      <Link href={`/gardens/${g.id}`} className="font-semibold text-green-900">
+                        {g.title || `Garden #${g.id}`}
+                      </Link>
+                      <button
+                        onClick={() => removeGarden(g.id)}
+                        className="text-gray-400 hover:text-pink-600"
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <p className="text-gray-600 mt-1">{g.address}</p>
+                    <p className="text-gray-600">{g.kind}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
-      {!loading && ids.length > 0 && items.length === 0 && (
-        <p className="text-gray-600">
-          None of your saved gardens could be loaded. They may have been removed.
-        </p>
-      )}
-
-      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-        {items.map((g) => (
-          <li key={g.id} className="bg-green-100 rounded-2xl overflow-hidden shadow">
-            <Link href={`/gardens/${g.id}`} className="block">
-              {/* image */}
-              <div className="h-44 bg-green-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={g.photos?.[0] || '/assets/default.jpg'}
-                  alt={g.title}
-                  className="h-44 w-full object-cover"
-                />
-              </div>
-              <div className="p-3 text-sm text-gray-800">
-                <div className="flex items-start justify-between">
-                  <h2 className="font-semibold text-green-900">{g.title}</h2>
+        {/* Gardeners */}
+        <section className="mt-10">
+          <h2 className="text-xl font-semibold text-green-900 mb-4">Gardeners</h2>
+          {gardeners.length === 0 ? (
+            <p className="text-gray-600 text-sm">
+              No favorite gardeners yet. Browse{' '}
+              <Link href="/gardeners" className="underline text-[#E3107D]">Gardeners</Link>.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {gardeners.map((p) => (
+                <div key={p.id} className="flex items-center gap-4 bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                  <Link href={`/gardeners/${p.id}`}>
+                    <img
+                      src={p.avatarUrl || '/assets/default-avatar.jpg'}
+                      alt={`${p.firstName} ${p.lastName}`}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  </Link>
+                  <div className="flex-1 text-sm">
+                    <Link href={`/gardeners/${p.id}`} className="font-medium text-green-900">
+                      {p.firstName} {p.lastName}
+                    </Link>
+                    <p className="text-gray-600">{p.address}</p>
+                    <p className="text-gray-600">{p.rating != null ? `${p.rating}★` : '—'}</p>
+                  </div>
                   <button
-                    onClick={(e) => { e.preventDefault(); remove(g.id); }}
-                    className="text-pink-600 text-base"
-                    title="Remove from favorites"
+                    onClick={() => removeGardener(p.id)}
+                    className="text-gray-400 hover:text-pink-600"
+                    title="Remove"
                   >
-                    ♥
+                    ✕
                   </button>
                 </div>
-                <p className="text-xs mt-1 line-clamp-2">{g.description}</p>
-                <p className="text-xs">{g.address}</p>
-                <p className="text-xs">{g.kind}</p>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }

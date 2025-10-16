@@ -3,10 +3,6 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-/**
- * POST /api/contact
- * { name, email, subject, message }
- */
 router.post('/', async (req, res) => {
   try {
     const { name, email, subject, message } = req.body || {};
@@ -19,16 +15,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'validation_error' });
     }
 
-    // Try to store in DB if a suitable model exists; otherwise just log.
     let stored = null;
     try {
-      // Try ContactMessage model first
       if (prisma.contactMessage?.create) {
         stored = await prisma.contactMessage.create({
           data: { name, email, subject, message },
         });
       } else if (prisma.message?.create) {
-        // Or a generic Message table
         stored = await prisma.message.create({
           data: {
             subject,
@@ -39,7 +32,6 @@ router.post('/', async (req, res) => {
         });
       }
     } catch (e) {
-      // No matching table -> just log; still return 201
       console.warn('Contact saved to console only:', { name, email, subject, message });
     }
 

@@ -6,7 +6,6 @@ import Link from 'next/link';
 export default function HelpCenterPage() {
   const [query, setQuery] = useState('');
 
-  // Keep the seed simple (strings only) to avoid any parsing quirks.
   const seed = [
     {
       q: 'How do I create an account?',
@@ -119,7 +118,6 @@ export default function HelpCenterPage() {
           )}
         </div>
 
-        {/* Still need help card */}
         <div className="mt-10 rounded-2xl bg-white border p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-green-900">Still need help?</h2>
           <p className="text-sm text-gray-700 mt-2">
