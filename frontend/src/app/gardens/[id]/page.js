@@ -8,6 +8,13 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 function normalizeGarden(payload) {
   if (!payload) return null;
 
+  const photosRaw = payload.photos ?? [];
+  const photos = Array.isArray(photosRaw)
+    ? photosRaw
+    : typeof photosRaw === 'string'
+      ? [photosRaw]
+      : [];
+
   if ('title' in payload || 'owner' in payload) {
     return {
       id: String(payload.id ?? payload.id_jardin ?? ''),
@@ -16,24 +23,21 @@ function normalizeGarden(payload) {
       address: payload.address ?? payload.adresse ?? '',
       kind: payload.kind ?? payload.type ?? '',
       needs: payload.needs ?? payload.besoins ?? '',
-      photos: Array.isArray(payload.photos) ? payload.photos : [],
+      photos,
       averageRating: payload.averageRating ?? payload.note_moyenne ?? null,
       owner: payload.owner
         ? {
             id: String(payload.owner.id ?? payload.owner.id_utilisateur ?? ''),
             firstName: payload.owner.firstName ?? payload.owner.prenom ?? '',
             lastName: payload.owner.lastName ?? payload.owner.nom ?? '',
-            avatarUrl: payload.owner.avatarUrl ?? null,
+            avatarUrl: payload.owner.avatarUrl ?? payload.owner.photo_profil ?? null,
             phone: payload.owner.phone ?? payload.owner.telephone ?? null,
             address: payload.owner.address ?? payload.owner.adresse ?? null,
             averageRating: payload.owner.averageRating ?? payload.owner.note ?? null,
             intro: payload.owner.bio ?? payload.owner.presentation ?? null,
           }
         : null,
-      demoOwnerId:
-        payload.ownerDemoId ??
-        payload.proprietaireDemoId ??
-        null,
+      demoOwnerId: payload.ownerDemoId ?? payload.proprietaireDemoId ?? null,
     };
   }
 
@@ -44,14 +48,14 @@ function normalizeGarden(payload) {
     address: payload.adresse ?? '',
     kind: payload.type ?? '',
     needs: payload.besoins ?? '',
-    photos: Array.isArray(payload.photos) ? payload.photos : [],
+    photos,
     averageRating: payload.note_moyenne ?? null,
     owner: payload.owner
       ? {
           id: String(payload.owner.id_utilisateur ?? ''),
           firstName: payload.owner.prenom ?? '',
           lastName: payload.owner.nom ?? '',
-          avatarUrl: payload.owner.avatarUrl ?? null,
+          avatarUrl: payload.owner.avatarUrl ?? payload.owner.photo_profil ?? null,
           phone: payload.owner.telephone ?? null,
           address: payload.owner.adresse ?? null,
           averageRating: payload.owner.note ?? null,
@@ -118,7 +122,10 @@ export default function GardenDetailPage({ params }) {
             {error || 'Unknown error'}
           </div>
           <p className="text-gray-600">
-            Back to <Link href="/jardins" className="underline text-green-700">gardens</Link>.
+            Back to{' '}
+            <Link href="/gardens" className="underline text-green-700">
+              gardens
+            </Link>.
           </p>
         </div>
       </div>
@@ -135,7 +142,7 @@ export default function GardenDetailPage({ params }) {
         {Array.isArray(garden.photos) && garden.photos.length > 0 && (
           <img
             src={garden.photos[0]}
-            alt={garden.title}
+            alt={garden.title || 'Photo de jardin'}
             className="w-full h-56 object-cover rounded-xl mb-6"
           />
         )}
@@ -177,7 +184,7 @@ export default function GardenDetailPage({ params }) {
 
                   {garden.demoOwnerId && (
                     <Link
-                      href={`/proprietaires/${garden.demoOwnerId}`}
+                      href={`/owners/${garden.demoOwnerId}`}
                       className="inline-block mt-1 px-4 py-2 rounded-md bg-[#E3107D] text-white hover:bg-[#c30c6a] w-max"
                     >
                       View profile

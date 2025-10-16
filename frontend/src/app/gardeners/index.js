@@ -5,9 +5,24 @@ import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
+function unwrapGardeners(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (!raw || typeof raw !== 'object') return [];
+  return (
+    raw.gardeners ??      
+    raw.gardener ??       
+    raw.jardiniers ??   
+    raw.jardinier ??    
+    raw.data ??          
+    []
+  );
+}
+
 function normalizeGardeners(raw) {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((item) => {
+  const arr = unwrapGardeners(raw);
+  if (!Array.isArray(arr)) return [];
+  return arr.map((item) => {
+    // EN-first
     if ('firstName' in item || 'lastName' in item || 'avatarUrl' in item) {
       return {
         id: String(item.id ?? item.id_utilisateur ?? ''),
@@ -21,51 +36,64 @@ function normalizeGardeners(raw) {
       };
     }
     return {
-      id: String(item.id_utilisateur ?? ''),
+      id: String(item.id ?? item.id_utilisateur ?? ''),
       firstName: item.prenom ?? '',
       lastName: item.nom ?? '',
       avatarUrl: item.photo_profil ?? null,
-      intro: item.biographie ?? '',
+      intro: item.presentation ?? item.biographie ?? '',
       phone: item.telephone ?? '',
-      address: item.adresse ?? '',
+      address: item.localisation ?? item.adresse ?? '',
       rating: item.note_moyenne ?? null,
     };
   });
 }
 
-export default function ListeJardiniers() {
+export default function GardenersList() {
   const [gardeners, setGardeners] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [minRating, setMinRating] = useState('');
   const [kind, setKind] = useState('');
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const url = new URL(`${API_BASE}/api/gardeners`);
-        if (search) url.searchParams.set('search', search);
-        if (minRating) url.searchParams.set('minRating', minRating);
-        if (kind) url.searchParams.set('kind', kind);
+        setLoading(true);
+        setErr('');
 
-        let res = await fetch(url.toString(), { cache: 'no-store' });
-        if (!res.ok) throw new Error('try_legacy');
-        const data = await res.json();
-        if (!alive) return;
-        setGardeners(normalizeGardeners(data));
-      } catch {
-        try {
-          const legacy = new URL(`${API_BASE}/api/jardiniers`);
-          if (search) legacy.searchParams.set('search', search);
-          const res2 = await fetch(legacy.toString(), { cache: 'no-store' });
-          const data2 = await res2.json();
-          if (!alive) return;
-          setGardeners(normalizeGardeners(data2));
-        } catch (err) {
-          console.error('Failed to load gardeners:', err);
-          if (alive) setGardeners([]);
+        const en = new URL(`${API_BASE}/api/gardeners`);
+        if (search) en.searchParams.set('search', search);
+        if (minRating) en.searchParams.set('minRating', minRating);
+        if (kind) en.searchParams.set('kind', kind);
+
+        let res = await fetch(en.toString(), { cache: 'no-store' });
+        let data;
+        if (res.ok) {
+          data = await res.json();
+        } else {
+          console.warn('[gardeners] EN list failed:', res.status);
+          const fr = new URL(`${API_BASE}/api/jardiniers`);
+          if (search) fr.searchParams.set('search', search);
+          res = await fetch(fr.toString(), { cache: 'no-store' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          data = await res.json();
         }
+
+        if (!alive) return;
+        console.debug('[gardeners] raw response:', data);
+        const norm = normalizeGardeners(data);
+        setGardeners(norm);
+      } catch (e) {
+        console.error('[gardeners] load error:', e);
+        if (alive) {
+          setErr("Impossible de charger les jardiniers.");
+          setGardeners([]);
+        }
+      } finally {
+        if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };
@@ -73,12 +101,10 @@ export default function ListeJardiniers() {
 
   const filtered = useMemo(() => {
     return gardeners.filter((g) => {
+      const q = search.trim().toLowerCase();
       const matchesSearch =
-        !search ||
-        [g.firstName, g.lastName, g.intro, g.address]
-          .join(' ')
-          .toLowerCase()
-          .includes(search.toLowerCase());
+        !q ||
+        [g.firstName, g.lastName, g.intro, g.address].join(' ').toLowerCase().includes(q);
       const matchesRating = !minRating || (g.rating ?? 0) >= Number(minRating);
       return matchesSearch && matchesRating;
     });
@@ -96,7 +122,7 @@ export default function ListeJardiniers() {
 
   return (
     <div className="min-h-screen px-6 py-10 bg-white">
-      <h1 className="text-3xl font-bold mb-6 text-center text-green-800">Our Gardeners</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-green-800">Gardeners</h1>
 
       <div className="flex flex-wrap gap-4 mb-6">
         <div className="relative w-full lg:w-[30%]">
@@ -142,9 +168,26 @@ export default function ListeJardiniers() {
         </button>
       </div>
 
+      {loading && (
+        <div className="space-y-4">
+          <div className="h-28 bg-gray-100 rounded-2xl animate-pulse" />
+          <div className="h-28 bg-gray-100 rounded-2xl animate-pulse" />
+        </div>
+      )}
+
+      {!!err && !loading && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
+          {err}
+        </div>
+      )}
+
+      {!loading && !err && filtered.length === 0 && (
+        <p className="text-center text-gray-600">Aucun jardinier trouvé.</p>
+      )}
+
       <div className="space-y-6">
         {filtered.map((g) => (
-          <Link key={g.id} href={`/jardinier/${g.id}`} className="block">
+          <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
             <article className="flex bg-green-100 rounded-xl shadow p-4 hover:shadow-md transition">
               <div className="w-32 h-32 bg-green-300 rounded shadow relative overflow-hidden">
                 <img
@@ -167,12 +210,12 @@ export default function ListeJardiniers() {
               </div>
 
               <div className="ml-6 flex flex-col justify-center">
-                <p className="text-sm text-gray-600"><strong>Name:</strong> {g.lastName}</p>
-                <p className="text-sm text-gray-600"><strong>First name:</strong> {g.firstName}</p>
-                <p className="text-sm text-gray-600"><strong>Description:</strong> {g.intro}</p>
-                <p className="text-sm text-gray-600"><strong>Phone:</strong> {g.phone}</p>
+                <p className="text-sm text-gray-600"><strong>Nom&nbsp;:</strong> {g.lastName}</p>
+                <p className="text-sm text-gray-600"><strong>Prénom&nbsp;:</strong> {g.firstName}</p>
+                <p className="text-sm text-gray-600"><strong>Description&nbsp;:</strong> {g.intro}</p>
+                <p className="text-sm text-gray-600"><strong>Téléphone&nbsp;:</strong> {g.phone}</p>
                 <p className="text-sm text-gray-600">📍 {g.address}</p>
-                <p className="text-sm text-gray-600"><strong>Rating:</strong> {g.rating ?? '—'}★</p>
+                <p className="text-sm text-gray-600"><strong>Note&nbsp;:</strong> {g.rating ?? '—'}★</p>
               </div>
             </article>
           </Link>
