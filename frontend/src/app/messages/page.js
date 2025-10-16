@@ -167,7 +167,7 @@ export default function MessagesPage() {
         <aside className="w-80 max-w-full bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Conversations</h2>
-            <Link href="/mon-espace" className="text-xs text-emerald-700 underline">My space</Link>
+            <Link href="/my-space" className="text-xs text-emerald-700 underline">My space</Link>
           </div>
 
           {!!error && !loadingThreads && (

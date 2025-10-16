@@ -1,32 +1,22 @@
 'use client';
 import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 
 export default function AuthGate({ children }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const search = useSearchParams();
 
   useEffect(() => {
-    if (loading) return;
-
-    if (!isAuthenticated) {
-      const existingNext = search.get('next');
-      const fallbackNext =
-        typeof window !== 'undefined'
-          ? encodeURIComponent(window.location.pathname + window.location.search)
-          : encodeURIComponent('/my-space');
-
-      const nextParam = existingNext || fallbackNext;
-      router.replace(`/login?next=${nextParam}`);
+    if (!loading && !isAuthenticated) {
+      router.replace('/login?next=/my-space');
     }
-  }, [loading, isAuthenticated, router, search]);
+  }, [loading, isAuthenticated, router]);
 
   if (loading) {
-    return <div className="pt-24 text-center text-gray-600">Checking session…</div>;
+    return <div className="pt-24 text-center text-gray-600">Vérification de la session…</div>;
   }
-  if (!isAuthenticated) return null; 
+  if (!isAuthenticated) return null;
 
   return children;
 }
