@@ -1,36 +1,64 @@
+// backend/routes/connexion.js
 const express = require('express');
-const router = express.Router();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
+const router = express.Router();
+
+router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
 router.post('/', async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Champs requis manquants.' });
-  }
-
   try {
-    const user = await prisma.utilisateur.findUnique({ where: { email } });
-
-    if (!user || user.mot_de_passe !== password) {
-      return res.status(401).json({ error: 'Identifiant ou mot de passe incorrect.' });
+    const { email, mot_de_passe } = req.body || {};
+    if (!email || !mot_de_passe) {
+      return res.status(400).json({ error: 'email_and_password_required' });
     }
 
-    res.status(200).json({
-      message: 'Connexion réussie !',
+    const user = await prisma.utilisateur.findUnique({
+      where: { email: String(email).trim().toLowerCase() }
+    });
+    if (!user) return res.status(401).json({ error: 'invalid_credentials' });
+
+    const stored = user.mot_de_passe || '';
+    let ok = false;
+
+    if (stored.startsWith('$2')) {
+      ok = await bcrypt.compare(mot_de_passe, stored);
+    } else {
+      // legacy clear-text password support + migrate to bcrypt
+      ok = stored === mot_de_passe;
+      if (ok) {
+        const newHash = await bcrypt.hash(mot_de_passe, 10);
+        await prisma.utilisateur.update({
+          where: { id_utilisateur: user.id_utilisateur },
+          data: { mot_de_passe: newHash },
+        });
+      }
+    }
+
+    if (!ok) return res.status(401).json({ error: 'invalid_credentials' });
+
+    const token = jwt.sign(
+      { id_utilisateur: user.id_utilisateur },
+      process.env.JWT_SECRET || 'dev-secret',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
       user: {
-        id: Number(user.id_utilisateur),
+        id_utilisateur: Number(user.id_utilisateur),
         prenom: user.prenom,
         nom: user.nom,
         email: user.email,
-        role: user.role,
-        photo: user.photo_profil,
-      }
+        role: user.role || 'user',
+      },
     });
-  } catch (error) {
-    console.error('Erreur serveur :', error);
-    res.status(500).json({ error: 'Erreur serveur.' });
+  } catch (e) {
+    console.error('POST /connexion failed:', e?.stack || e);
+    res.status(500).json({ error: 'server_error' });
   }
 });
 

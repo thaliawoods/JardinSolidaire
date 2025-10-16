@@ -1,49 +1,44 @@
+// backend/routes/inscription.js
 const express = require('express');
-const router = express.Router();
+const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
+const router = express.Router();
 
-router.post('/register', async (req, res) => {
-  const { prenom, nom, email, password, role } = req.body;
-  console.log('🔍 Données reçues côté serveur :', req.body);
+router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-  if (!prenom || !nom || !email || !password || !role) {
-    return res.status(400).json({ error: 'Tous les champs sont requis.' });
-  }
-
+router.post('/', async (req, res) => {
   try {
-    const existingUser = await prisma.utilisateur.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Cet e-mail est déjà utilisé.' });
+    const { prenom, nom, email, mot_de_passe, role = 'user' } = req.body || {};
+    if (!prenom || !nom || !email || !mot_de_passe) {
+      return res.status(400).json({ error: 'all_fields_required' });
     }
 
-    const newUser = await prisma.utilisateur.create({
+    const exists = await prisma.utilisateur.findUnique({
+      where: { email: String(email).trim().toLowerCase() }
+    });
+    if (exists) return res.status(400).json({ error: 'email_already_used' });
+
+    const hash = await bcrypt.hash(mot_de_passe, 10);
+
+    const created = await prisma.utilisateur.create({
       data: {
         prenom,
         nom,
-        email,
-        mot_de_passe: password, // 👈 mot de passe en clair (temporaire)
+        email: String(email).trim().toLowerCase(),
+        mot_de_passe: hash,
         role,
-        photo_profil: null,
-        biographie: null,
-        telephone: null,
-        adresse: null,
-        note_moyenne: null,
       },
+      select: {
+        id_utilisateur: true, prenom: true, nom: true, email: true, role: true
+      }
     });
 
-    res.status(201).json({
-      message: 'Inscription réussie',
-      user: {
-        prenom: newUser.prenom,
-        nom: newUser.nom,
-        email: newUser.email,
-        role: newUser.role,
-      },
-    });
-  } catch (error) {
-    console.error('Erreur serveur :', error);
-    res.status(500).json({ error: 'Erreur lors de l’inscription.' });
+    res.status(201).json({ user: { ...created, id_utilisateur: Number(created.id_utilisateur) } });
+  } catch (e) {
+    console.error('POST /inscription failed:', e?.stack || e);
+    res.status(500).json({ error: 'server_error' });
   }
 });
 
