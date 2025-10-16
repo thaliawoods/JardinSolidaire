@@ -9,26 +9,30 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [me, setMe] = useState(null);         
+  const [me, setMe] = useState(null);
   const [loadingMe, setLoadingMe] = useState(true);
 
   const user = me?.user ?? null;
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const hasOwner = !!user?.proprietaire && (user.proprietaire.published ?? true);
-  const hasGardener = !!user?.jardinier && (user.jardinier.published ?? true);
+  const hasGardener =
+    !!user?.jardinier && (user.jardinier.published ?? true);
 
-  const primaryCTA = useMemo(() => {
+  const ownerCTA = useMemo(() => {
     if (!user) return null;
+    return hasOwner
+      ? { href: "/edit-garden", label: "Modifier mon jardin" }
+      : { href: "/add-garden", label: "Ajouter mon jardin" };
+  }, [user, hasOwner]);
 
-    if (hasOwner) {
-      return { href: "/edit-garden", label: "Modifier mon jardin" };
-    }
-    if (hasGardener) {
-      return { href: "/edit-gardener", label: "Modifier mon annonce" };
-    }
-    return { href: "/add-garden", label: "Ajouter mon jardin" };
-  }, [user, hasOwner, hasGardener]);
+  const gardenerCTA = useMemo(() => {
+    if (!user) return null;
+    return hasGardener
+      ? { href: "/edit-gardener", label: "Je veux jardiner" }
+      : { href: "/add-gardener", label: "Je veux jardiner" };
+  }, [user, hasGardener]);
 
   useEffect(() => {
     let alive = true;
@@ -99,22 +103,32 @@ export default function Navbar() {
               </>
             )}
 
-            {!loadingMe && user && primaryCTA && (
-              <Link href={primaryCTA.href}>
-                <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
-                  {primaryCTA.label}
-                </button>
-              </Link>
-            )}
-
             {!loadingMe && user && (
-              <span className="hidden md:inline-block text-sm bg-white/20 px-2 py-1 rounded">
-                Connecté&nbsp;: {user.prenom || user.email}
-              </span>
+              <>
+                {ownerCTA && (
+                  <Link href={ownerCTA.href}>
+                    <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+                      {ownerCTA.label}
+                    </button>
+                  </Link>
+                )}
+
+                {gardenerCTA && (
+                  <Link href={gardenerCTA.href}>
+                    <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+                      {gardenerCTA.label}
+                    </button>
+                  </Link>
+                )}
+
+                <span className="hidden md:inline-block text-sm bg-white/20 px-2 py-1 rounded">
+                  Connecté&nbsp;: {user.prenom || user.email}
+                </span>
+              </>
             )}
           </div>
 
-          <div
+          <button
             onClick={() => setMenuOpen((v) => !v)}
             className="cursor-pointer ml-2 md:ml-0"
             aria-label="Menu"
@@ -124,7 +138,7 @@ export default function Navbar() {
             ) : (
               <FontAwesomeIcon icon={faBars} size="lg" />
             )}
-          </div>
+          </button>
         </div>
       </div>
 
@@ -134,12 +148,20 @@ export default function Navbar() {
             {!user && (
               <>
                 <li>
-                  <Link href="/login" onClick={() => setMenuOpen(false)} className="block">
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="block"
+                  >
                     Se connecter
                   </Link>
                 </li>
                 <li>
-                  <Link href="/signup" onClick={() => setMenuOpen(false)} className="block">
+                  <Link
+                    href="/signup"
+                    onClick={() => setMenuOpen(false)}
+                    className="block"
+                  >
                     S’inscrire
                   </Link>
                 </li>
@@ -148,35 +170,63 @@ export default function Navbar() {
 
             {user && (
               <>
-                {primaryCTA && (
+                {ownerCTA && (
                   <li>
                     <Link
-                      href={primaryCTA.href}
+                      href={ownerCTA.href}
                       onClick={() => setMenuOpen(false)}
                       className="block font-semibold"
                     >
-                      {primaryCTA.label}
+                      {ownerCTA.label}
+                    </Link>
+                  </li>
+                )}
+
+                {gardenerCTA && (
+                  <li>
+                    <Link
+                      href={gardenerCTA.href}
+                      onClick={() => setMenuOpen(false)}
+                      className="block font-semibold"
+                    >
+                      {gardenerCTA.label}
                     </Link>
                   </li>
                 )}
 
                 <li>
-                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="block">
+                  <Link
+                    href="/profile"
+                    onClick={() => setMenuOpen(false)}
+                    className="block"
+                  >
                     Mon profil
                   </Link>
                 </li>
                 <li>
-                  <Link href="/messages" onClick={() => setMenuOpen(false)} className="block">
+                  <Link
+                    href="/messages"
+                    onClick={() => setMenuOpen(false)}
+                    className="block"
+                  >
                     Ma messagerie
                   </Link>
                 </li>
                 <li>
-                  <Link href="/bookings" onClick={() => setMenuOpen(false)} className="block">
+                  <Link
+                    href="/bookings"
+                    onClick={() => setMenuOpen(false)}
+                    className="block"
+                  >
                     Réservations
                   </Link>
                 </li>
                 <li>
-                  <Link href="/favorites" onClick={() => setMenuOpen(false)} className="block">
+                  <Link
+                    href="/favorites"
+                    onClick={() => setMenuOpen(false)}
+                    className="block"
+                  >
                     Mes favoris
                   </Link>
                 </li>
