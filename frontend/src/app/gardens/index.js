@@ -1,4 +1,3 @@
-// frontend/src/app/gardens/index.js
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -18,6 +17,13 @@ function normalizeGardens(data) {
   }));
 }
 
+const uiToApiKind = {
+  vegetable: 'potager',
+  greenhouse: 'serre',
+  flowers: 'fleurs',
+  mowing: 'tondre',
+};
+
 const GardensList = () => {
   const [favorites, setFavorites] = useState([]);
   const [search, setSearch] = useState('');
@@ -34,19 +40,19 @@ const GardensList = () => {
         setLoading(true);
         setErr('');
 
-        // Prefer English endpoint
         const en = new URL(`${API_BASE}/api/gardens`);
         if (search) en.searchParams.set('search', search);
-        if (kind) en.searchParams.set('kind', kind);
+        if (kind) en.searchParams.set('kind', uiToApiKind[kind] ?? kind);
 
         let res = await fetch(en.toString(), { cache: 'no-store' });
+
         if (!res.ok) {
-          // Fallback to legacy French endpoint
           const fr = new URL(`${API_BASE}/api/jardins`);
           if (search) fr.searchParams.set('search', search);
-          if (kind) fr.searchParams.set('type', kind);
+          if (kind) fr.searchParams.set('type', uiToApiKind[kind] ?? kind);
           res = await fetch(fr.toString(), { cache: 'no-store' });
         }
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const raw = await res.json();
@@ -64,7 +70,9 @@ const GardensList = () => {
     }
 
     load();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [search, kind]);
 
   const toggleFavorite = (id) => {
@@ -83,7 +91,6 @@ const GardensList = () => {
       </h1>
 
       <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
-        {/* Search bar */}
         <div className="relative w-full lg:w-[30%]">
           <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
           <input
@@ -95,7 +102,6 @@ const GardensList = () => {
           />
         </div>
 
-        {/* Kind selector */}
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value)}
@@ -121,14 +127,12 @@ const GardensList = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {gardens.map((g) => (
-          <Link key={g.id} href={`/jardins/${g.id}`} className="block">
+          <Link key={g.id} href={`/gardens/${g.id}`} className="block">
             <div className="bg-green-100 rounded-2xl overflow-hidden shadow-md relative group hover:shadow-xl transition">
-              {/* Image */}
               <div className="h-48 overflow-hidden">
                 {g.photos.length > 0 ? (
                   <Slider dots infinite speed={500} slidesToShow={1} slidesToScroll={1}>
                     {g.photos.map((photo, index) => (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         key={index}
                         src={photo}
@@ -138,7 +142,6 @@ const GardensList = () => {
                     ))}
                   </Slider>
                 ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src="/assets/default.jpg"
                     alt="Default image"
@@ -147,13 +150,9 @@ const GardensList = () => {
                 )}
               </div>
 
-              {/* Text */}
               <div className="px-3 py-2 text-sm text-gray-700">
-                {/* Title + heart */}
                 <div className="flex justify-between items-start mb-1">
-                  <h2 className="font-bold text-base text-green-900">
-                    {g.title}
-                  </h2>
+                  <h2 className="font-bold text-base text-green-900">{g.title}</h2>
                   <button
                     onClick={(e) => {
                       e.preventDefault();
