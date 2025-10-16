@@ -15,6 +15,7 @@ function normalizeGarden(payload) {
       ? [photosRaw]
       : [];
 
+  // English-first shape
   if ('title' in payload || 'owner' in payload) {
     return {
       id: String(payload.id ?? payload.id_jardin ?? ''),
@@ -35,12 +36,18 @@ function normalizeGarden(payload) {
             address: payload.owner.address ?? payload.owner.adresse ?? null,
             averageRating: payload.owner.averageRating ?? payload.owner.note ?? null,
             intro: payload.owner.bio ?? payload.owner.presentation ?? null,
+
+            // possible profile id fields if your API already provides them
+            ownerId: payload.owner.ownerId ?? payload.owner.id_owner ?? payload.owner.idProprietaire ?? null,
           }
         : null,
-      demoOwnerId: payload.ownerDemoId ?? payload.proprietaireDemoId ?? null,
+
+      // sometimes the garden payload carries a separate demo/owner profile id
+      demoOwnerId: payload.ownerProfileId ?? payload.ownerDemoId ?? payload.proprietaireDemoId ?? null,
     };
   }
 
+  // Legacy FR shape
   return {
     id: String(payload.id_jardin ?? ''),
     title: payload.titre ?? '',
@@ -60,6 +67,8 @@ function normalizeGarden(payload) {
           address: payload.owner.adresse ?? null,
           averageRating: payload.owner.note ?? null,
           intro: payload.owner.presentation ?? null,
+
+          ownerId: payload.owner.id_proprietaire ?? null,
         }
       : null,
     demoOwnerId: payload.proprietaireDemoId ?? null,
@@ -80,6 +89,7 @@ export default function GardenDetailPage({ params }) {
         setLoading(true);
         setError('');
 
+        // Try EN route, then legacy FR route
         let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: 'no-store' });
         if (!res.ok) {
           res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
@@ -134,12 +144,21 @@ export default function GardenDetailPage({ params }) {
 
   const owner = garden.owner;
 
+  // Determine a real Owner profile id if available
+  const ownerProfileId =
+    garden.demoOwnerId ??
+    owner?.ownerId ??
+    owner?.id_owner ??
+    owner?.idProprietaire ??
+    null;
+
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
         <h1 className="text-2xl font-bold text-green-800 mb-4">{garden.title}</h1>
 
         {Array.isArray(garden.photos) && garden.photos.length > 0 && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={garden.photos[0]}
             alt={garden.title || 'Photo de jardin'}
@@ -169,6 +188,7 @@ export default function GardenDetailPage({ params }) {
                   <div className="flex items-center gap-3">
                     <div className="h-14 w-14 rounded-full bg-gray-200 overflow-hidden">
                       {owner.avatarUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={owner.avatarUrl}
                           alt={`${owner.firstName} ${owner.lastName}`}
@@ -182,9 +202,9 @@ export default function GardenDetailPage({ params }) {
                     </div>
                   </div>
 
-                  {garden.demoOwnerId && (
+                  {ownerProfileId && (
                     <Link
-                      href={`/owners/${garden.demoOwnerId}`}
+                      href={`/owners/${ownerProfileId}`}
                       className="inline-block mt-1 px-4 py-2 rounded-md bg-[#E3107D] text-white hover:bg-[#c30c6a] w-max"
                     >
                       View profile
