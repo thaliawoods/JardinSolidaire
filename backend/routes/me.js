@@ -1,4 +1,3 @@
-// backend/routes/me.js
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
@@ -6,15 +5,22 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// Auth middleware
 function auth(req, res, next) {
   try {
-    const h = req.headers.authorization || '';
-    const token = h.startsWith('Bearer ') ? h.slice(7) : null;
-    if (!token) return res.status(401).json({ error: 'invalid_token' });
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
-    const uid = Number(payload.id_utilisateur);
-    if (!uid || Number.isNaN(uid)) return res.status(401).json({ error: 'invalid_token' });
+    const header = String(req.headers.authorization || '');
+    const BEARER = 'bearer ';
+    if (!header.toLowerCase().startsWith(BEARER)) {
+      return res.status(401).json({ error: 'missing_authorization_header' });
+    }
+    const token = header.slice(BEARER.length).trim();
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return res.status(500).json({ error: 'server_misconfigured', detail: 'JWT_SECRET missing' });
+
+    const payload = jwt.verify(token, secret);
+    const uid = Number(payload.userId ?? payload.id); // allow brief legacy overlap
+    if (!Number.isFinite(uid) || uid <= 0) {
+      return res.status(401).json({ error: 'invalid_token_payload' });
+    }
     req.userId = uid;
     next();
   } catch {
@@ -24,148 +30,198 @@ function auth(req, res, next) {
 
 router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-// GET /api/me (JSON-safe selection)
+/**
+ * GET /me
+ * Returns the authenticated user + attached Gardener/Owner profiles (if any)
+ */
 router.get('/', auth, async (req, res) => {
   try {
-    const idBig = BigInt(req.userId);
-    const user = await prisma.utilisateur.findUnique({
-      where: { id_utilisateur: idBig },
+    const user = await prisma.user.findUnique({
+      where: { id: BigInt(req.userId) },
       select: {
-        id_utilisateur: true,
-        prenom: true,
-        nom: true,
+        id: true,
+        firstName: true,
+        lastName: true,
         email: true,
         role: true,
-        photo_profil: true,
-        biographie: true,
-        telephone: true,
-        adresse: true,
-        note_moyenne: true,
-        jardinier: {
+        avatarUrl: true,
+        bio: true,
+        phone: true,
+        address: true,
+        averageRating: true,
+        gardener: {
           select: {
-            id: true, prenom: true, nom: true, avatarUrl: true, isOnline: true,
-            localisation: true, competences: true, experienceAnnees: true,
-            presentation: true, totalReviews: true, rating: true,
-            published: true, createdAt: true, updatedAt: true,
+            id: true, firstName: true, lastName: true, avatarUrl: true, isOnline: true,
+            location: true, skills: true, yearsExperience: true, intro: true,
+            totalReviews: true, rating: true, published: true, createdAt: true, updatedAt: true,
           },
         },
-        proprietaire: {
+        owner: {
           select: {
-            id_proprietaire: true, prenom: true, nom: true, avatarUrl: true, isOnline: true,
-            totalReviews: true, rating: true, quartier: true, disponibilites: true,
-            surface: true, type: true, presentation: true, description: true, published: true,
+            id: true, firstName: true, lastName: true, avatarUrl: true, isOnline: true,
+            totalReviews: true, rating: true, district: true, availability: true,
+            area: true, kind: true, intro: true, description: true, published: true,
           },
         },
       },
     });
+
     if (!user) return res.status(404).json({ error: 'not_found' });
+
     res.json({
       user: {
-        id_utilisateur: Number(user.id_utilisateur),
-        prenom: user.prenom, nom: user.nom, email: user.email, role: user.role,
-        photo_profil: user.photo_profil, biographie: user.biographie,
-        telephone: user.telephone, adresse: user.adresse, note_moyenne: user.note_moyenne,
-        jardinier: user.jardinier ? { ...user.jardinier, id: Number(user.jardinier.id) } : null,
-        proprietaire: user.proprietaire
-          ? { ...user.proprietaire, id_proprietaire: Number(user.proprietaire.id_proprietaire) }
+        id: Number(user.id),
+      // ────── User
+        firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role,
+        avatarUrl: user.avatarUrl, bio: user.bio, phone: user.phone, address: user.address,
+        averageRating: user.averageRating,
+      // ────── Gardener profile (optional)
+        gardener: user.gardener
+          ? { ...user.gardener, id: Number(user.gardener.id) }
+          : null,
+      // ────── Owner profile (optional)
+        owner: user.owner
+          ? { ...user.owner, id: Number(user.owner.id) }
           : null,
       },
     });
   } catch (e) {
-    console.error('GET /api/me failed:', e?.stack || e);
+    console.error('GET /me failed:', e?.stack || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
 
-// POST /api/me/jardinier (upsert)
-router.post('/jardinier', auth, async (req, res) => {
+/**
+ * POST /me/gardener  (upsert)
+ * Body (English):
+ * {
+ *   firstName, lastName, avatarUrl?, isOnline?,
+ *   location?, skills?: string[], yearsExperience?, intro?,
+ *   totalReviews?, rating?
+ * }
+ */
+router.post('/gardener', auth, async (req, res) => {
   try {
-    const idBig = BigInt(req.userId);
+    const userId = BigInt(req.userId);
     const {
-      prenom, nom, avatarUrl = null, isOnline = false,
-      localisation = null, competences = [], experienceAnnees = null,
-      presentation = null, totalReviews = 0, rating = null,
+      firstName, lastName, avatarUrl = null, isOnline = false,
+      location = null, skills = [], yearsExperience = null,
+      intro = null, totalReviews = 0, rating = null,
+      published,
     } = req.body || {};
+
     const data = {
-      userId: idBig, prenom, nom, avatarUrl, isOnline: !!isOnline,
-      localisation, competences: Array.isArray(competences) ? competences : [],
-      experienceAnnees: experienceAnnees == null ? null : Number(experienceAnnees),
-      presentation, totalReviews: Number(totalReviews || 0),
+      userId,
+      firstName,
+      lastName,
+      avatarUrl,
+      isOnline: !!isOnline,
+      location,
+      skills: Array.isArray(skills) ? skills : [],
+      yearsExperience: yearsExperience == null ? null : Number(yearsExperience),
+      intro,
+      totalReviews: Number(totalReviews || 0),
       rating: rating == null ? null : Number(rating),
     };
-    const profile = await prisma.jardinier.upsert({
-      where: { userId: idBig },
+
+    const profile = await prisma.gardener.upsert({
+      where: { userId },
       update: data,
       create: { ...data, published: false },
-      select: { id: true, prenom: true, nom: true, published: true },
+      select: { id: true, firstName: true, lastName: true, published: true },
     });
-    res.json({ jardinier: { ...profile, id: Number(profile.id) } });
+
+    res.json({ gardener: { ...profile, id: Number(profile.id) } });
   } catch (e) {
-    console.error('POST /api/me/jardinier failed:', e?.stack || e);
+    console.error('POST /me/gardener failed:', e?.stack || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
 
-// POST /api/me/jardinier/publish
-router.post('/jardinier/publish', auth, async (req, res) => {
+/**
+ * POST /me/gardener/publish
+ * Body: { published: boolean }
+ */
+router.post('/gardener/publish', auth, async (req, res) => {
   try {
-    const idBig = BigInt(req.userId);
+    const userId = BigInt(req.userId);
     const { published } = req.body || {};
-    const updated = await prisma.jardinier.update({
-      where: { userId: idBig },
+    const updated = await prisma.gardener.update({
+      where: { userId },
       data: { published: !!published },
       select: { id: true, published: true },
     });
-    res.json({ jardinier: { ...updated, id: Number(updated.id) } });
+    res.json({ gardener: { ...updated, id: Number(updated.id) } });
   } catch (e) {
-    console.error('POST /api/me/jardinier/publish failed:', e?.stack || e);
+    console.error('POST /me/gardener/publish failed:', e?.stack || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
 
-// POST /api/me/proprietaire (upsert)
-router.post('/proprietaire', auth, async (req, res) => {
+/**
+ * POST /me/owner  (upsert)
+ * Body (English):
+ * {
+ *   firstName, lastName, avatarUrl?, isOnline?, totalReviews?, rating?,
+ *   district?, availability?, area?, kind?, intro?, description?
+ * }
+ */
+router.post('/owner', auth, async (req, res) => {
   try {
-    const idBig = BigInt(req.userId);
+    const userId = BigInt(req.userId);
     const {
-      prenom, nom, avatarUrl = null, isOnline = false, totalReviews = 0, rating = null,
-      quartier = null, disponibilites = null, surface = null, type = null,
-      presentation = null, description = null,
+      firstName, lastName, avatarUrl = null, isOnline = false,
+      totalReviews = 0, rating = null,
+      district = null, availability = null, area = null, kind = null,
+      intro = null, description = null,
     } = req.body || {};
+
     const data = {
-      userId: idBig, prenom, nom, avatarUrl, isOnline: !!isOnline,
+      userId,
+      firstName,
+      lastName,
+      avatarUrl,
+      isOnline: !!isOnline,
       totalReviews: Number(totalReviews || 0),
       rating: rating == null ? null : Number(rating),
-      quartier, disponibilites,
-      surface: surface == null ? null : Number(surface),
-      type, presentation, description,
+      district,
+      availability,
+      area: area == null ? null : Number(area),
+      kind,
+      intro,
+      description,
     };
-    const owner = await prisma.proprietaire.upsert({
-      where: { userId: idBig },
+
+    const owner = await prisma.owner.upsert({
+      where: { userId },
       update: data,
       create: { ...data, published: false },
-      select: { id_proprietaire: true, prenom: true, nom: true, published: true },
+      select: { id: true, firstName: true, lastName: true, published: true },
     });
-    res.json({ proprietaire: { ...owner, id_proprietaire: Number(owner.id_proprietaire) } });
+
+    res.json({ owner: { ...owner, id: Number(owner.id) } });
   } catch (e) {
-    console.error('POST /api/me/proprietaire failed:', e?.stack || e);
+    console.error('POST /me/owner failed:', e?.stack || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
 
-// POST /api/me/proprietaire/publish
-router.post('/proprietaire/publish', auth, async (req, res) => {
+/**
+ * POST /me/owner/publish
+ * Body: { published: boolean }
+ */
+router.post('/owner/publish', auth, async (req, res) => {
   try {
-    const idBig = BigInt(req.userId);
+    const userId = BigInt(req.userId);
     const { published } = req.body || {};
-    const updated = await prisma.proprietaire.update({
-      where: { userId: idBig },
+    const updated = await prisma.owner.update({
+      where: { userId },
       data: { published: !!published },
-      select: { id_proprietaire: true, published: true },
+      select: { id: true, published: true },
     });
-    res.json({ proprietaire: { ...updated, id_proprietaire: Number(updated.id_proprietaire) } });
+    res.json({ owner: { ...updated, id: Number(updated.id) } });
   } catch (e) {
-    console.error('POST /api/me/proprietaire/publish failed:', e?.stack || e);
+    console.error('POST /me/owner/publish failed:', e?.stack || e);
     res.status(500).json({ error: 'server_error' });
   }
 });

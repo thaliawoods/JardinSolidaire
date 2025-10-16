@@ -1,4 +1,3 @@
-// backend/server.js
 require('dotenv').config();
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
@@ -9,23 +8,22 @@ const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Routers
-const jardinsRoutes = require('./routes/jardins');
-const jardiniersRoutes = require('./routes/jardiniers');
-const proprietairesRoutes = require('./routes/proprietaires');
-const connexionRoutes = require('./routes/connexion');
-const inscriptionRoutes = require('./routes/inscription');
-const mdpOublieRoutes = require('./routes/mdp_oublie');
-const modifierMdpRoutes = require('./routes/modifier_mdp');
-const navbarRoute = require('./routes/navbar');
-const meRoutes = require('./routes/me'); // <- make sure this line exists
+const gardensRoutes       = require('./routes/gardens');
+const gardenersRoutes     = require('./routes/gardeners');
+const ownersRoutes        = require('./routes/owners');
+const loginRoutes         = require('./routes/login');
+const registerRoutes      = require('./routes/register');
+const authCheckEmail      = require('./routes/auth.checkEmail');
+const authResetPassword   = require('./routes/auth.resetPassword');
+const navbarRoutes        = require('./routes/navbar');
+const meRoutes            = require('./routes/me');
+const messagesRoutes      = require('./routes/messages');
+const bookingsRoutes      = require('./routes/bookings');
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// DB health
 app.get('/api/_dbcheck', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -36,19 +34,35 @@ app.get('/api/_dbcheck', async (_req, res) => {
   }
 });
 
-// Mount API
-app.use('/api/jardins', jardinsRoutes);
-app.use('/api/jardiniers', jardiniersRoutes);
-app.use('/api/proprietaires', proprietairesRoutes);
-app.use('/api/connexion', connexionRoutes);
-app.use('/api/inscription', inscriptionRoutes);
-app.use('/api/mdp', mdpOublieRoutes);
-app.use('/api/modifier_mdp', modifierMdpRoutes);
-app.use('/api/utilisateur/has-annonce', navbarRoute);
+app.use('/api/gardens', gardensRoutes);
+app.use('/api/gardeners', gardenersRoutes);
+app.use('/api/owners', ownersRoutes);
+app.use('/api/login', loginRoutes);
+app.use('/api/register', registerRoutes);
+app.use('/api/auth', authCheckEmail);    
+app.use('/api/auth', authResetPassword); 
+app.use('/api/navbar', navbarRoutes);
 app.use('/api/me', meRoutes);
+app.use('/api/messages', messagesRoutes);
+app.use('/api/bookings', bookingsRoutes);
+// Optional:
+// app.use('/api/garden-page', gardenPageRoutes);
 
-app.get('/', (_req, res) => res.send('Backend avec Prisma est en ligne ✅'));
+app.use('/api/jardins',        (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/jardins/, '/api/gardens')));
+app.use('/api/jardiniers',     (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/jardiniers/, '/api/gardeners')));
+app.use('/api/proprietaires',  (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/proprietaires/, '/api/owners')));
+
+app.use('/api/connexion',      (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/connexion/, '/api/login')));
+app.use('/api/inscription',    (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/inscription/, '/api/register')));
+app.post('/api/verifier-email', (req, res) => res.redirect(301, '/api/auth/check-email'));
+app.post('/api/modifier_mdp',   (req, res) => res.redirect(301, '/api/auth/reset-password'));
+app.use('/api/mdp',            (req, res) => res.redirect(301, '/api/auth/check-email')); // old "mdp_oublie"
+
+app.use('/api/utilisateur/has-annonce', (req, res) => res.redirect(301, '/api/navbar'));
+app.use('/api/pageJardin',     (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/pageJardin/, '/api/gardens')));
+
+app.get('/', (_req, res) => res.send('Prisma backend is online ✅'));
 
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

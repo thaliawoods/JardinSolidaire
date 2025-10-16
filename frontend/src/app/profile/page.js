@@ -1,79 +1,59 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { apiFetch } from '../lib/api';
 
-/* ===== Minimal fallbacks (use your own if you already have them) ===== */
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 function getToken() {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('token');
 }
-async function apiFetch(path, { token, method = 'GET', body } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    let err = { status: res.status, error: 'request_failed' };
-    try { err = await res.json(); } catch {}
-    throw err;
-  }
-  return res.json();
-}
-/* ==================================================================== */
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [me, setMe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       setErr('');
       const token = getToken();
       if (!token) {
-        // not logged: bounce to /connexion
-        window.location.href = '/connexion';
+        router.replace('/login'); 
         return;
       }
-      const r = await apiFetch('/api/me', { token });
+      const r = await apiFetch('/api/me');
       setMe(r.user);
     } catch (e) {
-      setErr(e?.error || 'server_error');
+      setErr(e?.error || e?.message || 'server_error');
     } finally {
       setLoading(false);
     }
-  }
+  }, [router]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function togglePublish(kind, next) {
     try {
       setBusy(true);
-      const token = getToken();
-      if (kind === 'jardinier') {
-        await apiFetch('/api/me/jardinier/publish', {
-          token,
+      if (kind === 'gardener') {
+        await apiFetch('/api/me/gardener/publish', {
           method: 'POST',
-          body: { published: next },
+          body: { published: !!next },
         });
       } else {
-        await apiFetch('/api/me/proprietaire/publish', {
-          token,
+        await apiFetch('/api/me/owner/publish', {
           method: 'POST',
-          body: { published: next },
+          body: { published: !!next },
         });
       }
       await load();
     } catch (e) {
-      setErr(e?.error || 'server_error');
+      setErr(e?.error || e?.message || 'server_error');
     } finally {
       setBusy(false);
     }
@@ -81,145 +61,144 @@ export default function ProfilePage() {
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      <h1 className="text-2xl font-bold text-green-800 mb-6">Mon profil</h1>
+      <h1 className="text-2xl font-bold text-green-800 mb-6">My profile</h1>
 
       {loading && <Skeleton />}
 
-      {!!err && (
+      {!!err && !loading && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
-          Erreur : {err}
+          Error: {err}
         </div>
       )}
 
-      {me && (
+      {me && !loading && (
         <div className="space-y-8">
-          {/* --- USER CARD --- */}
           <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
-            <h2 className="text-lg font-semibold mb-4">Informations du compte</h2>
+            <h2 className="text-lg font-semibold mb-4">Account information</h2>
             <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
-              <Field label="Nom">{me.nom || '—'}</Field>
-              <Field label="Prénom">{me.prenom || '—'}</Field>
+              <Field label="Last name">{me.nom || '—'}</Field>
+              <Field label="First name">{me.prenom || '—'}</Field>
               <Field label="Email">{me.email || '—'}</Field>
-              <Field label="Rôle">{me.role || '—'}</Field>
-              <Field label="Téléphone">{me.telephone || '—'}</Field>
-              <Field label="Adresse">{me.adresse || '—'}</Field>
-              <Field label="Note">{me.note_moyenne ?? '—'}</Field>
+              <Field label="Role">{me.role || '—'}</Field>
+              <Field label="Phone">{me.telephone || '—'}</Field>
+              <Field label="Address">{me.adresse || '—'}</Field>
+              <Field label="Average rating">{me.note_moyenne ?? '—'}</Field>
               <Field label="Bio" full>{me.biographie || '—'}</Field>
             </div>
           </section>
 
-          {/* --- JARDINIER CARD --- */}
           <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Profil Jardinier</h2>
-              {me.jardinier?.published ? (
-                <Badge color="green">Publié</Badge>
+              <h2 className="text-lg font-semibold">Gardener profile</h2>
+              {me.gardener?.published ? (
+                <Badge color="green">Published</Badge>
               ) : (
-                <Badge color="gray">Non publié</Badge>
+                <Badge color="gray">Unpublished</Badge>
               )}
             </div>
 
-            {!me.jardinier && (
+            {!me.gardener && (
               <div className="flex items-center justify-between bg-white border rounded-lg p-4">
-                <p className="text-sm text-gray-700">Aucun profil jardinier pour le moment.</p>
+                <p className="text-sm text-gray-700">No gardener profile yet.</p>
                 <Link
-                  href="/ajouter-jardinier"
+                  href="/become-a-gardener"   
                   className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
                 >
-                  Créer mon profil
+                  Create my profile
                 </Link>
               </div>
             )}
 
-            {me.jardinier && (
+            {me.gardener && (
               <>
                 <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
-                  <Field label="Nom complet">
-                    {me.jardinier.prenom} {me.jardinier.nom}
+                  <Field label="Full name">
+                    {me.gardener.prenom} {me.gardener.nom}
                   </Field>
-                  <Field label="Localisation">{me.jardinier.localisation || '—'}</Field>
-                  <Field label="Compétences" full>
-                    {(me.jardinier.competences || []).join(', ') || '—'}
+                  <Field label="Location">{me.gardener.localisation || '—'}</Field>
+                  <Field label="Skills" full>
+                    {(me.gardener.competences || []).join(', ') || '—'}
                   </Field>
-                  <Field label="Expérience (années)">
-                    {me.jardinier.experienceAnnees ?? '—'}
+                  <Field label="Experience (years)">
+                    {me.gardener.experienceAnnees ?? '—'}
                   </Field>
-                  <Field label="Note">{me.jardinier.rating ?? '—'}</Field>
-                  <Field label="Présentation" full>
-                    {me.jardinier.presentation || '—'}
+                  <Field label="Rating">{me.gardener.rating ?? '—'}</Field>
+                  <Field label="Introduction" full>
+                    {me.gardener.presentation || '—'}
                   </Field>
                 </div>
 
                 <div className="mt-4 flex gap-2">
                   <Link
-                    href="/modifier-jardinier"
+                    href="/edit-gardener"    
                     className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
                   >
-                    Modifier
+                    Edit
                   </Link>
                   <button
                     disabled={busy}
-                    onClick={() => togglePublish('jardinier', !me.jardinier.published)}
+                    onClick={() => togglePublish('gardener', !me.gardener.published)}
                     className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
                   >
-                    {me.jardinier.published ? 'Dépublier' : 'Publier'}
+                    {me.gardener.published ? 'Unpublish' : 'Publish'}
                   </button>
                 </div>
               </>
             )}
           </section>
 
-          {/* --- PROPRIETAIRE CARD --- */}
           <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Profil Propriétaire</h2>
-              {me.proprietaire?.published ? (
-                <Badge color="green">Publié</Badge>
+              <h2 className="text-lg font-semibold">Owner profile</h2>
+              {me.owner?.published ? (
+                <Badge color="green">Published</Badge>
               ) : (
-                <Badge color="gray">Non publié</Badge>
+                <Badge color="gray">Unpublished</Badge>
               )}
             </div>
 
-            {!me.proprietaire && (
+            {!me.owner && (
               <div className="flex items-center justify-between bg-white border rounded-lg p-4">
-                <p className="text-sm text-gray-700">Aucun profil propriétaire pour le moment.</p>
+                <p className="text-sm text-gray-700">No owner profile yet.</p>
                 <Link
-                  href="/ajouter-proprietaire"
+                  href="/create-owner"      
                   className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
                 >
-                  Créer mon profil
+                  Create my profile
                 </Link>
               </div>
             )}
 
-            {me.proprietaire && (
+            {me.owner && (
               <>
                 <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
-                  <Field label="Nom complet">
-                    {me.proprietaire.prenom} {me.proprietaire.nom}
+                  <Field label="Full name">
+                    {me.owner.prenom} {me.owner.nom}
                   </Field>
-                  <Field label="Quartier">{me.proprietaire.quartier || '—'}</Field>
-                  <Field label="Disponibilités">{me.proprietaire.disponibilites || '—'}</Field>
-                  <Field label="Surface">{me.proprietaire.surface ? `${me.proprietaire.surface} m²` : '—'}</Field>
-                  <Field label="Type de jardin">{me.proprietaire.type || '—'}</Field>
-                  <Field label="Présentation" full>{me.proprietaire.presentation || '—'}</Field>
-                  <Field label="Description" full>{me.proprietaire.description || '—'}</Field>
-                  <Field label="Note">{me.proprietaire.rating ?? '—'}</Field>
+                  <Field label="Neighborhood">{me.owner.quartier || '—'}</Field>
+                  <Field label="Availability">{me.owner.disponibilites || '—'}</Field>
+                  <Field label="Surface">
+                    {me.owner.surface ? `${me.owner.surface} m²` : '—'}
+                  </Field>
+                  <Field label="Garden type">{me.owner.type || '—'}</Field>
+                  <Field label="Introduction" full>{me.owner.presentation || '—'}</Field>
+                  <Field label="Description" full>{me.owner.description || '—'}</Field>
+                  <Field label="Rating">{me.owner.rating ?? '—'}</Field>
                 </div>
 
                 <div className="mt-4 flex gap-2">
                   <Link
-                    href="/modifier-proprietaire"
+                    href="/edit-owner"        
                     className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
                   >
-                    Modifier
+                    Edit
                   </Link>
                   <button
                     disabled={busy}
-                    onClick={() => togglePublish('proprietaire', !me.proprietaire.published)}
+                    onClick={() => togglePublish('owner', !me.owner.published)}
                     className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
                   >
-                    {me.proprietaire.published ? 'Dépublier' : 'Publier'}
+                    {me.owner.published ? 'Unpublish' : 'Publish'}
                   </button>
                 </div>
               </>
@@ -231,7 +210,6 @@ export default function ProfilePage() {
   );
 }
 
-/* ---------------- UI bits ---------------- */
 function Field({ label, children, full }) {
   return (
     <div className={full ? 'sm:col-span-2' : ''}>
