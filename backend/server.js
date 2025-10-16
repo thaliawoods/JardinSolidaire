@@ -19,6 +19,7 @@ const navbarRoutes        = require('./routes/navbar');
 const meRoutes            = require('./routes/me');
 const messagesRoutes      = require('./routes/messages');
 const bookingsRoutes      = require('./routes/bookings');
+const contactRoutes = require('./routes/contact');
 
 app.use(cors());
 app.use(express.json());
@@ -45,6 +46,7 @@ app.use('/api/navbar', navbarRoutes);
 app.use('/api/me', meRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/bookings', bookingsRoutes);
+app.use('/api/contact', contactRoutes);
 // Optional:
 // app.use('/api/garden-page', gardenPageRoutes);
 
