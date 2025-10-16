@@ -1,9 +1,30 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Slider from 'react-slick';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
+// ---------- helpers ----------
+const STORAGE_KEY = 'favGardens';
+
+function loadFavs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveFavs(ids) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+  } catch {}
+}
 
 function normalizeGardens(data) {
   if (!Array.isArray(data)) return [];
@@ -24,13 +45,24 @@ const uiToApiKind = {
   mowing: 'tondre',
 };
 
-const GardensList = () => {
+// ---------- page ----------
+export default function GardensList() {
   const [favorites, setFavorites] = useState([]);
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState('');
   const [gardens, setGardens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+
+  // load favorites once on mount
+  useEffect(() => {
+    setFavorites(loadFavs());
+  }, []);
+
+  // keep localStorage in sync
+  useEffect(() => {
+    saveFavs(favorites);
+  }, [favorites]);
 
   useEffect(() => {
     let alive = true;
@@ -76,7 +108,9 @@ const GardensList = () => {
   }, [search, kind]);
 
   const toggleFavorite = (id) => {
-    setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
 
   const reset = () => {
@@ -84,13 +118,34 @@ const GardensList = () => {
     setKind('');
   };
 
+  const favCount = favorites.length;
+
+  const filtered = useMemo(() => {
+    if (!search) return gardens;
+    const q = search.toLowerCase();
+    return gardens.filter((g) =>
+      [g.title, g.description, g.address, g.kind].join(' ').toLowerCase().includes(q)
+    );
+  }, [gardens, search]);
+
   return (
     <div className="min-h-screen px-6 py-10 bg-white">
-      <h1 className="text-3xl font-bold mb-8 text-center text-green-800">
-        Our Community Gardens
-      </h1>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <h1 className="text-3xl font-bold text-green-800">
+          Our Community Gardens
+        </h1>
+
+        <Link
+          href="/favorites"
+          className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+          title="See my favorite gardens"
+        >
+          Favorites ({favCount})
+        </Link>
+      </div>
 
       <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
+        {/* Search */}
         <div className="relative w-full lg:w-[30%]">
           <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
           <input
@@ -102,6 +157,7 @@ const GardensList = () => {
           />
         </div>
 
+        {/* Kind */}
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value)}
@@ -126,13 +182,15 @@ const GardensList = () => {
       {!!err && <p className="text-center text-red-600 mb-4">{err}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {gardens.map((g) => (
+        {filtered.map((g) => (
           <Link key={g.id} href={`/gardens/${g.id}`} className="block">
             <div className="bg-green-100 rounded-2xl overflow-hidden shadow-md relative group hover:shadow-xl transition">
+              {/* Image */}
               <div className="h-48 overflow-hidden">
                 {g.photos.length > 0 ? (
                   <Slider dots infinite speed={500} slidesToShow={1} slidesToScroll={1}>
                     {g.photos.map((photo, index) => (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         key={index}
                         src={photo}
@@ -142,6 +200,7 @@ const GardensList = () => {
                     ))}
                   </Slider>
                 ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src="/assets/default.jpg"
                     alt="Default image"
@@ -150,6 +209,7 @@ const GardensList = () => {
                 )}
               </div>
 
+              {/* Text */}
               <div className="px-3 py-2 text-sm text-gray-700">
                 <div className="flex justify-between items-start mb-1">
                   <h2 className="font-bold text-base text-green-900">{g.title}</h2>
@@ -169,7 +229,7 @@ const GardensList = () => {
                   </button>
                 </div>
 
-                <p className="text-xs leading-tight">{g.description}</p>
+                <p className="text-xs leading-tight line-clamp-2">{g.description}</p>
                 <p className="text-xs leading-tight">{g.address}</p>
                 <p className="text-xs leading-tight">{g.kind}</p>
               </div>
@@ -179,6 +239,4 @@ const GardensList = () => {
       </div>
     </div>
   );
-};
-
-export default GardensList;
+}
