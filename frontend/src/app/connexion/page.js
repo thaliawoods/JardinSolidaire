@@ -1,203 +1,89 @@
 'use client';
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import InputField from '../../components/Pageconnexion/InputField';
-import Footer from '../../components/Footer/Footer';
-import Navbar from '../../components/Navbar/Navbar';
 
-export default function Connexion() {
+import { useState } from 'react';
+import Link from 'next/link';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
+export default function ConnexionPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const router = useRouter();
+  const [motDePasse, setMotDePasse] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setErrorMessage('');
+    setError('');
 
     try {
-      const response = await fetch('http://localhost:5001/api/connexion', {
+      const res = await fetch(`${API_BASE}/api/connexion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        // 👇 IMPORTANT: match backend field name
+        body: JSON.stringify({ email, mot_de_passe: motDePasse }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (response.ok) {
-        if (data.user.role === 'jardinier' || data.user.role === 'ami_du_vert') {
-          router.push('/jardins'); // Redirige les jardiniers/amis vers les jardins
-        } else if (data.user.role === 'proprietaire') {
-          router.push('/jardiniers'); // Redirige les propriétaires vers les jardiniers
-        } else {
-          setErrorMessage('Rôle inconnu.');
-        }
-      } else {
-        setErrorMessage(data.error || 'Identifiant ou mot de passe incorrect.');
+      if (!res.ok) {
+        setError(data?.error || 'login_failed');
+        return;
       }
-    } catch (error) {
-      console.error('Erreur réseau :', error);
-      setErrorMessage('Erreur de connexion. Veuillez réessayer.');
+
+      // Save session
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Optional: fetch /api/me to hydrate full profile state
+      // const meRes = await fetch(`${API_BASE}/api/me`, {
+      //   headers: { Authorization: `Bearer ${data.token}` },
+      // });
+      // const me = await meRes.json();
+      // localStorage.setItem('me', JSON.stringify(me.user));
+
+      // Go home (or dashboard)
+      window.location.href = '/';
+    } catch (err) {
+      console.error(err);
+      setError('network_error');
     }
-  };
-
-  const styles = {
-    container: {
-      maxWidth: '500px',
-      margin: '0 auto',
-      padding: '40px 20px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-    },
-    title: {
-      textAlign: 'center',
-      color: '#021904',
-      marginBottom: '20px',
-      fontSize: '28px',
-    },
-    intro: {
-      textAlign: 'center',
-      color: '#4e784f',
-      fontSize: '20px',
-      marginBottom: '30px',
-      lineHeight: '1.5',
-    },
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    passwordWrapper: {
-      position: 'relative',
-      marginBottom: '20px',
-    },
-    passwordInput: {
-      width: '100%',
-      padding: '14px',
-      paddingRight: '50px',
-      border: '2px solid #6ec173',
-      borderRadius: '10px',
-      fontSize: '18px',
-      color: '#021904',
-    },
-    toggleButton: {
-      position: 'absolute',
-      top: '50%',
-      right: '12px',
-      transform: 'translateY(-50%)',
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      color: '#6ec173',
-      fontSize: '14px',
-    },
-    forgot: {
-      textAlign: 'right',
-      marginTop: '-10px',
-      marginBottom: '20px',
-      fontSize: '16px',
-    },
-    button: {
-      padding: '14px',
-      backgroundColor: '#6ec173',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '10px',
-      cursor: 'pointer',
-      fontSize: '18px',
-    },
-    register: {
-      textAlign: 'center',
-      marginTop: '24px',
-      fontSize: '18px',
-      color: '#021904',
-    },
-  };
-
-  const pageStyle = {
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh',
-    paddingTop: '100px',
-  };
+  }
 
   return (
-    <>
-      <Navbar />
-      <div style={pageStyle}>
-        <div style={styles.container}>
-          <h2 style={styles.title}>Connexion à JardinSolidaire</h2>
-          <p style={styles.intro}>
-            Ravie de vous revoir sur JardinSolidaire 🌱 <br />
-            Connectez-vous pour cultiver des liens et des jardins.
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
+        <h1 className="text-2xl font-bold text-green-800 text-center">Connexion à JardinSolidaire</h1>
+
+        <input
+          type="email"
+          placeholder="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        />
+        <input
+          type="password"
+          placeholder="mot de passe"
+          value={motDePasse}
+          onChange={(e) => setMotDePasse(e.target.value)}
+          className="w-full border rounded px-3 py-2"
+        />
+
+        {error && (
+          <p className="text-sm text-red-600">
+            {error === 'email_and_password_required' && 'Email et mot de passe requis.'}
+            {error === 'invalid_credentials' && 'Identifiants incorrects.'}
+            {error !== 'email_and_password_required' && error !== 'invalid_credentials' && 'Erreur de connexion.'}
           </p>
-          <form style={styles.form} onSubmit={handleSubmit}>
-            <InputField
-              type="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Adresse e-mail"
-            />
+        )}
 
-            <div style={styles.passwordWrapper}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mot de passe"
-                required
-                style={styles.passwordInput}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={styles.toggleButton}
-              >
-                {showPassword ? 'Masquer' : 'Afficher'}
-              </button>
-            </div>
+        <button className="w-full bg-[#e3107d] text-white rounded px-4 py-2">
+          Se connecter
+        </button>
 
-            <p style={styles.forgot}>
-              <a
-                href="/mdp_oublier"
-                style={{
-                  color: '#6ec173',
-                  textDecoration: 'none',
-                }}
-                onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
-                onMouseOut={(e) => e.target.style.textDecoration = 'none'}
-              >
-                Mot de passe oublié ?
-              </a>
-            </p>
-            <button type="submit" style={styles.button}>Se connecter</button>
-            {errorMessage && (
-              <p style={{ color: 'red', fontSize: '16px', marginTop: '10px', textAlign: 'center' }}>
-                {errorMessage}
-              </p>
-            )}
-          </form>
-
-          <p style={{ ...styles.register, color: '#e3107d' }}>
-            Pas encore de compte ? <a
-              href="/inscription"
-              style={{
-                color: '#021904',
-                textDecoration: 'none',
-              }}
-              onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
-              onMouseOut={(e) => e.target.style.textDecoration = 'none'}
-            >
-              Inscrivez-vous
-            </a>
-          </p>
+        <div className="text-center text-sm">
+          Pas encore de compte ? <Link href="/inscription" className="text-[#e3107d]">Inscrivez-vous</Link>
         </div>
-      </div>
-      <Footer />
-    </>
+      </form>
+    </div>
   );
-};
-
- 
+}

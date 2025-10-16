@@ -19,6 +19,7 @@ const inscriptionRoutes = require('./routes/inscription');
 const mdpOublieRoutes = require('./routes/mdp_oublie');
 const modifierMdpRoutes = require('./routes/modifier_mdp');
 const navbarRoute = require('./routes/navbar');
+const meRoutes = require('./routes/me');              // ✅ <— ADD THIS
 
 // Middleware
 app.use(cors());
@@ -45,6 +46,7 @@ app.use('/api/inscription', inscriptionRoutes);
 app.use('/api/mdp', mdpOublieRoutes);
 app.use('/api/modifier_mdp', modifierMdpRoutes);
 app.use('/api/utilisateur/has-annonce', navbarRoute);
+app.use('/api/me', meRoutes);                         // ✅ now works
 
 // Root
 app.get('/', (_req, res) => res.send('Backend avec Prisma est en ligne ✅'));

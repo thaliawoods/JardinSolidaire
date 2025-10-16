@@ -1,71 +1,44 @@
-// backend/prisma/seed_jardinier.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function run() {
   try {
-    // Clean demo data (safe for local dev)
     await prisma.commentJardinier.deleteMany();
     await prisma.jardinier.deleteMany();
 
-    // 1) Alice
+    // link to existing users (example: Alice & Emma)
+    const alice = await prisma.utilisateur.findFirst({ where: { prenom: 'Alice', nom: 'Dupont' } });
+    const emma  = await prisma.utilisateur.findFirst({ where: { prenom: 'Emma',  nom: 'Durand' } });
+    if (!alice || !emma) throw new Error('Seed users for jardiniers not found.');
+
     await prisma.jardinier.create({
       data: {
+        userId: alice.id_utilisateur,
         prenom: 'Alice',
         nom: 'Dupont',
-        avatarUrl: null,
-        isOnline: true,
-        localisation: '10 rue des Lilas, Paris',
-        competences: ['herboristerie', 'taille', 'désherbage'],
-        experienceAnnees: 3,
-        presentation:
-          'Herboriste passionnée, je cultive des plantes médicinales et je partage mes connaissances.',
-        totalReviews: 242,
-        rating: 4.9,
-        comments: {
-          create: [
-            { authorName: 'Lucas', text: 'Super prestation, très ponctuelle !' },
-            { authorName: 'Hugo', text: 'Très pédagogue, merci !' },
-          ],
-        },
+        avatarUrl: 'https://img.freepik.com/...jpg',
+        localisation: 'Paris',
+        competences: ['désherbage', 'arrosage'],
+        experienceAnnees: 2,
+        presentation: 'Herboriste passionnée…',
+        totalReviews: 12,
+        rating: 4.7,
+        published: true,
       },
     });
 
-    // 2) Emma
     await prisma.jardinier.create({
       data: {
+        userId: emma.id_utilisateur,
         prenom: 'Emma',
         nom: 'Durand',
-        avatarUrl: null,
-        isOnline: false,
-        localisation: '3 rue Verte, Marseille',
-        competences: ['permaculture', 'plantation'],
+        localisation: 'Marseille',
+        competences: ['permaculture'],
         experienceAnnees: 1,
-        presentation:
-          'Débutante enthousiaste, j’apprends la permaculture et le jardinage naturel.',
-        totalReviews: 120,
+        presentation: 'Débutante enthousiaste…',
+        totalReviews: 5,
         rating: 4.5,
-        comments: { create: [] },
-      },
-    });
-
-    // 3) Karim (extra example)
-    await prisma.jardinier.create({
-      data: {
-        prenom: 'Karim',
-        nom: 'Ben Ali',
-        avatarUrl: null,
-        isOnline: true,
-        localisation: 'Lyon',
-        competences: ['arrosage', 'paillage', 'compost'],
-        experienceAnnees: 5,
-        presentation:
-          'Jardinier bénévole, orienté entretien biologique et optimisation de l’arrosage.',
-        totalReviews: 37,
-        rating: 4.7,
-        comments: {
-          create: [{ authorName: 'Zoé', text: 'Très soigneux et efficace.' }],
-        },
+        published: true,
       },
     });
 
@@ -77,5 +50,4 @@ async function run() {
     await prisma.$disconnect();
   }
 }
-
 run();

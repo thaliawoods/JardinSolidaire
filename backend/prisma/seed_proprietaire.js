@@ -6,35 +6,16 @@ async function run() {
     await prisma.commentProprietaire.deleteMany();
     await prisma.proprietaire.deleteMany();
 
-    // Lucas Martin (matchera l'owner du jardin "Jardin fleuri de Lucas")
-    await prisma.proprietaire.create({
-      data: {
-        prenom: 'Lucas',
-        nom: 'Martin',
-        avatarUrl: 'https://img.freepik.com/vecteurs-libre/photo-compte-profil-homme_24908-81754.jpg',
-        isOnline: true,
-        totalReviews: 12,
-        rating: 4.9,
-        quartier: 'Lyon',
-        disponibilites: 'Week-ends',
-        surface: 120,
-        type: 'fleurs',
-        presentation: 'J’ai transformé mon terrain urbain en havre de biodiversité.',
-        description: 'Fleurs, arrosage, désherbage',
-        comments: {
-          create: [
-            { authorName: 'Ana', text: 'Très accueillant, jardin magnifique.' },
-          ],
-        },
-      },
-    });
+    // find users to link
+    const lucas  = await prisma.utilisateur.findFirst({ where: { prenom: 'Lucas',  nom: 'Martin' } });
+    const jeanne = await prisma.utilisateur.findFirst({ where: { prenom: 'Jeanne', nom: 'Roux'   } });
+    if (!lucas || !jeanne) throw new Error('Seed users not found. Run seed_utilisateur first.');
 
-    // Christian Martin
     await prisma.proprietaire.create({
       data: {
+        userId: lucas.id_utilisateur,
         prenom: 'Christian',
         nom: 'Martin',
-        avatarUrl: null,
         isOnline: true,
         totalReviews: 18,
         rating: 4.8,
@@ -42,23 +23,17 @@ async function run() {
         disponibilites: 'Soirées & week-ends',
         surface: 60,
         type: 'potager',
-        presentation: 'Passionné de tomates & aromatiques. Cherche coup de main arrosage & désherbage.',
+        presentation: 'Passionné de tomates & aromatiques...',
         description: 'Carrés potagers, compost en cours.',
-        comments: {
-          create: [
-            { authorName: 'Sarah', text: 'Accueil chaleureux, jardin agréable !' },
-            { authorName: 'Nicolas', text: 'Tout est bien organisé, merci.' },
-          ],
-        },
+        comments: { create: [{ authorName: 'Sarah', text: 'Accueil chaleureux !' }] },
       },
     });
 
-    // Jeanne Roux
     await prisma.proprietaire.create({
       data: {
+        userId: jeanne.id_utilisateur,
         prenom: 'Jeanne',
         nom: 'Roux',
-        avatarUrl: null,
         isOnline: false,
         totalReviews: 7,
         rating: 4.6,
@@ -66,9 +41,8 @@ async function run() {
         disponibilites: 'Mercredi après-midi',
         surface: 35,
         type: 'verger',
-        presentation: 'Petites tailles et entretien d’un jeune verger.',
+        presentation: 'Entretien d’un jeune verger.',
         description: 'Pommier, poirier, prunier.',
-        comments: { create: [{ authorName: 'Léo', text: 'Très sympa et flexible sur les horaires.' }] },
       },
     });
 
@@ -80,5 +54,4 @@ async function run() {
     await prisma.$disconnect();
   }
 }
-
 run();
