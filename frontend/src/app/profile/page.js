@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiFetch } from '../lib/api';
+import { apiFetch } from '../../lib/api';
 
 function getToken() {
   if (typeof window === 'undefined') return null;

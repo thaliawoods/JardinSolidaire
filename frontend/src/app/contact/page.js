@@ -23,7 +23,6 @@ export default function ContactPage() {
       const res = await fetch(`${API_BASE}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // If you want to pass auth: add Authorization from localStorage token
         body: JSON.stringify({ name, email, subject, message }),
       });
       const data = await res.json().catch(() => ({}));
