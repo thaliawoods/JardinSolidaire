@@ -1,43 +1,65 @@
-'use client';
-import { useState } from 'react';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+// backend/routes/connexion.js
+const express = require('express');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { PrismaClient } = require('@prisma/client');
 
-export default function ConnexionPage() {
-  const [email, setEmail] = useState('');
-  const [mot_de_passe, setPassword] = useState('');
-  const [error, setError] = useState('');
+const prisma = new PrismaClient();
+const router = express.Router();
 
-  async function onSubmit(e) {
-    e.preventDefault();
-    setError('');
-    try {
-      const res = await fetch(`${API_BASE}/api/connexion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, mot_de_passe }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'login_failed');
+router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-      // ✅ Save token, go home (or /mon-espace)
-      localStorage.setItem('token', data.token);
-      window.location.href = '/mon-espace';
-    } catch (e) {
-      setError('Identifiants invalides');
+router.post('/', async (req, res) => {
+  try {
+    const { email, mot_de_passe } = req.body || {};
+    if (!email || !mot_de_passe) {
+      return res.status(400).json({ error: 'email_and_password_required' });
     }
-  }
 
-  return (
-    <main className="pt-24 max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Se connecter</h1>
-      {!!error && <p className="text-red-600 text-sm mb-3">{error}</p>}
-      <form onSubmit={onSubmit} className="space-y-3">
-        <input className="w-full border p-2 rounded" placeholder="Email"
-               value={email} onChange={e=>setEmail(e.target.value)} />
-        <input className="w-full border p-2 rounded" placeholder="Mot de passe" type="password"
-               value={mot_de_passe} onChange={e=>setPassword(e.target.value)} />
-        <button className="bg-green-600 text-white px-4 py-2 rounded">Connexion</button>
-      </form>
-    </main>
-  );
-}
+    const user = await prisma.utilisateur.findUnique({
+      where: { email: String(email).trim().toLowerCase() }
+    });
+    if (!user) return res.status(401).json({ error: 'invalid_credentials' });
+
+    const stored = user.mot_de_passe || '';
+    let ok = false;
+
+    if (stored.startsWith('$2')) {
+      ok = await bcrypt.compare(mot_de_passe, stored);
+    } else {
+      // legacy clear-text password support + migrate to bcrypt
+      ok = stored === mot_de_passe;
+      if (ok) {
+        const newHash = await bcrypt.hash(mot_de_passe, 10);
+        await prisma.utilisateur.update({
+          where: { id_utilisateur: user.id_utilisateur },
+          data: { mot_de_passe: newHash },
+        });
+      }
+    }
+
+    if (!ok) return res.status(401).json({ error: 'invalid_credentials' });
+
+    const token = jwt.sign(
+      { id_utilisateur: user.id_utilisateur },
+      process.env.JWT_SECRET || 'dev-secret',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id_utilisateur: Number(user.id_utilisateur),
+        prenom: user.prenom,
+        nom: user.nom,
+        email: user.email,
+        role: user.role || 'user',
+      },
+    });
+  } catch (e) {
+    console.error('POST /connexion failed:', e?.stack || e);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+module.exports = router;
