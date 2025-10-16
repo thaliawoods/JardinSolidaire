@@ -1,6 +1,5 @@
 // backend/server.js
 require('dotenv').config();
-
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const cors = require('cors');
@@ -19,14 +18,14 @@ const inscriptionRoutes = require('./routes/inscription');
 const mdpOublieRoutes = require('./routes/mdp_oublie');
 const modifierMdpRoutes = require('./routes/modifier_mdp');
 const navbarRoute = require('./routes/navbar');
-const meRoutes = require('./routes/me');              // ✅ <— ADD THIS
+const meRoutes = require('./routes/me'); // <- make sure this line exists
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 🔎 DB health (JSON)
+// DB health
 app.get('/api/_dbcheck', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -46,9 +45,8 @@ app.use('/api/inscription', inscriptionRoutes);
 app.use('/api/mdp', mdpOublieRoutes);
 app.use('/api/modifier_mdp', modifierMdpRoutes);
 app.use('/api/utilisateur/has-annonce', navbarRoute);
-app.use('/api/me', meRoutes);                         // ✅ now works
+app.use('/api/me', meRoutes);
 
-// Root
 app.get('/', (_req, res) => res.send('Backend avec Prisma est en ligne ✅'));
 
 app.listen(PORT, () => {
