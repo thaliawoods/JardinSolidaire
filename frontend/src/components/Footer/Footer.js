@@ -15,7 +15,7 @@ const Footer = () => {
             </li>
             <li>
               <Link href="/help" className="hover:underline focus:underline">
-                Help Center
+                Centre d&#39;aide
               </Link>
             </li>
           </ul>

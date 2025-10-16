@@ -21,13 +21,13 @@ const HomeImage = () => {
             href="/gardens"
             className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded"
           >
-            Our Gardens
+            Nos Jardins
           </Link>
           <Link
             href="/gardeners"
             className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded"
           >
-            Our Gardeners
+            Nos Jardiniers
           </Link>
         </div>
       </div>
