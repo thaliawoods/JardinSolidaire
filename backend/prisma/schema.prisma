@@ -1,5 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -43,24 +43,24 @@ model heurescumul_es {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model jardin {
-  id_jardin        BigInt           @id @default(autoincrement())
-  id_proprietaire  BigInt           @unique
+  id_jardin        BigInt    @id @default(autoincrement())
+  id_proprietaire  BigInt    @unique
   titre            String?
   description      String?
   adresse          String?
   superficie       Float?
   type             String?
   besoins          String?
-  photos           Json?            @db.Json
-  date_publication DateTime?        @default(now()) @db.Timestamptz(6)
+  photos           Json?     @db.Json
+  date_publication DateTime? @default(now()) @db.Timestamptz(6)
   statut           String?
   note_moyenne     Float?
 
   // Relations
-  avis             avis[]
-  disponibilites   disponibilites[]
-  utilisateur      utilisateur       @relation(fields: [id_proprietaire], references: [id_utilisateur], onDelete: NoAction, onUpdate: NoAction)
-  reservation      reservation[]
+  avis           avis[]
+  disponibilites disponibilites[]
+  utilisateur    utilisateur      @relation(fields: [id_proprietaire], references: [id_utilisateur], onDelete: NoAction, onUpdate: NoAction)
+  reservation    reservation[]
 }
 
 model messagerie {
@@ -90,39 +90,98 @@ model reservation {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model utilisateur {
-  id_utilisateur                                     BigInt           @id @default(autoincrement())
-  prenom                                             String?
-  nom                                                String?
-  email                                              String?          @unique
-  mot_de_passe                                       String?
-  role                                               String?
-  photo_profil                                       String?
-  biographie                                         String?
-  date_inscription                                   DateTime?        @default(now()) @db.Timestamptz(6)
-  telephone                                          String?
-  adresse                                            String?
-  note_moyenne                                       Float?
+  id_utilisateur   BigInt    @id @default(autoincrement())
+  prenom           String?
+  nom              String?
+  email            String?   @unique
+  mot_de_passe     String?
+  role             String?
+  photo_profil     String?
+  biographie       String?
+  date_inscription DateTime? @default(now()) @db.Timestamptz(6)
+  telephone        String?
+  adresse          String?
+  note_moyenne     Float?
 
   // Relations
   avis                                               avis[]
   heurescumul_es                                     heurescumul_es[]
-  jardin                                             jardin?           // 🔧 un seul jardin maximum
-  messagerie_messagerie_id_destinataireToutilisateur messagerie[]     @relation("messagerie_id_destinataireToutilisateur")
-  messagerie_messagerie_id_envoyeurToutilisateur     messagerie[]     @relation("messagerie_id_envoyeurToutilisateur")
+  jardin                                             jardin? // 🔧 un seul jardin maximum
+  messagerie_messagerie_id_destinataireToutilisateur messagerie[]            @relation("messagerie_id_destinataireToutilisateur")
+  messagerie_messagerie_id_envoyeurToutilisateur     messagerie[]            @relation("messagerie_id_envoyeurToutilisateur")
   reservation                                        reservation[]
   competences                                        utilisateurCompetence[]
 }
 
 model competence {
   id_competence Int                     @id @default(autoincrement())
-  nom           String                 @unique
+  nom           String                  @unique
   utilisateurs  utilisateurCompetence[]
 }
 
 model utilisateurCompetence {
   id_utilisateur_competence Int         @id @default(autoincrement())
-  utilisateur         utilisateur       @relation(fields: [id_utilisateur], references: [id_utilisateur])
-  id_utilisateur       BigInt
-  competence           competence       @relation(fields: [id_competence], references: [id_competence])
-  id_competence        Int
+  utilisateur               utilisateur @relation(fields: [id_utilisateur], references: [id_utilisateur])
+  id_utilisateur            BigInt
+  competence                competence  @relation(fields: [id_competence], references: [id_competence])
+  id_competence             Int
+}
+
+model proprietaire {
+  id_proprietaire Int      @id @default(autoincrement())
+  prenom          String?
+  nom             String?
+  avatarUrl       String?
+  isOnline        Boolean? @default(false)
+  totalReviews    Int?     @default(0)
+  rating          Float?   @default(4.8)
+  quartier        String?
+  disponibilites  String?
+  surface         Int?
+  type            String?
+  presentation    String?
+  description     String?
+
+  // ⬇️ renamed relation type
+  comments CommentProprietaire[]
+}
+
+model CommentProprietaire {
+  id         Int      @id @default(autoincrement())
+  text       String
+  authorName String?
+  createdAt  DateTime @default(now())
+
+  proprietaireId Int?
+  proprietaire   proprietaire? @relation(fields: [proprietaireId], references: [id_proprietaire])
+}
+
+model Jardinier {
+  id               Int      @id @default(autoincrement())
+  prenom           String
+  nom              String
+  avatarUrl        String?
+  isOnline         Boolean  @default(false)
+  localisation     String?
+  competences      String[] // Postgres array OK
+  experienceAnnees Int?
+  presentation     String?
+  totalReviews     Int      @default(0)
+  rating           Float?
+
+  // ⬇️ renamed relation type
+  comments CommentJardinier[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CommentJardinier {
+  id         Int      @id @default(autoincrement())
+  text       String
+  authorName String?
+  createdAt  DateTime @default(now())
+
+  jardinierId Int
+  jardinier   Jardinier @relation(fields: [jardinierId], references: [id], onDelete: Cascade)
 }
