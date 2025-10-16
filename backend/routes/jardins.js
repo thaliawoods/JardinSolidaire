@@ -1,90 +1,134 @@
+// backend/routes/jardins.js
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// Récupérer tous les jardins
+router.get('/_ping', (_req, res) => res.json({ ok: true }));
+
+/**
+ * LISTE des jardins
+ * query: ?search=&quartier=&type=
+ */
 router.get('/', async (req, res) => {
   try {
-    const { type, quartier, skip = 0, take = 10 } = req.query;
+    const { search = '', quartier = '', type = '' } = req.query;
 
-    const jardins = await prisma.jardin.findMany({
+    const rows = await prisma.jardin.findMany({
       where: {
-        type: type || undefined,
-        adresse: quartier ? { contains: quartier } : undefined
+        AND: [
+          search
+            ? {
+                OR: [
+                  { titre: { contains: search, mode: 'insensitive' } },
+                  { description: { contains: search, mode: 'insensitive' } },
+                  { adresse: { contains: search, mode: 'insensitive' } },
+                ],
+              }
+            : {},
+          type ? { type } : {},
+          // Si un champ "quartier" existe un jour sur "jardin", ajoute-le ici
+          // quartier ? { quartier: { contains: quartier, mode: 'insensitive' } } : {},
+        ],
       },
-      skip: parseInt(skip),
-      take: parseInt(take)
+      orderBy: { id_jardin: 'asc' },
     });
 
-    const formatés = jardins.map((j) => ({
-      ...j,
-      id_jardin: j.id_jardin.toString(),
-      id_proprietaire: j.id_proprietaire.toString(),
-        description: j.description,
-        adresse: j.adresse,
-        type: j.type,
-        photos: j.photos,
-    }));
-    console.log('🔍 jardins récupérés:', jardins);
-    res.json(formatés);
-  } catch (error) {
-    console.error('Erreur filtrée :', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.json(
+      rows.map((j) => ({
+        id_jardin: String(j.id_jardin),
+        id_proprietaire: j.id_proprietaire ? String(j.id_proprietaire) : null, // utilisateur.id
+        titre: j.titre ?? '',
+        description: j.description ?? '',
+        adresse: j.adresse ?? '',
+        type: j.type ?? '',
+        besoins: j.besoins ?? '',
+        photos: Array.isArray(j.photos) ? j.photos : [],
+        date_publication: j.date_publication,
+        note_moyenne: j.note_moyenne ?? null,
+      })),
+    );
+  } catch (err) {
+    console.error('Erreur GET /jardins :', err);
+    res.status(500).json({ error: 'server_error' });
   }
 });
 
-
-
-// GET un jardin par ID
+/**
+ * DÉTAIL d’un jardin
+ * Retourne les infos du jardin + bloc owner (depuis "utilisateur")
+ * + un pont facultatif vers la table "proprietaire" des seeds (proprietaireDemoId)
+ */
 router.get('/:id', async (req, res) => {
-  const id = BigInt(req.params.id);
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) return res.status(400).json({ error: 'invalid_id' });
+
   try {
-    const jardin = await prisma.jardin.findUnique({
-      where: { id_jardin: id }
+    const j = await prisma.jardin.findUnique({
+      where: { id_jardin: id },
+      include: {
+        utilisateur: {
+          select: {
+            id_utilisateur: true,
+            prenom: true,
+            nom: true,
+            email: true,
+            telephone: true,
+            adresse: true,
+            photo_profil: true,
+            note_moyenne: true,
+            biographie: true,
+          },
+        },
+      },
     });
 
-    if (!jardin) return res.status(404).json({ error: 'Jardin non trouvé' });
+    if (!j) return res.status(404).json({ error: 'not_found' });
 
-    // Conversion BigInt → String
-    jardin.id_jardin = jardin.id_jardin.toString();
-    jardin.id_proprietaire = jardin.id_proprietaire.toString();
+    // Tentative de "pont" vers la table seed "proprietaire" par match sur prénom/nom
+    let proprietaireDemoId = null;
+    if (j.utilisateur?.prenom || j.utilisateur?.nom) {
+      const demo = await prisma.proprietaire.findFirst({
+        where: {
+          prenom: j.utilisateur?.prenom || undefined,
+          nom: j.utilisateur?.nom || undefined,
+        },
+        select: { id_proprietaire: true },
+      });
+      if (demo) proprietaireDemoId = String(demo.id_proprietaire);
+    }
 
-    res.json(jardin);
-  } catch (error) {
-    console.error('Erreur get by ID :', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
+    res.json({
+      id_jardin: String(j.id_jardin),
+      titre: j.titre ?? '',
+      description: j.description ?? '',
+      adresse: j.adresse ?? '',
+      type: j.type ?? '',
+      besoins: j.besoins ?? '',
+      photos: Array.isArray(j.photos) ? j.photos : [],
+      date_publication: j.date_publication,
+      note_moyenne: j.note_moyenne ?? null,
 
-// POST un nouveau jardin
-router.post('/', async (req, res) => {
-  try {
-    const data = req.body;
+      owner: j.utilisateur
+        ? {
+            id_utilisateur: String(j.utilisateur.id_utilisateur),
+            prenom: j.utilisateur.prenom ?? '',
+            nom: j.utilisateur.nom ?? '',
+            avatarUrl: j.utilisateur.photo_profil ?? null,
+            telephone: j.utilisateur.telephone ?? null,
+            adresse: j.utilisateur.adresse ?? null,
+            note: j.utilisateur.note_moyenne ?? null,
+            presentation: j.utilisateur.biographie ?? null,
+          }
+        : null,
 
-    const nouveau = await prisma.jardin.create({
-      data: {
-        id_proprietaire: BigInt(data.id_proprietaire),
-        titre: data.titre,
-        description: data.description,
-        adresse: data.adresse,
-        superficie: parseFloat(data.superficie),
-        type: data.type,
-        besoins: data.besoins,
-        photos: data.photos, // JSON (array of URLs)
-        date_publication: new Date(),
-        statut: 'disponible',
-        note_moyenne: 0,
-      }
+      proprietaireDemoId, // pour lier vers /proprietaires/[id] si trouvé
     });
-
-    res.status(201).json({ message: 'Jardin ajouté', id: nouveau.id_jardin.toString() });
-  } catch (error) {
-    console.error('Erreur création jardin :', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+  } catch (err) {
+    console.error('Erreur GET /jardins/:id :', err);
+    res.status(500).json({ error: 'server_error' });
   }
 });
-
 
 module.exports = router;
