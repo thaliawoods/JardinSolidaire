@@ -1,20 +1,15 @@
-// vérifie les champs requis d’un formulaire “Je veux jardiner”.
-// champs obligatoires : nom (Prénom/Nom) et description.
-// renvoie la liste des noms de champs manquants.
+// Checks required fields for the “I want to garden” form.
+// Required fields: name (covers first/last) and description.
+// Returns an array of missing field names (English).
 
-function getMissingRequiredFields(formData) {
+function getMissingRequiredFields(formData = {}) {
+  // Back-compat alias: accept French 'nom' for a while
+  const name = (formData.name ?? formData.nom ?? '').toString().trim();
+  const description = (formData.description ?? '').toString().trim();
+
   const missing = [];
-
-  // nom est obligatoire (on considère qu'il sert à la fois pour "Prénom" et "Nom")
-  if (!formData.nom || formData.nom.trim() === '') {
-    missing.push('nom');
-  }
-
-  // description est obligatoire
-  if (!formData.description || formData.description.trim() === '') {
-    missing.push('description');
-  }
-
+  if (!name) missing.push('name');
+  if (!description) missing.push('description');
   return missing;
 }
 

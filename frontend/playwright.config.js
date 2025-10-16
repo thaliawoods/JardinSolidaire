@@ -1,18 +1,16 @@
-// playwright.config.js
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir: 'src/testsE2E',      // où vivent vos specs
-  timeout: 30 * 1000,           // 30s par test max
+  testDir: 'src/testsE2E',     
+  timeout: 30 * 1000,         
   use: {
     baseURL: 'http://localhost:3000',
-    headless: true,             // mode sans interface
+    headless: true,            
     viewport: { width: 1280, height: 720 },
     actionTimeout: 10 * 1000,
     ignoreHTTPSErrors: true,
   },
 
-  // → Lance d'abord votre backend puis votre frontend
   webServer: [
     {
       command: 'cd ../backend && npm run dev',
@@ -29,8 +27,7 @@ export default defineConfig({
     },
   ],
 
-  // Forcer Playwright à attendre que le front soit up
-  // avant de lancer les tests
+
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

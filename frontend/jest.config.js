@@ -6,7 +6,7 @@ const customJestConfig = {
   // rootDir: 'src',
   testMatch: ['**/tests/**/*.+(js|jsx|ts|tsx)', '**/?(*.)+(test).+(js|jsx|ts|tsx)'],
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',  // ou 'ts-jest' si vous utilisez TS
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest', 
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jsdom',
