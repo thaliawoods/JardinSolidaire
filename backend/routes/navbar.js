@@ -1,33 +1,49 @@
 const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
 const router = express.Router();
-const connection = require('../db');
 
-// Route : GET /api/navbar?userId=xxx&role=xxx
-router.get('/', (req, res) => {
-  const { userId, role } = req.query;
+router.get('/', async (req, res) => {
+  try {
+    const userIdNum = Number(req.query.userId);
+    const roleRaw = String(req.query.role || '').trim().toLowerCase();
 
-  if (!userId || !role) {
-    return res.status(400).json({ error: 'Paramètres manquants' });
-  }
-
-  let query = '';
-  if (role === 'proprietaire') {
-    query = 'SELECT id_jardin FROM jardin WHERE id_proprietaire = ? LIMIT 1';
-  } else if (role === 'ami_du_vert') {
-    query = 'SELECT id_utilisateur FROM utilisateurCompetence WHERE id_utilisateur = ? LIMIT 1';
-  } else {
-    return res.status(400).json({ error: 'Rôle invalide' });
-  }
-
-  connection.query(query, [userId], (err, results) => {
-    if (err) {
-      console.error('Erreur MySQL :', err);
-      return res.status(500).json({ error: 'Erreur serveur' });
+    if (!Number.isFinite(userIdNum) || !roleRaw) {
+      return res.status(400).json({ error: 'missing_params' });
     }
 
-    const hasAnnonce = results.length > 0;
-    res.json({ hasAnnonce });
-  });
+    const role =
+      roleRaw === 'owner' || roleRaw === 'proprietaire'
+        ? 'owner'
+        : roleRaw === 'green_friend' || roleRaw === 'ami_du_vert'
+        ? 'green_friend'
+        : null;
+
+    if (!role) return res.status(400).json({ error: 'invalid_role' });
+
+    const userId = BigInt(userIdNum);
+
+    let hasListing = false;
+    if (role === 'owner') {
+      const garden = await prisma.garden.findFirst({
+        where: { ownerUserId: userId },
+        select: { id: true },
+      });
+      hasListing = !!garden;
+    } else if (role === 'green_friend') {
+      const link = await prisma.userSkill.findFirst({
+        where: { userId },
+        select: { id: true },
+      });
+      hasListing = !!link;
+    }
+
+    return res.json({ hasListing });
+  } catch (err) {
+    console.error('GET /navbar failed:', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
 });
 
 module.exports = router;

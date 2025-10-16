@@ -1,65 +1,22 @@
-const { getMissingRequiredFields } = require('../utils/formUtils');
+// backend/tests/hashPassword.test.js
+const bcrypt = require('bcrypt');
+const { hashPassword } = require('../utils');
 
-describe('getMissingRequiredFields (backend)', () => {
-  test('renvoie [] quand nom et description sont correctement remplis', () => {
-    const formData = {
-      nom: 'Alice Dupont',
-      description: 'J\'ai 5 ans d\'expérience en jardinage',
-      localisation: 'Paris',
-      surface: '20m²',
-      services: 'Potager',
-      photos: []
-    };
-    expect(getMissingRequiredFields(formData)).toEqual([]);
-  });
+describe('Password hashing', () => {
+  it('hashes a password and verifies it with bcrypt', async () => {
+    const password = 'Test123!';
+    const hashed = await hashPassword(password);
 
-  test('signale "nom" si le champ nom est vide ou composé d\'espaces', () => {
-    const formData = {
-      nom: '   ',
-      description: 'Il fait beau dans le jardin',
-      localisation: '',
-      surface: '',
-      services: '',
-      photos: []
-    };
-    expect(getMissingRequiredFields(formData)).toEqual(['nom']);
-  });
+    expect(hashed).toBeDefined();
+    expect(typeof hashed).toBe('string');
+    expect(hashed).not.toBe(password);
 
-  test('signale "description" si le champ description est vide', () => {
-    const formData = {
-      nom: 'Bob Martin',
-      description: '',
-      localisation: 'Lyon',
-      surface: '',
-      services: '',
-      photos: []
-    };
-    expect(getMissingRequiredFields(formData)).toEqual(['description']);
-  });
+    // bcrypt should validate the original password
+    const ok = await bcrypt.compare(password, hashed);
+    expect(ok).toBe(true);
 
-  test('signale ["nom","description"] si les deux champs sont vides', () => {
-    const formData = {
-      nom: '',
-      description: '    ',
-      localisation: 'Marseille',
-      surface: '',
-      services: '',
-      photos: []
-    };
-
-    const missing = getMissingRequiredFields(formData);
-    expect(missing.sort()).toEqual(['description', 'nom']);
-  });
-
-  test('ne renvoie rien pour les autres champs (seulement nom & description sont obligatoires)', () => {
-    const formData = {
-      nom: 'Carole',
-      description: 'Je jardine en ville',
-      localisation: '',
-      surface: '',
-      services: '',
-      photos: []
-    };
-    expect(getMissingRequiredFields(formData)).toEqual([]);
+    // and reject a wrong password
+    const bad = await bcrypt.compare('wrong', hashed);
+    expect(bad).toBe(false);
   });
 });

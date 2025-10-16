@@ -60,7 +60,6 @@ export default function useSession() {
       setStoredUser(data.user);
     } catch (e) {
       setError(e?.error || 'server_error');
-      // invalid token → clear
       setStoredToken(null);
       setToken(null);
       setMe(null);
@@ -71,10 +70,11 @@ export default function useSession() {
 
   useEffect(() => { load(); }, [load]);
 
-  const login = useCallback(async ({ email, mot_de_passe }) => {
-    const res = await apiFetch('/api/connexion', {
+  const login = useCallback(async ({ email, password, mot_de_passe } = {}) => {
+    const pwd = password ?? mot_de_passe; 
+    const res = await apiFetch('/api/login', {
       method: 'POST',
-      body: { email, mot_de_passe },
+      body: { email, password: pwd },
     });
     setStoredToken(res.token);
     setToken(res.token);
