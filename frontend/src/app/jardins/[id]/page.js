@@ -1,163 +1,156 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 
-export default function JardinPage() {
-  const router = useRouter();
-  const { id } = useParams();
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
-  // API data & UI state
-  const [jardin, setJardin]               = useState(null);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState(null);
-  const [selectedDate, setSelectedDate]   = useState(null);
+export default function JardinDetailPage({ params }) {
+  const { id } = params || {};
 
-  // Fetch the jardin on mount
+  const [jardin, setJardin] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState('');
+
   useEffect(() => {
-    async function fetchJardin() {
+    let alive = true;
+
+    async function load() {
       try {
-        const res  = await fetch(`http://localhost:5001/api/jardins/${id}`);
+        setLoading(true);
+        setError('');
+        const res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        setJardin(await res.json());
-      } catch (err) {
-        console.error(err);
-        setError(err.message);
+        const data = await res.json();
+        if (alive) setJardin(data);
+      } catch (e) {
+        if (alive) {
+          setError("Impossible de charger ce jardin.");
+          setJardin(null);
+        }
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     }
-    fetchJardin();
+
+    if (id) load();
+    return () => { alive = false; };
   }, [id]);
 
-  // Reservation handler
-  const handleReservation = async () => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) return router.push('/connexion');
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white text-gray-900 p-6">
+        <div className="animate-pulse space-y-4 max-w-6xl mx-auto">
+          <div className="h-28 bg-gray-100 rounded-2xl" />
+          <div className="h-40 bg-gray-100 rounded-2xl" />
+          <div className="h-40 bg-gray-100 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
 
-    try {
-      const res = await fetch('http://localhost:5000/api/reservations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_utilisateur:    userId,
-          id_jardin:         id,
-          date_reservation:  selectedDate.toISOString(),
-          statut:            'en_attente',
-        }),
-      });
-      if (res.ok) {
-        alert('Réservation effectuée ✅');
-        router.push('/reservation');
-      } else {
-        alert('Erreur lors de la réservation ❌');
-      }
-    } catch (err) {
-      console.error('Erreur réservation:', err);
-      alert('Erreur serveur');
-    }
-  };
+  if (error || !jardin) {
+    return (
+      <div className="min-h-screen bg-white text-gray-900 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
+            {error || "Erreur inconnue"}
+          </div>
+          <p className="text-gray-600">Retour aux{' '}
+            <Link href="/jardins" className="underline text-green-700">jardins</Link>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  if (loading) return <p className="p-6 text-center">Chargement…</p>;
-  if (error)   return <p className="p-6 text-center text-red-500">Erreur : {error}</p>;
-  if (!jardin) return <p className="p-6 text-center">Jardin introuvable</p>;
-
-  // Normalize photos array
-  const photos     = Array.isArray(jardin.photos) ? jardin.photos : [];
-  const mainPhoto  = photos[0] ?? '/assets/default.jpg';
-  const thumbnails = photos.slice(1);
+  const owner = jardin.owner;
 
   return (
-    <div className="min-h-screen p-6 bg-white">
-      {/* Header */}
-      <div className="flex justify-between items-center flex-wrap gap-4 mb-4">
-        <h1 className="text-2xl font-bold text-green-800">{jardin.titre}</h1>
-        <div className="flex gap-3 text-sm">
-          <span className="text-gray-600">
-            Propriétaire : {jardin.utilisateur?.nom} {jardin.utilisateur?.prenom}
-          </span>
-          <button>Partager</button>
-          <button>♥</button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col">
+      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
+        {/* Titre + image */}
+        <h1 className="text-2xl font-bold text-green-800 mb-4">{jardin.titre}</h1>
 
-      {/* Gallery & Owner Info */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2">
+        {Array.isArray(jardin.photos) && jardin.photos.length > 0 && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={mainPhoto}
-            alt="Photo principale"
-            className="rounded-lg w-full h-64 object-cover mb-4"
+            src={jardin.photos[0]}
+            alt={jardin.titre}
+            className="w-full h-56 object-cover rounded-xl mb-6"
           />
-          {thumbnails.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {thumbnails.map((photo, idx) => (
-                <img
-                  key={idx}
-                  src={photo}
-                  alt={`Miniature ${idx + 1}`}
-                  className="h-24 w-full object-cover rounded-lg hover:scale-105 transition-transform cursor-pointer"
-                  onClick={() => setSelectedDate(null) || null /* keep existing UI */}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="bg-gray-100 p-4 rounded-xl text-sm">
-          <h3 className="font-bold mb-2 text-green-800">Informations du Propriétaire</h3>
-          <p className="font-bold mb-2 text-green-800">Nom : {jardin.utilisateur?.nom}</p>
-          <p className="font-bold mb-2 text-green-800">Statut vérifié</p>
-          <button className="mt-4 px-4 py-2 bg-pink-500 text-white rounded">Message</button>
-        </div>
-      </div>
+        )}
 
-      {/* Jardin Details */}
-      <div className="mb-6">
-        <h2 className="font-bold text-lg mb-2 text-green-800">Informations du Jardin</h2>
-        <p className="text-sm text-green-800">{jardin.description}</p>
-        <p className="text-sm text-green-800">Adresse : {jardin.adresse}</p>
-        <p className="text-sm text-green-800">Type : {jardin.type}</p>
-        <p className="text-sm text-green-800">Besoins : {jardin.besoins}</p>
-        <p className="text-sm text-green-800">
-          Publié le :{' '}
-          {new Date(jardin.date_publication)
-            .toLocaleDateString('fr-FR')}
-        </p>
-        <p className="text-sm text-green-800">Note moyenne : {jardin.note_moyenne}</p>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* Colonne gauche: infos jardin */}
+          <section className="lg:col-span-2">
+            <Card title="Informations du Jardin">
+              <div className="mt-3 space-y-1 text-sm text-gray-700">
+                <p>{jardin.description}</p>
+                <p><strong>Adresse :</strong> {jardin.adresse || '—'}</p>
+                <p><strong>Type :</strong> {jardin.type || '—'}</p>
+                <p><strong>Besoins :</strong> {jardin.besoins || '—'}</p>
+                <p><strong>Note moyenne :</strong> {jardin.note_moyenne ?? '—'}★</p>
+              </div>
+            </Card>
+          </section>
 
-      {/* Date Picker & Reservation */}
-      <div className="mb-6">
-        <h2 className="font-bold text-lg mb-2 text-green-800">Choisissez une date</h2>
-        <DatePicker
-          selected={selectedDate}
-          onChange={(d) => setSelectedDate(d)}
-          inline
-          minDate={new Date()}
-          calendarClassName="rounded-lg border border-green-300 p-2"
-        />
-        <button
-          disabled={!selectedDate}
-          className={`mt-4 w-full max-w-xs mx-auto font-semibold px-6 py-2 rounded-full transition ${
-            selectedDate
-              ? 'bg-[#E3107D] hover:bg-[#c30c6a] text-white'
-              : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-          }`}
-          onClick={handleReservation}
-        >
-          Réserver
-        </button>
-      </div>
+          {/* Colonne droite: propriétaire */}
+          <aside>
+            <Card title="Informations du Propriétaire">
+              {!owner ? (
+                <p className="text-sm text-gray-600">Aucun propriétaire lié.</p>
+              ) : (
+                <div className="mt-3 grid grid-cols-1 gap-3 text-sm text-gray-700">
+                  <div className="flex items-center gap-3">
+                    <div className="h-14 w-14 rounded-full bg-gray-200 overflow-hidden">
+                      {owner.avatarUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={owner.avatarUrl}
+                          alt={`${owner.prenom} ${owner.nom}`}
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium">{owner.prenom} {owner.nom}</p>
+                      <p className="text-gray-500">{owner.adresse || '—'}</p>
+                    </div>
+                  </div>
 
-      {/* Comments Placeholder */}
-      <div>
-        <h2 className="font-bold text-lg mb-2 text-green-800">Commentaires</h2>
-        <div className="bg-gray-100 p-4 rounded-xl text-sm">
-          (📝 Zone de commentaires à venir)
+                  {jardin.proprietaireDemoId && (
+                    <Link
+                      href={`/proprietaires/${jardin.proprietaireDemoId}`}
+                      className="inline-block mt-1 px-4 py-2 rounded-md bg-[#E3107D] text-white hover:bg-[#c30c6a] w-max"
+                    >
+                      Voir le profil
+                    </Link>
+                  )}
+                </div>
+              )}
+            </Card>
+          </aside>
         </div>
-      </div>
+
+        {/* Présentation du proprio si dispo sur l'utilisateur */}
+        {owner?.presentation && (
+          <section className="mt-6">
+            <Card title="Texte de présentation du propriétaire">
+              <p className="mt-3 text-gray-700 whitespace-pre-wrap">{owner.presentation}</p>
+            </Card>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function Card({ title, children }) {
+  return (
+    <div className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {children}
     </div>
   );
 }

@@ -1,14 +1,35 @@
-// backend/prisma/seed_proprietaire.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function run() {
   try {
-    // Clean demo data (safe for local dev)
     await prisma.commentProprietaire.deleteMany();
     await prisma.proprietaire.deleteMany();
 
-    // 1) Proprietaire #1
+    // Lucas Martin (matchera l'owner du jardin "Jardin fleuri de Lucas")
+    await prisma.proprietaire.create({
+      data: {
+        prenom: 'Lucas',
+        nom: 'Martin',
+        avatarUrl: 'https://img.freepik.com/vecteurs-libre/photo-compte-profil-homme_24908-81754.jpg',
+        isOnline: true,
+        totalReviews: 12,
+        rating: 4.9,
+        quartier: 'Lyon',
+        disponibilites: 'Week-ends',
+        surface: 120,
+        type: 'fleurs',
+        presentation: 'J’ai transformé mon terrain urbain en havre de biodiversité.',
+        description: 'Fleurs, arrosage, désherbage',
+        comments: {
+          create: [
+            { authorName: 'Ana', text: 'Très accueillant, jardin magnifique.' },
+          ],
+        },
+      },
+    });
+
+    // Christian Martin
     await prisma.proprietaire.create({
       data: {
         prenom: 'Christian',
@@ -32,7 +53,7 @@ async function run() {
       },
     });
 
-    // 2) Proprietaire #2
+    // Jeanne Roux
     await prisma.proprietaire.create({
       data: {
         prenom: 'Jeanne',
@@ -47,11 +68,7 @@ async function run() {
         type: 'verger',
         presentation: 'Petites tailles et entretien d’un jeune verger.',
         description: 'Pommier, poirier, prunier.',
-        comments: {
-          create: [
-            { authorName: 'Léo', text: 'Très sympa et flexible sur les horaires.' },
-          ],
-        },
+        comments: { create: [{ authorName: 'Léo', text: 'Très sympa et flexible sur les horaires.' }] },
       },
     });
 
