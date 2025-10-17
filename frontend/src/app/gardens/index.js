@@ -31,14 +31,13 @@ const uiToApiKind = {
 };
 
 export default function GardensList() {
-  const [favorites, setFavorites] = useState([]); // array of favorite IDs (as strings)
+  const [favorites, setFavorites] = useState([]);
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState('');
   const [gardens, setGardens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
-  // hydrate favorites from localStorage
   useEffect(() => {
     setFavorites(getFavGardens().map((g) => String(g.id)));
   }, []);
@@ -86,7 +85,6 @@ export default function GardensList() {
     };
   }, [search, kind]);
 
-  // persist snapshot on toggle
   const toggleFavorite = (g) => {
     const id = String(g.id);
     setFavorites((prev) => {
@@ -124,7 +122,7 @@ export default function GardensList() {
     <div className="min-h-screen px-6 py-10 bg-white">
       <div className="flex items-center justify-between gap-4 mb-4">
         <h1 className="text-3xl font-bold text-green-800">
-          Our Community Gardens
+          Nos Jardins
         </h1>
 
         <Link
@@ -132,7 +130,7 @@ export default function GardensList() {
           className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
           title="See my favorites"
         >
-          Favorites ({favorites.length})
+          Favoris ({favorites.length})
         </Link>
       </div>
 
@@ -153,11 +151,11 @@ export default function GardensList() {
           onChange={(e) => setKind(e.target.value)}
           className="px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
         >
-          <option value="">All garden types</option>
-          <option value="vegetable">Vegetable garden</option>
-          <option value="greenhouse">Greenhouse</option>
-          <option value="flowers">Flowers</option>
-          <option value="mowing">Mowing</option>
+          <option value="">Tout les types de jardin</option>
+          <option value="vegetable">Jardin potager</option>
+          <option value="greenhouse">Serre</option>
+          <option value="flowers">Fleurs</option>
+          <option value="mowing">Tonte</option>
         </select>
 
         <button
