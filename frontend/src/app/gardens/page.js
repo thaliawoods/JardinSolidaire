@@ -6,7 +6,6 @@ export default function GardensPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-grow pt-20 pb-16">
-        <h1 className="text-center text-3xl font-bold text-green-800">Jardins</h1>
         <GardensList />
       </main>
     </div>
