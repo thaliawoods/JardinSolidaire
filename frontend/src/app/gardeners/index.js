@@ -18,7 +18,7 @@ function unwrapGardeners(raw) {
     raw.gardener ??       
     raw.jardiniers ??     
     raw.jardinier ??      
-    raw.data ??           // generic wrapper
+    raw.data ??           
     []
   );
 }
@@ -28,7 +28,6 @@ function normalizeGardeners(raw) {
   if (!Array.isArray(arr)) return [];
   return arr.map((item) => {
     if ('firstName' in item || 'lastName' in item || 'avatarUrl' in item) {
-      // EN-first
       return {
         id: String(item.id ?? item.id_utilisateur ?? ''),
         firstName: item.firstName ?? '',
@@ -62,7 +61,6 @@ export default function GardenersList() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
-  // hydrate favorites
   useEffect(() => {
     setFavorites(getFavGardeners().map((g) => String(g.id)));
   }, []);
@@ -119,7 +117,6 @@ export default function GardenersList() {
     });
   }, [gardeners, search, minRating]);
 
-  // persist snapshot on toggle
   const toggleFavorite = (g) => {
     const id = String(g.id);
     setFavorites((prev) => {
@@ -150,13 +147,13 @@ export default function GardenersList() {
   return (
     <div className="min-h-screen px-6 py-10 bg-white">
       <div className="flex items-center justify-between gap-4 mb-4">
-        <h1 className="text-3xl font-bold text-green-800">Gardeners</h1>
+        <h1 className="text-3xl font-bold text-green-800">Jardiniers</h1>
         <Link
           href="/favorites"
           className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
           title="See my favorites"
         >
-          Favorites ({favorites.length})
+          Favoris ({favorites.length})
         </Link>
       </div>
 
@@ -188,12 +185,12 @@ export default function GardenersList() {
           onChange={(e) => setKind(e.target.value)}
           className="px-4 py-2 rounded-full border border-gray-300 text-sm text-gray-700"
         >
-          <option value="">Type of gardening</option>
-          <option value="vegetable">Vegetable garden</option>
-          <option value="flowers">Flowers</option>
+          <option value="">Types de jardinage</option>
+          <option value="vegetable">Potager</option>
+          <option value="flowers">Fleurs</option>
           <option value="permaculture">Permaculture</option>
-          <option value="learning">Learn gardening</option>
-          <option value="mowing">Mowing</option>
+          <option value="learning">Apprendre le jardinage</option>
+          <option value="mowing">Tonte de pelouse</option>
         </select>
 
         <button
