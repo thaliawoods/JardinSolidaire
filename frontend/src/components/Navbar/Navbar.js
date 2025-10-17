@@ -13,12 +13,10 @@ export default function Navbar() {
   const [loadingMe, setLoadingMe] = useState(true);
 
   const user = me?.user ?? null;
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const hasOwner = !!user?.proprietaire && (user.proprietaire.published ?? true);
-  const hasGardener =
-    !!user?.jardinier && (user.jardinier.published ?? true);
+  const hasGardener = !!user?.jardinier && (user.jardinier.published ?? true);
 
   const ownerCTA = useMemo(() => {
     if (!user) return null;
@@ -38,11 +36,9 @@ export default function Navbar() {
     let alive = true;
 
     async function hydrate() {
-      if (!token) {
-        setLoadingMe(false);
-        return;
-      }
+      if (!token) { setLoadingMe(false); return; }
       try {
+        // ✅ backticks + proper Authorization header
         const res = await fetch(`${API_BASE}/api/me`, {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
@@ -50,9 +46,8 @@ export default function Navbar() {
         const data = await res.json();
         if (!alive) return;
 
-        if (res.ok && data?.user) {
-          setMe(data);
-        } else {
+        if (res.ok && data?.user) setMe(data);
+        else {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           setMe(null);
@@ -65,9 +60,7 @@ export default function Navbar() {
     }
 
     hydrate();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [token]);
 
   function handleLogout() {
@@ -91,12 +84,12 @@ export default function Navbar() {
             {!loadingMe && !user && (
               <>
                 <Link href="/login">
-                  <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+                  <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full">
                     Se connecter
                   </button>
                 </Link>
                 <Link href="/register">
-                  <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+                  <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full">
                     S’inscrire
                   </button>
                 </Link>
@@ -107,7 +100,7 @@ export default function Navbar() {
               <>
                 {ownerCTA && (
                   <Link href={ownerCTA.href}>
-                    <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+                    <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg">
                       {ownerCTA.label}
                     </button>
                   </Link>
@@ -115,13 +108,13 @@ export default function Navbar() {
 
                 {gardenerCTA && (
                   <Link href={gardenerCTA.href}>
-                    <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
+                    <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg">
                       {gardenerCTA.label}
                     </button>
                   </Link>
                 )}
 
-                <span className="hidden md:inline-block text-sm bg-white/20 px-2 py-1 rounded">
+                <span className="hidden md:inline-block text-sm bg-white/20 px-3 py-1 rounded-full">
                   Connecté&nbsp;: {user.prenom || user.email}
                 </span>
               </>
@@ -145,96 +138,40 @@ export default function Navbar() {
       {menuOpen && (
         <div className="bg-green-600 w-full absolute top-16 left-0 border-t border-white/20">
           <ul className="flex flex-col space-y-2 p-4 text-white">
-            {!user && (
+            {!user ? (
               <>
                 <li>
-                  <Link
-                    href="/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
+                  <Link href="/login" onClick={() => setMenuOpen(false)} className="block">
                     Se connecter
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/signup"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
+                  <Link href="/signup" onClick={() => setMenuOpen(false)} className="block">
                     S’inscrire
                   </Link>
                 </li>
               </>
-            )}
-
-            {user && (
+            ) : (
               <>
                 {ownerCTA && (
                   <li>
-                    <Link
-                      href={ownerCTA.href}
-                      onClick={() => setMenuOpen(false)}
-                      className="block font-semibold"
-                    >
+                    <Link href={ownerCTA.href} onClick={() => setMenuOpen(false)} className="block font-semibold">
                       {ownerCTA.label}
                     </Link>
                   </li>
                 )}
-
                 {gardenerCTA && (
                   <li>
-                    <Link
-                      href={gardenerCTA.href}
-                      onClick={() => setMenuOpen(false)}
-                      className="block font-semibold"
-                    >
+                    <Link href={gardenerCTA.href} onClick={() => setMenuOpen(false)} className="block font-semibold">
                       {gardenerCTA.label}
                     </Link>
                   </li>
                 )}
-
-                <li>
-                  <Link
-                    href="/profile"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
-                    Mon profil
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/messages"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
-                    Ma messagerie
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/bookings"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
-                    Réservations
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/favorites"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
-                    Mes favoris
-                  </Link>
-                </li>
-                <li>
-                  <button onClick={handleLogout} className="block text-left w-full">
-                    Déconnexion
-                  </button>
-                </li>
+                <li><Link href="/profile" onClick={() => setMenuOpen(false)} className="block">Mon profil</Link></li>
+                <li><Link href="/messages" onClick={() => setMenuOpen(false)} className="block">Ma messagerie</Link></li>
+                <li><Link href="/bookings" onClick={() => setMenuOpen(false)} className="block">Réservations</Link></li>
+                <li><Link href="/favorites" onClick={() => setMenuOpen(false)} className="block">Mes favoris</Link></li>
+                <li><button onClick={handleLogout} className="block text-left w-full">Déconnexion</button></li>
               </>
             )}
           </ul>

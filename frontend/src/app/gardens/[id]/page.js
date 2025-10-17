@@ -5,6 +5,10 @@ import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
+// Brand tokens (match navbar)
+const BRAND_GREEN = '#16a34a'; // tailwind green-600
+const BRAND_PINK  = '#E3107D'; // navbar CTA pink
+
 function normalizeGarden(payload) {
   if (!payload) return null;
 
@@ -36,13 +40,9 @@ function normalizeGarden(payload) {
             address: payload.owner.address ?? payload.owner.adresse ?? null,
             averageRating: payload.owner.averageRating ?? payload.owner.note ?? null,
             intro: payload.owner.bio ?? payload.owner.presentation ?? null,
-
-            // possible profile id fields if your API already provides them
             ownerId: payload.owner.ownerId ?? payload.owner.id_owner ?? payload.owner.idProprietaire ?? null,
           }
         : null,
-
-      // sometimes the garden payload carries a separate demo/owner profile id
       demoOwnerId: payload.ownerProfileId ?? payload.ownerDemoId ?? payload.proprietaireDemoId ?? null,
     };
   }
@@ -67,7 +67,6 @@ function normalizeGarden(payload) {
           address: payload.owner.adresse ?? null,
           averageRating: payload.owner.note ?? null,
           intro: payload.owner.presentation ?? null,
-
           ownerId: payload.owner.id_proprietaire ?? null,
         }
       : null,
@@ -89,7 +88,7 @@ export default function GardenDetailPage({ params }) {
         setLoading(true);
         setError('');
 
-        // Try EN route, then legacy FR route
+        // ✅ template strings fixed
         let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: 'no-store' });
         if (!res.ok) {
           res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
@@ -155,21 +154,23 @@ export default function GardenDetailPage({ params }) {
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
-        <h1 className="text-2xl font-bold text-green-800 mb-4">{garden.title}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-green-700 mb-5">
+          {garden.title}
+        </h1>
 
         {Array.isArray(garden.photos) && garden.photos.length > 0 && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={garden.photos[0]}
             alt={garden.title || 'Photo de jardin'}
-            className="w-full h-56 object-cover rounded-xl mb-6"
+            className="w-full h-56 md:h-72 lg:h-80 object-cover rounded-2xl mb-6"
           />
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <section className="lg:col-span-2">
             <Card title="Garden information">
-              <div className="mt-3 space-y-1 text-sm text-gray-700">
+              <div className="mt-3 space-y-1.5 text-sm text-gray-700">
                 <p>{garden.description}</p>
                 <p><strong>Address:</strong> {garden.address || '—'}</p>
                 <p><strong>Kind:</strong> {garden.kind || '—'}</p>
@@ -205,7 +206,8 @@ export default function GardenDetailPage({ params }) {
                   {ownerProfileId && (
                     <Link
                       href={`/owners/${ownerProfileId}`}
-                      className="inline-block mt-1 px-4 py-2 rounded-md bg-[#E3107D] text-white hover:bg-[#c30c6a] w-max"
+                      className="inline-block mt-1 px-4 py-2 rounded-full text-white"
+                      style={{ backgroundColor: BRAND_PINK }}
                     >
                       View profile
                     </Link>
@@ -228,10 +230,17 @@ export default function GardenDetailPage({ params }) {
   );
 }
 
+/** Soft green card using same navbar green, but transparent */
 function Card({ title, children }) {
   return (
-    <div className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
-      <h2 className="text-lg font-semibold">{title}</h2>
+    <div
+      className="rounded-2xl p-6"
+      style={{
+        backgroundColor: 'rgba(22,163,74,0.08)', // BRAND_GREEN @ 8% opacity
+        border: '1px solid rgba(22,163,74,0.15)', // subtle ring
+      }}
+    >
+      <h2 className="text-lg font-semibold text-green-800">{title}</h2>
       {children}
     </div>
   );
