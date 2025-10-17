@@ -16,8 +16,7 @@ export default function ContactPage() {
 
   async function onSubmit(e) {
     e.preventDefault();
-    setOk('');
-    setErr('');
+    setOk(''); setErr('');
     try {
       setSubmitting(true);
       const res = await fetch(`${API_BASE}/api/contact`, {
@@ -34,10 +33,7 @@ export default function ContactPage() {
       }
 
       setOk('Your message has been sent. Thank you! ✅');
-      setName('');
-      setEmail('');
-      setSubject('');
-      setMessage('');
+      setName(''); setEmail(''); setSubject(''); setMessage('');
       setSubmitting(false);
     } catch {
       setErr('network_error');
@@ -57,7 +53,7 @@ export default function ContactPage() {
         <h1 className="text-3xl font-bold text-green-800 mb-6">Contact</h1>
 
         {!!errText && (
-          <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
             {errText}
           </div>
         )}
@@ -67,64 +63,75 @@ export default function ContactPage() {
           </div>
         )}
 
-        <form className="space-y-5" onSubmit={onSubmit}>
-          <div>
-            <label className="block text-sm font-medium mb-1">Nom</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Jane Doe"
-              required
-            />
-          </div>
+        <section
+          className="rounded-2xl p-6 shadow-sm"
+          style={{
+            backgroundColor: 'rgba(22,163,74,0.08)',  
+            border: '1px solid rgba(22,163,74,0.15)',  
+          }}
+        >
+          <form className="space-y-5" onSubmit={onSubmit}>
+            <div>
+              <label className="block text-sm font-medium mb-1">Nom</label>
+              <input
+                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Jane Doe"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="jane@example.com"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="jane@example.com"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Sujet</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="À propos d'un jardin ou d'un jardinier…"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Sujet</label>
+              <input
+                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="À propos d'un jardin ou d'un jardinier…"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Message</label>
-            <textarea
-              className="w-full border rounded px-3 py-2"
-              rows={6}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Dites-nous en plus…"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Message</label>
+              <textarea
+                rows={6}
+                className="w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Dites-nous en plus…"
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-full bg-[#E3107D] text-white px-5 py-2 font-semibold disabled:opacity-60"
-          >
-            {submitting ? 'Envoi…' : 'Envoyer le message'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-full px-5 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
+            >
+              {submitting ? 'Envoi…' : 'Envoyer le message'}
+            </button>
+          </form>
+        </section>
 
         <p className="mt-6 text-sm text-gray-600">
-          Vous préférez par email ? Écrivez à <a href="mailto:hello@jardinsolidaire.test" className="text-[#E3107D] underline">hello@jardinsolidaire.test</a>
+          Vous préférez par email ? Écrivez à{' '}
+          <a href="mailto:hello@jardinsolidaire.test" className="text-pink-500 hover:text-pink-600 underline">
+            hello@jardinsolidaire.test
+          </a>
         </p>
       </main>
     </div>

@@ -10,12 +10,11 @@ import {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
-/* --------------------- media helpers --------------------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
   if (s.startsWith('http') || s.startsWith('data:')) return s;
-  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s; // local public asset
+  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s; 
   if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
   if (s.startsWith('/')) return s;
   const clean = s.replace(/^\.?\/*/, '');
@@ -59,23 +58,19 @@ function gardenCoverPlaceholder(title = '') {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/* -------- fetch the affiliated cover from the API when missing -------- */
 async function fetchGardenCoverById(id) {
-  // Try EN, then FR endpoint
   let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: 'no-store' });
   if (!res.ok) res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
   if (!res.ok) return null;
 
   const data = await res.json();
 
-  // Try common field names where the cover might be stored
   const candidates = [
     data.cover, data.image, data.mainImage, data.coverImage, data.photo_couverture,
     Array.isArray(data.images) ? data.images[0] : null,
     Array.isArray(data.photos) ? data.photos[0] : null,
   ].filter(Boolean);
 
-  // If an object with url field
   for (const c of candidates) {
     if (typeof c === 'string') return resolveMedia(c);
     if (c && typeof c === 'object') {
@@ -87,13 +82,11 @@ async function fetchGardenCoverById(id) {
   return null;
 }
 
-/* ------------------------------ page ------------------------------ */
 export default function FavoritesPage() {
   const [gardens, setGardens] = useState([]);
   const [gardeners, setGardeners] = useState([]);
 
   useEffect(() => {
-    // Load from storage
     const storedGardens = getFavGardens().map(g => ({
       ...g,
       cover: resolveMedia(g.cover) || null,
@@ -106,7 +99,6 @@ export default function FavoritesPage() {
     setGardens(storedGardens);
     setGardeners(storedGardeners);
 
-    // For any garden missing a cover, hydrate from API
     (async () => {
       const needs = storedGardens.filter(g => !g.cover);
       if (needs.length === 0) return;
@@ -140,7 +132,6 @@ export default function FavoritesPage() {
           )}
         </div>
 
-        {/* Gardens */}
         <section className="mt-8">
           <h2 className="text-xl font-semibold text-green-900 mb-4">Jardins</h2>
           {gardens.length === 0 ? (
@@ -151,9 +142,6 @@ export default function FavoritesPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {gardens.map((g) => {
-                // 1) affiliated cover from API/local if present
-                // 2) local default.jpg if that fails
-                // 3) pretty SVG as last resort
                 const secondFallback = gardenCoverPlaceholder(g.title || `Jardin #${g.id}`);
                 const firstChoice = g.cover || '/assets/default.jpg';
                 return (
@@ -194,7 +182,6 @@ export default function FavoritesPage() {
           )}
         </section>
 
-        {/* Gardeners */}
         <section className="mt-10">
           <h2 className="text-xl font-semibold text-green-900 mb-4">Jardiniers</h2>
           {gardeners.length === 0 ? (

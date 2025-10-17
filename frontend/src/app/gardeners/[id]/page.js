@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
+const BRAND_GREEN = '#16a34a';
 
 function resolveMedia(u) {
   if (!u) return null;
@@ -25,10 +26,7 @@ function greenPlaceholder(first, last) {
   const txt = initials(first, last);
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/>
-  </linearGradient></defs>
-  <rect width="256" height="256" rx="24" ry="24" fill="url(#g)"/>
+  <rect width="256" height="256" rx="24" ry="24" fill="${BRAND_GREEN}"/>
   <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
         font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
 </svg>`;
@@ -70,8 +68,8 @@ export default function GardenerDetailPage({ params }) {
         const data = await res.json();
         if (!alive) return;
         setGardener(normalizeGardener(data));
-      } catch (e) {
-        if (alive) { setErr("Impossible de charger le jardinier."); setGardener(null); }
+      } catch (_e) {
+        if (alive) { setErr('Impossible de charger le jardinier.'); setGardener(null); }
       } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
@@ -83,25 +81,59 @@ export default function GardenerDetailPage({ params }) {
   );
 
   if (loading) {
-    return <main className="max-w-3xl mx-auto px-4 py-8"><div className="h-24 bg-gray-100 rounded-2xl animate-pulse mb-4"/><div className="h-40 bg-gray-100 rounded-2xl animate-pulse"/></main>;
-  }
-  if (err || !gardener) {
     return (
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 mb-4">
-          {err || "Impossible de charger le jardinier."}
-        </div>
-        <Link href="/gardeners" className="inline-block px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700">← Retour à la liste</Link>
+        <div className="h-24 bg-gray-100 rounded-2xl animate-pulse mb-4" />
+        <div className="h-40 bg-gray-100 rounded-2xl animate-pulse" />
       </main>
     );
   }
 
-  const avatarSrc = gardener.avatarUrl || fallback; // local asset path wins if provided
+  if (err || !gardener) {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-8">
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 mb-4">
+          {err || 'Impossible de charger le jardinier.'}
+        </div>
+        <Link
+          href="/gardeners"
+          aria-label="Retour à la liste des jardiniers"
+          className="
+            inline-flex items-center gap-2
+            rounded-full px-4 py-2
+            bg-white/80 text-[#16a34a]
+            border border-[rgba(22,163,74,0.28)]
+            hover:bg-[rgba(22,163,74,0.06)]
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
+            shadow-sm transition
+          "
+        >
+          <span aria-hidden>←</span> Retour à la liste
+        </Link>
+      </main>
+    );
+  }
+
+  const avatarSrc = gardener.avatarUrl || fallback;
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <Link href="/gardeners" className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700">← Jardiniers</Link>
+        <Link
+          href="/gardeners"
+          aria-label="Retour aux jardiniers"
+          className="
+            inline-flex items-center gap-2
+            rounded-full px-4 py-2
+            bg-white/80 text-[#16a34a]
+            border border-[rgba(22,163,74,0.28)]
+            hover:bg-[rgba(22,163,74,0.06)]
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
+            shadow-sm transition
+          "
+        >
+          <span aria-hidden>←</span> Jardiniers
+        </Link>
       </div>
 
       <section className="flex items-center gap-4 mb-6">
@@ -109,36 +141,83 @@ export default function GardenerDetailPage({ params }) {
         <img
           src={avatarSrc}
           alt={`${gardener.firstName} ${gardener.lastName}`}
-          className="w-20 h-20 rounded-full object-cover border-4 border-green-300 shadow"
+          className="w-20 h-20 rounded-full object-cover shadow"
+          style={{ border: '4px solid rgba(22,163,74,0.35)' }}
           onError={(e) => { e.currentTarget.src = fallback; }}
         />
         <div>
-          <h1 className="text-xl font-semibold text-green-800">{gardener.firstName} {gardener.lastName}</h1>
+          <h1 className="text-xl font-semibold text-green-800">
+            {gardener.firstName} {gardener.lastName}
+          </h1>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Jardinier</span>
-            {gardener.rating != null && (<span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">★ {Number(gardener.rating).toFixed(1)}</span>)}
-            {!!gardener.address && (<span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">📍 {gardener.address}</span>)}
+            <span
+              className="text-xs px-2 py-1 rounded-full"
+              style={{ backgroundColor: 'rgba(22,163,74,0.12)', color: BRAND_GREEN }}
+            >
+              Jardinier
+            </span>
+            {gardener.rating != null && (
+              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+                ★ {Number(gardener.rating).toFixed(1)}
+              </span>
+            )}
+            {!!gardener.address && (
+              <span
+                className="text-xs px-2 py-1 rounded-full"
+                style={{ backgroundColor: 'white', border: '1px solid rgba(22,163,74,0.25)', color: BRAND_GREEN }}
+              >
+                📍 {gardener.address}
+              </span>
+            )}
           </div>
         </div>
       </section>
 
-      <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100 shadow-sm space-y-4">
-        <p className="text-gray-700"><strong className="text-gray-800">Description&nbsp;:</strong> {gardener.intro || '—'}</p>
+      <section
+        className="rounded-2xl p-6 shadow-sm space-y-4"
+        style={{
+          backgroundColor: 'rgba(22,163,74,0.08)',
+          border: '1px solid rgba(22,163,74,0.15)',
+        }}
+      >
+        <p className="text-gray-700">
+          <strong className="text-gray-800">Description&nbsp;:</strong> {gardener.intro || '—'}
+        </p>
+
         <div className="flex flex-wrap gap-3">
-          <p className="text-gray-700"><strong className="text-gray-800">Téléphone&nbsp;:</strong> {gardener.phone || '—'}</p>
-          <p className="text-gray-700"><strong className="text-gray-800">Note&nbsp;:</strong> {gardener.rating ?? '—'}★</p>
+          <p className="text-gray-700">
+            <strong className="text-gray-800">Téléphone&nbsp;:</strong> {gardener.phone || '—'}
+          </p>
+          <p className="text-gray-700">
+            <strong className="text-gray-800">Note&nbsp;:</strong> {gardener.rating ?? '—'}★
+          </p>
         </div>
+
         {!!gardener.skills?.length && (
           <div>
             <p className="font-medium text-gray-800 mb-2">Compétences :</p>
             <div className="flex flex-wrap gap-2">
-              {gardener.skills.map((s, i) => <span key={i} className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">{typeof s === 'string' ? s : (s?.nom ?? '—')}</span>)}
+              {gardener.skills.map((s, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-1 text-xs rounded-full"
+                  style={{ backgroundColor: 'rgba(22,163,74,0.12)', color: BRAND_GREEN }}
+                >
+                  {typeof s === 'string' ? s : (s?.nom ?? '—')}
+                </span>
+              ))}
             </div>
           </div>
         )}
-        <div className="pt-2 flex flex-wrap gap-3">
-          <Link href="/gardeners" className="px-4 py-2 rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50">Voir d’autres jardiniers</Link>
-          <Link href="/gardeners" className="px-4 py-2 rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50">Voir d’autres jardiniers</Link>
+
+        <div className="pt-2">
+          <Link
+            href="/messages"
+            aria-label="Envoyer un message"
+            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-white shadow-sm transition bg-pink-500 hover:bg-pink-600"
+          >
+            Envoyer un message
+          </Link>
         </div>
       </section>
     </main>

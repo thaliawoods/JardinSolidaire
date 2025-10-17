@@ -7,7 +7,6 @@ const router = express.Router();
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-/* -------------------- auth middleware -------------------- */
 function auth(req, res, next) {
   try {
     const header = String(req.headers.authorization || '');
@@ -33,7 +32,6 @@ function auth(req, res, next) {
   }
 }
 
-/* -------------------- small helpers -------------------- */
 function cleanString(x, { allowEmpty = true } = {}) {
   if (x == null) return allowEmpty ? '' : null;
   const s = String(x).trim();
@@ -55,15 +53,9 @@ function asStringArray(arr) {
   );
 }
 
-/* -------------------------------------------------------- */
 
 router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-/**
- * GET /me
- * Returns the authenticated user + attached Gardener/Owner profiles (if any)
- * Uses ENGLISH keys in the response to match the frontend.
- */
 router.get('/', auth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -87,7 +79,7 @@ router.get('/', auth, async (req, res) => {
             avatarUrl: true,
             isOnline: true,
             location: true,
-            skills: true,            // string[]
+            skills: true,          
             yearsExperience: true,
             intro: true,
             totalReviews: true,
@@ -144,10 +136,6 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-/**
- * POST /me/profile  (update basic account info)
- * Body: { firstName, lastName, phone?, address?, bio?, avatarUrl? }
- */
 router.post('/profile', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);
@@ -187,12 +175,6 @@ router.post('/profile', auth, async (req, res) => {
   }
 });
 
-/**
- * POST /me/gardener  (upsert)
- * Accepts EN keys (preferred) and FR aliases (mapped to EN):
- * EN: firstName, lastName, location, skills[], yearsExperience, intro, avatarUrl?, isOnline?, totalReviews?, rating?, published?
- * FR: prenom, nom, localisation, competences[], experienceAnnees, presentation
- */
 router.post('/gardener', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);
@@ -259,10 +241,6 @@ router.post('/gardener', auth, async (req, res) => {
   }
 });
 
-/**
- * POST /me/gardener/publish
- * Body: { published: boolean }
- */
 router.post('/gardener/publish', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);
@@ -279,10 +257,6 @@ router.post('/gardener/publish', auth, async (req, res) => {
   }
 });
 
-/**
- * POST /me/owner  (upsert)
- * English keys
- */
 router.post('/owner', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);
@@ -328,10 +302,6 @@ router.post('/owner', auth, async (req, res) => {
   }
 });
 
-/**
- * POST /me/owner/publish
- * Body: { published: boolean }
- */
 router.post('/owner/publish', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);

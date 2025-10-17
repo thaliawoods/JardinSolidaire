@@ -38,7 +38,6 @@ export default function Navbar() {
     async function hydrate() {
       if (!token) { setLoadingMe(false); return; }
       try {
-        // ✅ backticks + proper Authorization header
         const res = await fetch(`${API_BASE}/api/me`, {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",

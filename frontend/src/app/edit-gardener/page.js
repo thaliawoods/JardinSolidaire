@@ -25,11 +25,10 @@ export default function EditGardenerPage() {
     intro: '',
     location: '',
     yearsExperience: '',
-    skills: [], // string[]
+    skills: [],
   });
   const [newSkill, setNewSkill] = useState('');
 
-  /* ---------- load selectable skills (optional suggestions) ---------- */
   useEffect(() => {
     (async () => {
       try {
@@ -52,16 +51,14 @@ export default function EditGardenerPage() {
     })();
   }, []);
 
-  /* ---------------------- prefill from /api/me ----------------------- */
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
         setErr('');
-        const me = await apiFetch('/api/me'); // { user: {..., gardener: {...}} }
+        const me = await apiFetch('/api/me');
         const g = me?.user?.gardener;
         if (!g) {
-          // no gardener yet → go to creation page (or keep here as blank)
           setLoading(false);
           return;
         }
@@ -84,7 +81,6 @@ export default function EditGardenerPage() {
     })();
   }, []);
 
-  /* ----------------------------- helpers ----------------------------- */
   const normalize = (s) => s.trim().replace(/\s+/g, ' ');
   const alreadyHas = useMemo(
     () => (name) => formData.skills.map((x) => x.toLowerCase()).includes(name.toLowerCase()),
@@ -106,7 +102,6 @@ export default function EditGardenerPage() {
     setFormData((p) => ({ ...p, [name]: value }));
   };
 
-  /* ------------------------------ save ------------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -144,7 +139,6 @@ export default function EditGardenerPage() {
     }
   };
 
-  /* ----------------------------- render ------------------------------ */
   return (
     <div className="min-h-screen p-6 bg-white">
       <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">Modifier mon profil jardinier</h1>
@@ -159,149 +153,158 @@ export default function EditGardenerPage() {
         <Skeleton />
       ) : (
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Prénom</label>
+          <section
+            className="rounded-2xl p-6 border shadow-sm"
+            style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Prénom</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                  placeholder="Jane"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nom</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                  placeholder="Doe"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700">Adresse</label>
               <input
                 type="text"
-                name="firstName"
-                value={formData.firstName}
+                name="location"
+                value={formData.location}
                 onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
+                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                placeholder="Paris"
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <textarea
+                name="intro"
+                value={formData.intro}
+                onChange={handleChange}
+                rows={4}
+                className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                placeholder="Parlez de vous, de vos services, disponibilités…"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nom</label>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700">Nombre d’années d’expérience</label>
               <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
+                type="number"
+                name="yearsExperience"
+                min="0"
+                value={formData.yearsExperience}
                 onChange={handleChange}
-                className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-                required
+                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                placeholder="Ex. 3"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Adresse</label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-              placeholder="Paris"
-            />
-          </div>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700">Compétences</label>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
-            <textarea
-              name="intro"
-              value={formData.intro}
-              onChange={handleChange}
-              rows={4}
-              className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-              required
-            />
-          </div>
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
+                  placeholder="ex: arrosage, compost, potager…"
+                  className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                />
+                <button
+                  type="button"
+                  onClick={addSkill}
+                  className="shrink-0 px-4 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
+                >
+                  Ajouter
+                </button>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre d’années d’expérience</label>
-            <input
-              type="number"
-              name="yearsExperience"
-              min="0"
-              value={formData.yearsExperience}
-              onChange={handleChange}
-              className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-            />
-          </div>
-
-          {/* Compétences */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Compétences</label>
-
-            <div className="mt-2 flex gap-2">
-              <input
-                type="text"
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
-                placeholder="ex: arrosage, compost, potager…"
-                className="w-full border rounded px-3 py-2 text-gray-700"
-              />
-              <button
-                type="button"
-                onClick={addSkill}
-                className="shrink-0 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded"
-              >
-                Ajouter
-              </button>
-            </div>
-
-            {formData.skills.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {formData.skills.map((s) => (
-                  <span
-                    key={s}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm"
-                  >
-                    {s}
-                    <button
-                      type="button"
-                      onClick={() => removeSkill(s)}
-                      className="ml-1 rounded-full border border-green-800 w-5 h-5 leading-5 text-center"
-                      aria-label={`retirer ${s}`}
-                      title={`retirer ${s}`}
+              {formData.skills.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.skills.map((s) => (
+                    <span
+                      key={s}
+                      className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm"
+                      style={{ backgroundColor: 'rgba(22,163,74,0.12)', color: '#16a34a' }}
                     >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+                      {s}
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(s)}
+                        className="ml-1 rounded-full w-5 h-5 leading-5 text-center border"
+                        style={{ borderColor: 'rgba(22,163,74,0.35)', color: '#16a34a' }}
+                        aria-label={`retirer ${s}`}
+                        title={`retirer ${s}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
 
-            {/* optional suggestions list */}
-            {skillsList.length > 0 && (
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {skillsList.map((comp) => {
-                  const name = comp.name ?? comp.nom ?? '';
-                  const checked = formData.skills.some(
-                    (s) => s.toLowerCase() === name.toLowerCase()
-                  );
-                  return (
-                    <label key={comp.id ?? name} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          checked
-                            ? removeSkill(name)
-                            : setFormData((p) => ({ ...p, skills: [...p.skills, name] }))
-                        }
-                      />
-                      <span>{name}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+              {skillsList.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {skillsList.map((comp) => {
+                    const name = comp.name ?? comp.nom ?? '';
+                    const checked = formData.skills.some(
+                      (s) => s.toLowerCase() === name.toLowerCase()
+                    );
+                    return (
+                      <label key={comp.id ?? name} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            checked
+                              ? removeSkill(name)
+                              : setFormData((p) => ({ ...p, skills: [...p.skills, name] }))
+                          }
+                        />
+                        <span>{name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
 
           <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
               disabled={submitting}
-              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-6 py-2 rounded-full"
+              className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
             >
               {submitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
             <Link
               href="/profile"
-              className="px-6 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="px-6 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
             >
               Annuler
             </Link>
@@ -312,7 +315,6 @@ export default function EditGardenerPage() {
   );
 }
 
-/* --------------------------- tiny skeleton --------------------------- */
 function Skeleton() {
   return (
     <div className="max-w-3xl mx-auto animate-pulse space-y-4">

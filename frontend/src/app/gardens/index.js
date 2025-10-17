@@ -106,11 +106,9 @@ export default function GardensList() {
 
   return (
     <div className="min-h-screen px-6 py-10 bg-white">
-      {/* Header row */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl md:text-4xl font-bold text-green-700">Nos Jardins</h1>
 
-        {/* Favoris pill -> brand green like navbar */}
         <Link
           href="/favorites"
           className="px-4 py-2 rounded-full bg-green-600 text-white hover:bg-green-700 transition"
@@ -120,9 +118,7 @@ export default function GardensList() {
         </Link>
       </div>
 
-      {/* Filters */}
       <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
-        {/* search */}
         <label className="relative w-full lg:w-[32%]">
           <span className="sr-only">Rechercher un jardin</span>
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
@@ -135,7 +131,6 @@ export default function GardensList() {
           />
         </label>
 
-        {/* type select */}
         <label className="w-full lg:w-[24%]">
           <span className="sr-only">Type de jardin</span>
           <select
@@ -151,7 +146,6 @@ export default function GardensList() {
           </select>
         </label>
 
-        {/* reset */}
         <button
           onClick={reset}
           className="px-6 py-2.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition w-full lg:w-auto"
@@ -160,16 +154,13 @@ export default function GardensList() {
         </button>
       </div>
 
-      {/* status */}
       {loading && <p className="text-center text-gray-500" aria-live="polite">Loading…</p>}
       {!!err && <p className="text-center text-red-600 mb-4" role="alert">{err}</p>}
 
-      {/* Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
         {filtered.map((g) => (
           <Link key={g.id} href={`/gardens/${g.id}`} className="block group">
             <div className="bg-green-100 rounded-2xl overflow-hidden shadow-md ring-1 ring-black/5 hover:shadow-lg transition">
-              {/* media */}
               <div className="h-48 overflow-hidden">
                 {g.photos.length > 0 ? (
                   <Slider dots arrows={false} infinite speed={400} slidesToShow={1} slidesToScroll={1}>
@@ -193,7 +184,6 @@ export default function GardensList() {
                 )}
               </div>
 
-              {/* content */}
               <div className="px-4 py-3 text-sm text-gray-700">
                 <div className="flex justify-between items-start mb-1">
                   <h2 className="font-bold text-base text-green-900">{g.title}</h2>

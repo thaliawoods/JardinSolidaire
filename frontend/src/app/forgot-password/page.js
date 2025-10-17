@@ -1,4 +1,3 @@
-// frontend/src/app/mdp_oublier/page.js  (you can also move to /forgot-password/page.js)
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -37,7 +36,6 @@ export default function ForgotPasswordPage() {
 
       if (res.ok && data?.success) {
         localStorage.setItem('email', email);
-        // keep the current French route until you rename the reset page
         window.location.href = '/modifier_mdp';
         return;
       }

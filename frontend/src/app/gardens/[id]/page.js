@@ -4,14 +4,11 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-
-// Brand tokens (match navbar)
-const BRAND_GREEN = '#16a34a'; // tailwind green-600
-const BRAND_PINK  = '#E3107D'; // navbar CTA pink
+const BRAND_GREEN = '#16a34a';
+const BRAND_PINK  = '#E3107D';
 
 function normalizeGarden(payload) {
   if (!payload) return null;
-
   const photosRaw = payload.photos ?? [];
   const photos = Array.isArray(photosRaw)
     ? photosRaw
@@ -40,7 +37,12 @@ function normalizeGarden(payload) {
             address: payload.owner.address ?? payload.owner.adresse ?? null,
             averageRating: payload.owner.averageRating ?? payload.owner.note ?? null,
             intro: payload.owner.bio ?? payload.owner.presentation ?? null,
-            ownerId: payload.owner.ownerId ?? payload.owner.id_owner ?? payload.owner.idProprietaire ?? null,
+            ownerId:
+              payload.owner.ownerId ??
+              payload.owner.id_owner ??
+              payload.owner.idProprietaire ??
+              payload.owner.id_proprietaire ??
+              null,
           }
         : null,
       demoOwnerId: payload.ownerProfileId ?? payload.ownerDemoId ?? payload.proprietaireDemoId ?? null,
@@ -76,9 +78,9 @@ function normalizeGarden(payload) {
 
 export default function GardenDetailPage({ params }) {
   const { id } = params || {};
-  const [garden, setGarden] = useState(null);
+  const [garden, setGarden]   = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState('');
+  const [error, setError]     = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -88,20 +90,14 @@ export default function GardenDetailPage({ params }) {
         setLoading(true);
         setError('');
 
-        // ✅ template strings fixed
         let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: 'no-store' });
-        if (!res.ok) {
-          res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
-        }
+        if (!res.ok) res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
         if (alive) setGarden(normalizeGarden(data));
-      } catch (e) {
-        if (alive) {
-          setError("Couldn't load this garden.");
-          setGarden(null);
-        }
+      } catch {
+        if (alive) { setError("Couldn't load this garden."); setGarden(null); }
       } finally {
         if (alive) setLoading(false);
       }
@@ -143,17 +139,39 @@ export default function GardenDetailPage({ params }) {
 
   const owner = garden.owner;
 
-  // Determine a real Owner profile id if available
+  // Only proprietaire-like ids
   const ownerProfileId =
     garden.demoOwnerId ??
     owner?.ownerId ??
     owner?.id_owner ??
     owner?.idProprietaire ??
+    owner?.id_proprietaire ??
     null;
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
+        {/* NEW: Retour button */}
+{/* Softer pill, same green tint as navbar */}
+<div className="mb-4">
+  <Link
+    href="/gardens"
+    aria-label="Retour aux jardins"
+    className="
+      inline-flex items-center gap-2 rounded-full px-4 py-2
+      bg-white/80 text-[#16a34a]
+      border border-[rgba(22,163,74,0.28)]
+      hover:bg-[rgba(22,163,74,0.06)]
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
+      shadow-sm transition
+    "
+  >
+    <span aria-hidden>←</span> Retour aux jardins
+  </Link>
+</div>
+
+
+
         <h1 className="text-3xl md:text-4xl font-bold text-green-700 mb-5">
           {garden.title}
         </h1>
@@ -187,7 +205,10 @@ export default function GardenDetailPage({ params }) {
               ) : (
                 <div className="mt-3 grid grid-cols-1 gap-3 text-sm text-gray-700">
                   <div className="flex items-center gap-3">
-                    <div className="h-14 w-14 rounded-full bg-gray-200 overflow-hidden">
+                    <div
+                      className="h-14 w-14 rounded-full overflow-hidden"
+                      style={{ border: `4px solid rgba(22,163,74,0.35)` }}
+                    >
                       {owner.avatarUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -209,7 +230,7 @@ export default function GardenDetailPage({ params }) {
                       className="inline-block mt-1 px-4 py-2 rounded-full text-white"
                       style={{ backgroundColor: BRAND_PINK }}
                     >
-                      View profile
+                      Voir le profil
                     </Link>
                   )}
                 </div>
@@ -230,14 +251,13 @@ export default function GardenDetailPage({ params }) {
   );
 }
 
-/** Soft green card using same navbar green, but transparent */
 function Card({ title, children }) {
   return (
     <div
       className="rounded-2xl p-6"
       style={{
-        backgroundColor: 'rgba(22,163,74,0.08)', // BRAND_GREEN @ 8% opacity
-        border: '1px solid rgba(22,163,74,0.15)', // subtle ring
+        backgroundColor: 'rgba(22,163,74,0.08)',
+        border: '1px solid rgba(22,163,74,0.15)',
       }}
     >
       <h2 className="text-lg font-semibold text-green-800">{title}</h2>
