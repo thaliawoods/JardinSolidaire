@@ -6,12 +6,6 @@ const router = express.Router();
 
 router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-/**
- * GET /gardeners
- * Optional query params:
- *  - q: text search on firstName/lastName/location
- *  - take, skip: pagination (defaults: 20, 0)
- */
 router.get('/', async (req, res) => {
   try {
     const take = Math.min(Math.max(parseInt(req.query.take ?? '20', 10), 1), 100);
@@ -69,10 +63,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * GET /gardeners/:id
- * Returns a single gardener with comments.
- */
 router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'invalid_id' });

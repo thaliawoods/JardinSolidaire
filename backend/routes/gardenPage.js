@@ -1,4 +1,3 @@
-// backend/routes/owners.js
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 
@@ -7,7 +6,6 @@ const router = express.Router();
 
 router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-// LIST: supports ?kind=&district=&skip=&take= (also accepts legacy ?type=&quartier=)
 router.get('/', async (req, res) => {
   try {
     const kind     = String(req.query.kind ?? req.query.type ?? '').trim() || undefined;
@@ -37,7 +35,7 @@ router.get('/', async (req, res) => {
         kind: true,
         intro: true,
         description: true,
-        _count: { select: { comments: true } }, // OwnerComment count
+        _count: { select: { comments: true } }, 
       },
     });
 
@@ -64,7 +62,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// DETAIL: include comments (OwnerComment)
 router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: 'invalid_id' });
@@ -102,7 +99,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// CREATE owner
 router.post('/', async (req, res) => {
   try {
     const {
@@ -145,7 +141,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// CREATE a comment for an owner
 router.post('/:id/comments', async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: 'invalid_id' });

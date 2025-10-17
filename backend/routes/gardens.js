@@ -6,14 +6,6 @@ const router = express.Router();
 
 router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-/**
- * GET /gardens
- * Query:
- *  - search  : text search on title/description/address
- *  - kind    : exact match on kind (ex: "potager", "fleurs")
- *  - take    : page size (default 20, max 100)
- *  - skip    : offset (default 0)
- */
 router.get('/', async (req, res) => {
   try {
     const search = String(req.query.search ?? '').trim();
@@ -77,11 +69,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * GET /gardens/:id
- * Returns garden details + owner (User) summary.
- * Also tries to find a matching Owner profile by first/last name (demo bridge).
- */
 router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'invalid_id' });

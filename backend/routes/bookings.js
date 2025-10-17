@@ -52,18 +52,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * POST /bookings
- * Body (English only):
- * {
- *   userId: number,
- *   gardenId: number,
- *   slotId?: number | null,
- *   bookedAt?: string | Date,
- *   status?: string,
- *   notes?: string
- * }
- */
+
 router.post('/', async (req, res) => {
   try {
     const {

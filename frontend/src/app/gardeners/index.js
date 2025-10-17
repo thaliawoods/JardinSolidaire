@@ -4,10 +4,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { getFavGardeners, addFavGardener, removeFavGardener } from '@/lib/favorites';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const API_BASE   = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
+const BRAND_GREEN = '#16a34a'; 
 
-/* ---------- utils ---------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -31,10 +31,7 @@ function greenPlaceholder(first, last) {
   const txt = initials(first, last);
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/>
-  </linearGradient></defs>
-  <rect width="256" height="256" rx="24" ry="24" fill="url(#g)"/>
+  <rect width="256" height="256" rx="24" fill="${BRAND_GREEN}"/>
   <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
         font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
 </svg>`;
@@ -67,7 +64,6 @@ function normalizeGardeners(raw) {
   });
 }
 
-/* ---------- component ---------- */
 export default function GardenersList() {
   const [gardeners, setGardeners] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -142,37 +138,36 @@ export default function GardenersList() {
 
   return (
     <main className="min-h-screen bg-white px-6 py-10">
-      {/* match Gardens page width */}
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-4">
           <h1 className="text-3xl font-bold text-green-800">Jardiniers</h1>
           <Link
             href="/favorites"
-            className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+            className="px-4 py-2 rounded-full text-white"
+            style={{ backgroundColor: BRAND_GREEN }}
           >
             Favoris ({favorites.length})
           </Link>
         </div>
 
-        {/* Filters — identical layout/widths to Gardens */}
         <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
-          {/* search */}
           <div className="relative w-full lg:w-[30%]">
-            <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+            <span className="absolute left-3 top-2.5 text-gray-400" aria-hidden>🔍</span>
             <input
               type="text"
               placeholder="Rechercher un·e jardinier·e…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-10 w-full pl-10 pr-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 text-sm text-gray-700"
+              aria-label="Rechercher un·e jardinier·e"
             />
           </div>
 
-          {/* minimum rating */}
           <select
             value={minRating}
             onChange={(e) => setMinRating(e.target.value)}
             className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
+            aria-label="Note minimale"
           >
             <option value="">Note minimale</option>
             <option value="5">5★</option>
@@ -182,11 +177,11 @@ export default function GardenersList() {
             <option value="3">3★</option>
           </select>
 
-          {/* kind / skill */}
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value)}
             className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
+            aria-label="Type de profil"
           >
             <option value="">Tous les profils</option>
             <option value="arrosage">Arrosage</option>
@@ -197,7 +192,7 @@ export default function GardenersList() {
 
           <button
             onClick={resetFilters}
-            className="h-10 px-5 rounded-full bg-[#E3107D] hover:bg-[#c30c6a] text-white transition w-full lg:w-auto"
+            className="h-10 px-5 rounded-full text-white w-full lg:w-auto transition bg-pink-500 hover:bg-pink-600"
           >
             Reset
           </button>
@@ -210,7 +205,7 @@ export default function GardenersList() {
           </div>
         )}
         {!!err && !loading && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 mb-6">
             {err}
           </div>
         )}
@@ -224,8 +219,17 @@ export default function GardenersList() {
             const src = g.avatarUrl || fallback;
             return (
               <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
-                <article className="flex bg-green-100 rounded-xl shadow p-4 hover:shadow-md transition">
-                  <div className="w-32 h-32 bg-green-300 rounded shadow relative overflow-hidden">
+                <article
+                  className="flex rounded-2xl p-4 hover:shadow transition"
+                  style={{
+                    backgroundColor: 'rgba(22,163,74,0.08)',
+                    border: '1px solid rgba(22,163,74,0.15)',
+                  }}
+                >
+                  <div
+                    className="w-32 h-32 rounded-2xl shadow relative overflow-hidden shrink-0"
+                    style={{ border: '4px solid rgba(22,163,74,0.35)' }}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
@@ -237,7 +241,7 @@ export default function GardenersList() {
                       type="button"
                       onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
                       className="absolute top-2 right-2 text-xl hover:scale-125 transition"
-                      aria-label="Add/remove from favorites"
+                      aria-label={favorites.includes(String(g.id)) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                     >
                       {favorites.includes(String(g.id))
                         ? <span className="text-pink-500">♥</span>
@@ -245,13 +249,13 @@ export default function GardenersList() {
                     </button>
                   </div>
 
-                  <div className="ml-6 flex flex-col justify-center">
-                    <p className="text-sm text-gray-600"><strong>Nom&nbsp;:</strong> {g.lastName}</p>
-                    <p className="text-sm text-gray-600"><strong>Prénom&nbsp;:</strong> {g.firstName}</p>
-                    <p className="text-sm text-gray-600"><strong>Description&nbsp;:</strong> {g.intro}</p>
-                    <p className="text-sm text-gray-600"><strong>Téléphone&nbsp;:</strong> {g.phone}</p>
-                    <p className="text-sm text-gray-600">📍 {g.address}</p>
-                    <p className="text-sm text-gray-600"><strong>Note&nbsp;:</strong> {g.rating ?? '—'}★</p>
+                  <div className="ml-6 flex flex-col justify-center gap-1.5">
+                    <p className="text-sm text-gray-700"><strong>Nom&nbsp;:</strong> {g.lastName}</p>
+                    <p className="text-sm text-gray-700"><strong>Prénom&nbsp;:</strong> {g.firstName}</p>
+                    <p className="text-sm text-gray-700"><strong>Description&nbsp;:</strong> {g.intro || '—'}</p>
+                    <p className="text-sm text-gray-700"><strong>Téléphone&nbsp;:</strong> {g.phone || '—'}</p>
+                    <p className="text-sm text-gray-700">📍 {g.address || '—'}</p>
+                    <p className="text-sm text-gray-700"><strong>Note&nbsp;:</strong> {g.rating ?? '—'}★</p>
                   </div>
                 </article>
               </Link>

@@ -4,10 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
-/**
- * Simple session hook backed by localStorage token + /api/me.
- * Returns { user, isAuthenticated, loading }.
- */
 export default function useSession() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
