@@ -1,3 +1,4 @@
+// frontend/src/app/login/page.js
 'use client';
 
 import { useState } from 'react';
@@ -14,7 +15,6 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-
     try {
       setSubmitting(true);
       const res = await fetch(`${API_BASE}/api/login`, {
@@ -22,7 +22,6 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -33,7 +32,6 @@ export default function LoginPage() {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-
       window.location.href = '/';
     } catch (err) {
       console.error(err);
@@ -52,7 +50,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-bold text-green-800 text-center">Sign in to JardinSolidaire</h1>
+        <h1 className="text-2xl font-bold text-green-800 text-center">Connexion</h1>
 
         <input
           type="email"
@@ -63,9 +61,10 @@ export default function LoginPage() {
           required
           autoComplete="email"
         />
+
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Mot de passe"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full border rounded px-3 py-2"
@@ -73,19 +72,26 @@ export default function LoginPage() {
           autoComplete="current-password"
         />
 
+        {/* 👇 Forgot password link */}
+        <div className="text-right -mt-2">
+          <Link href="/forgot-password" className="text-sm text-[#e3107d] hover:underline">
+            Mot de passe oublié ?
+          </Link>
+        </div>
+
         {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}
 
         <button
           className="w-full bg-[#e3107d] text-white rounded px-4 py-2 disabled:opacity-60"
           disabled={submitting}
         >
-          {submitting ? 'Signing in…' : 'Sign in'}
+          {submitting ? 'Connexion en cours…' : 'Se connecter'}
         </button>
 
         <div className="text-center text-sm">
-          No account yet?{' '}
+          Pas encore de compte ?{' '}
           <Link href="/register" className="text-[#e3107d]">
-            Create one
+            Créer un compte
           </Link>
         </div>
       </form>
