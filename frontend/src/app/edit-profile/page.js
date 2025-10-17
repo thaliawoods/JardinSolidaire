@@ -5,15 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
-/* ====== CONFIGURE THESE TWO TO MATCH add-gardener ====== */
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const UPLOAD_ENDPOINT =
-  process.env.NEXT_PUBLIC_UPLOAD_ENDPOINT || '/api/uploads'; // <-- put the working path here
-const UPLOAD_FIELD =
-  process.env.NEXT_PUBLIC_UPLOAD_FIELD || 'file';            // <-- put the working field name here
-/* ======================================================= */
+const UPLOAD_ENDPOINT = process.env.NEXT_PUBLIC_UPLOAD_ENDPOINT || '/api/uploads';
+const UPLOAD_FIELD = process.env.NEXT_PUBLIC_UPLOAD_FIELD || 'file';
 
-/* ---------- helpers ---------- */
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
 function resolveMedia(u) {
@@ -48,7 +43,6 @@ function greenAvatar(first, last) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/* Extract the first usable URL from many common upload responses */
 function pickFirstUrl(json) {
   if (!json || typeof json !== 'object') return '';
   if (typeof json.url === 'string') return json.url;
@@ -138,7 +132,6 @@ export default function EditProfilePage() {
     }
   };
 
-  /* ---------- avatar preview + actions ---------- */
   const avatarSrc = useMemo(() => resolveMedia(form.avatarUrl), [form.avatarUrl]);
   const avatarFallback = useMemo(
     () => greenAvatar(form.firstName, form.lastName),
@@ -173,18 +166,12 @@ export default function EditProfilePage() {
     if (!file) return;
     try {
       setUploading(true);
-
-      // 1) Use the SAME endpoint/field as add-gardener
       const fd = new FormData();
       fd.append(UPLOAD_FIELD, file);
       let url = await postForm(UPLOAD_ENDPOINT, fd);
-
-      // 2) If your server returns relative paths, normalize
       if (url && !/^https?:|^data:|^\//.test(url)) url = `/uploads/${url}`;
-
       setForm((prev) => ({ ...prev, avatarUrl: url }));
     } catch (err) {
-      // 3) Fallbacks (only if the first attempt failed)
       console.warn('[edit-profile] first upload attempt failed:', err);
       try {
         const fallbackFd = new FormData();
@@ -232,8 +219,10 @@ export default function EditProfilePage() {
         <Skeleton />
       ) : (
         <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-6">
-          {/* Avatar card */}
-          <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100 shadow-sm">
+          <section
+            className="rounded-2xl p-6 border shadow-sm"
+            style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
+          >
             <h2 className="text-lg font-semibold text-emerald-900 mb-4">Photo de profil</h2>
 
             <div className="flex items-start gap-5">
@@ -241,14 +230,15 @@ export default function EditProfilePage() {
               <img
                 src={avatarSrc || avatarFallback}
                 alt="Avatar"
-                className="w-20 h-20 rounded-full object-cover border-4 border-green-300 shadow"
+                className="w-20 h-20 rounded-full object-cover shadow"
+                style={{ border: '4px solid rgba(22,163,74,0.35)' }}
                 onError={(e) => { e.currentTarget.src = avatarFallback; }}
               />
 
               <div className="flex-1 space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
-                    {uploading ? 'Upload…' : 'Téléverser un fichier'}
+                  <label className="inline-flex items-center px-4 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition cursor-pointer">
+                    {uploading ? 'Upload…' : 'Télécharger'}
                     <input type="file" accept="image/*" onChange={handleAvatarFile} className="hidden" />
                   </label>
 
@@ -256,7 +246,7 @@ export default function EditProfilePage() {
                     <a
                       href={avatarSrc}
                       download
-                      className="px-4 py-2 rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                      className="px-4 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
                     >
                       Télécharger l’avatar
                     </a>
@@ -265,7 +255,7 @@ export default function EditProfilePage() {
                   <button
                     type="button"
                     onClick={removeAvatar}
-                    className="px-4 py-2 rounded-full bg-white border border-red-200 text-red-700 hover:bg-red-50"
+                    className="px-4 py-2 rounded-full bg-white/80 border border-red-300 text-red-700 hover:bg-red-50 transition"
                   >
                     Retirer
                   </button>
@@ -277,19 +267,21 @@ export default function EditProfilePage() {
                     name="avatarUrl"
                     value={form.avatarUrl}
                     onChange={onChange}
-                    className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
+                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
                     placeholder="https://… ou /uploads/mon-avatar.jpg"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Collez une URL directe, ou téléversez un fichier ci-dessus (le lien sera rempli automatiquement).
+                    Collez une URL directe, ou utilisez “Télécharger” pour choisir un fichier (le lien sera rempli).
                   </p>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Account info card */}
-          <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100 shadow-sm">
+          <section
+            className="rounded-2xl p-6 border shadow-sm"
+            style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
+          >
             <h2 className="text-lg font-semibold text-emerald-900 mb-4">Informations du compte</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -299,7 +291,8 @@ export default function EditProfilePage() {
                   name="firstName"
                   value={form.firstName}
                   onChange={onChange}
-                  className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
+                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                  placeholder="Jane"
                   required
                 />
               </div>
@@ -309,7 +302,8 @@ export default function EditProfilePage() {
                   name="lastName"
                   value={form.lastName}
                   onChange={onChange}
-                  className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
+                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                  placeholder="Doe"
                   required
                 />
               </div>
@@ -320,7 +314,7 @@ export default function EditProfilePage() {
                   name="email"
                   value={form.email}
                   disabled
-                  className="mt-1 w-full border rounded px-3 py-2 text-gray-400 bg-gray-50"
+                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-200 bg-gray-50 text-gray-500"
                 />
               </div>
 
@@ -330,7 +324,7 @@ export default function EditProfilePage() {
                   name="phone"
                   value={form.phone}
                   onChange={onChange}
-                  className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
+                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
                   placeholder="e.g. 0674096643"
                 />
               </div>
@@ -341,7 +335,7 @@ export default function EditProfilePage() {
                   name="address"
                   value={form.address}
                   onChange={onChange}
-                  className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
+                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
                   placeholder="Rue, ville…"
                 />
               </div>
@@ -353,7 +347,7 @@ export default function EditProfilePage() {
                   value={form.bio}
                   onChange={onChange}
                   rows={4}
-                  className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
+                  className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
                   placeholder="Quelques mots sur vous…"
                 />
               </div>
@@ -364,13 +358,13 @@ export default function EditProfilePage() {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-6 py-2 rounded-full"
+              className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
             >
               {submitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
             <Link
               href="/profile"
-              className="px-6 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="px-6 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
             >
               Annuler
             </Link>

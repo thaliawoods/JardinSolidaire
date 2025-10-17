@@ -1,4 +1,3 @@
-// frontend/src/app/login/page.js
 'use client';
 
 import { useState } from 'react';
@@ -72,7 +71,6 @@ export default function LoginPage() {
           autoComplete="current-password"
         />
 
-        {/* 👇 Forgot password link */}
         <div className="text-right -mt-2">
           <Link href="/forgot-password" className="text-sm text-[#e3107d] hover:underline">
             Mot de passe oublié ?

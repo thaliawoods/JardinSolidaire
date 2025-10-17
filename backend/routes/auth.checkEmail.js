@@ -4,12 +4,6 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const router = express.Router();
 
-/**
- * POST /auth/check-email
- * Body: { email: string }
- * Returns 200 with { exists: true, redirect: '/reset-password' } if found,
- * 404 with { exists: false, message } if not.
- */
 router.post('/check-email', async (req, res) => {
   try {
     const raw = req.body?.email;

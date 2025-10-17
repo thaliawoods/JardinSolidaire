@@ -1,4 +1,3 @@
-// frontend/src/app/je-veux-jardiner/page.js
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -15,28 +14,25 @@ export default function IWantToGardenPage() {
     intro: '',
     location: '',
     yearsExperience: '',
-    skills: [],   // string[]
-    photos: [],   // File[] (preview only for now)
+    skills: [],   
+    photos: [],  
   });
 
-  const [skillsList, setSkillsList] = useState([]); // [{id, name}]
+  const [skillsList, setSkillsList] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     (async () => {
-      // Try English endpoint first
       try {
         let res = await fetch(`${API_BASE}/api/skills`, { cache: 'no-store' });
         if (!res.ok) throw new Error('fallback');
         let data = await res.json();
 
-        // Normalize if server returns French shape
         if (Array.isArray(data) && data[0] && data[0].name === undefined) {
           data = data.map((c) => ({ id: c.id_competence ?? c.id, name: c.nom ?? c.name }));
         }
         setSkillsList(data || []);
       } catch {
-        // Fallback to legacy /competences
         try {
           const res = await fetch(`${API_BASE}/competences`, { cache: 'no-store' });
           const data = await res.json();
@@ -93,7 +89,7 @@ export default function IWantToGardenPage() {
       location: formData.location.trim(),
       intro: formData.intro.trim(),
       yearsExperience: formData.yearsExperience ? Number(formData.yearsExperience) : null,
-      skills: formData.skills, // string[]
+      skills: formData.skills, 
       // photos not uploaded yet—add /api/uploads later and pass URLs here
     };
 
@@ -127,7 +123,6 @@ export default function IWantToGardenPage() {
       <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">I want to garden</h1>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Photos (preview only) */}
         <div className="flex flex-col items-center">
           <label className="block w-full text-sm font-medium text-gray-700 mb-2">Add photos (max 5):</label>
           <input
@@ -160,7 +155,6 @@ export default function IWantToGardenPage() {
           </p>
         </div>
 
-        {/* Text fields */}
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
