@@ -1,142 +1,76 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import Footer from '../../components/Footer/Footer';
+import { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
+import Footer from '../../components/Footer/Footer';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [message, setMessage] = useState('');
-  const [showPw, setShowPw] = useState(false);
+  const [pwd, setPwd] = useState('');
+  const [pwd2, setPwd2] = useState('');
+  const [msg, setMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const hasMinLength = password.length >= 8;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  const isValid = hasMinLength && hasUppercase && hasNumber && hasSpecialChar;
-
   useEffect(() => {
-    const storedEmail = localStorage.getItem('email');
-    if (storedEmail) setEmail(storedEmail);
+    const e = localStorage.getItem('reset_email') || '';
+    setEmail(e);
   }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setMessage('');
-
-    if (password !== confirm) {
-      setMessage("🚫 The two passwords don't match. Please try again.");
+    setMsg('');
+    if (!pwd || pwd !== pwd2) {
+      setMsg('Les mots de passe ne correspondent pas.');
       return;
     }
-    if (!isValid) {
-      setMessage('🔐 Your password must meet the requirements below.');
-      return;
-    }
-    if (!email) {
-      setMessage('No email found for this reset. Please start from the Forgot Password page.');
-      return;
-    }
-
     try {
       setSubmitting(true);
-      const res = await fetch(`${API_BASE}/api/modifier_mdp`, {
+      const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, nouveauMotDePasse: password }),
+        body: JSON.stringify({ email, newPassword: pwd }),
       });
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok || !data?.success) {
-        setMessage(data?.error || data?.message || 'An error occurred. Please try again later.');
-        return;
+      if (res.ok && data?.success) {
+        localStorage.removeItem('reset_email');
+        setMsg('Votre mot de passe a été mis à jour. Vous pouvez vous connecter.');
+        // window.location.href = '/login'; // optional
+      } else {
+        setMsg(
+          data?.error === 'password_must_be_different'
+            ? "Choisissez un mot de passe différent de l’ancien."
+            : data?.error === 'user_not_found'
+            ? "Utilisateur introuvable."
+            : "Une erreur s'est produite."
+        );
       }
-
-      setMessage('🎉 Your password has been updated. Redirecting to login…');
-      localStorage.removeItem('email');
-      setTimeout(() => {
-        window.location.href = '/connexion'; 
-      }, 900);
     } catch (err) {
       console.error(err);
-      setMessage('An unexpected error occurred. Please try again.');
+      setMsg('Erreur réseau.');
     } finally {
       setSubmitting(false);
     }
   }
 
-  const styles = {
-    container: { maxWidth: '500px', margin: '0 auto', padding: '40px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center' },
-    title: { textAlign: 'center', color: '#021904', marginBottom: '20px', fontSize: '28px' },
-    intro: { textAlign: 'center', color: '#4e784f', fontSize: '18px', marginBottom: '30px', lineHeight: 1.5 },
-    passwordWrapper: { position: 'relative', marginBottom: '20px' },
-    passwordInput: { width: '100%', padding: '14px', paddingRight: '50px', border: '2px solid #6ec173', borderRadius: '10px', fontSize: '18px', color: '#021904' },
-    toggleButton: { position: 'absolute', top: '50%', right: '12px', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6ec173', fontSize: '14px' },
-    button: { padding: '14px', backgroundColor: '#6ec173', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '18px', marginTop: '10px' },
-    hint: (ok) => ({ color: ok ? '#4e784f' : '#e3107d', fontSize: '14px', marginBottom: '5px' }),
-    msg: (ok) => ({ color: ok ? '#4e784f' : '#e3107d', textAlign: 'center', marginTop: '15px' }),
-  };
-
   return (
     <>
       <Navbar />
-      <div style={{ backgroundColor: '#f5f5f5', minHeight: '100vh', paddingTop: '100px' }}>
-        <div style={styles.container}>
-          <h2 style={styles.title}>Reset your password</h2>
-          <p style={styles.intro}>
-            🌱 Keep your account safe with a strong password.
-          </p>
-
-          <form onSubmit={handleSubmit}>
-            <div style={styles.passwordWrapper}>
-              <input
-                type={showPw ? 'text' : 'password'}
-                name="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="New password"
-                required
-                autoComplete="new-password"
-                style={styles.passwordInput}
-              />
-              <button type="button" onClick={() => setShowPw((v) => !v)} style={styles.toggleButton}>
-                {showPw ? 'Hide' : 'Show'}
-              </button>
-            </div>
-
-            <div style={styles.passwordWrapper}>
-              <input
-                type={showPw ? 'text' : 'password'}
-                name="confirmPassword"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Confirm password"
-                required
-                autoComplete="new-password"
-                style={styles.passwordInput}
-              />
-              <button type="button" onClick={() => setShowPw((v) => !v)} style={styles.toggleButton}>
-                {showPw ? 'Hide' : 'Show'}
-              </button>
-            </div>
-
-            <p style={styles.hint(hasMinLength)}>✔️ At least 8 characters</p>
-            <p style={styles.hint(hasUppercase)}>✔️ One uppercase letter</p>
-            <p style={styles.hint(hasNumber)}>✔️ One number</p>
-            <p style={styles.hint(hasSpecialChar)}>✔️ One special character</p>
-
-            <button type="submit" disabled={submitting} style={{ ...styles.button, opacity: submitting ? 0.7 : 1 }}>
-              {submitting ? 'Saving…' : 'Save new password'}
-            </button>
-
-            {message && (
-              <p style={styles.msg(message.startsWith('🎉'))}>{message}</p>
-            )}
-          </form>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-white pt-24">
+        <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
+          <h1 className="text-2xl font-bold text-green-800 text-center">Nouveau mot de passe</h1>
+          <input value={email} readOnly className="w-full border rounded px-3 py-2 bg-gray-50" />
+          <input type="password" placeholder="Nouveau mot de passe" value={pwd}
+                 onChange={(e)=>setPwd(e.target.value)} className="w-full border rounded px-3 py-2" />
+          <input type="password" placeholder="Confirmer le mot de passe" value={pwd2}
+                 onChange={(e)=>setPwd2(e.target.value)} className="w-full border rounded px-3 py-2" />
+          {msg && <p className="text-sm text-red-600">{msg}</p>}
+          <button disabled={submitting}
+                  className="w-full bg-[#e3107d] text-white rounded px-4 py-2 disabled:opacity-60">
+            {submitting ? 'Mise à jour…' : 'Mettre à jour'}
+          </button>
+        </form>
       </div>
       <Footer />
     </>
