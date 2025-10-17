@@ -1,10 +1,11 @@
-// routes/me.js
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 const router = express.Router();
+
+const isDev = process.env.NODE_ENV !== 'production';
 
 /* -------------------- auth middleware -------------------- */
 function auth(req, res, next) {
@@ -27,14 +28,12 @@ function auth(req, res, next) {
     }
     req.userId = uid;
     next();
-  } catch (e) {
+  } catch {
     return res.status(401).json({ error: 'invalid_token' });
   }
 }
 
 /* -------------------- small helpers -------------------- */
-const isDev = process.env.NODE_ENV !== 'production';
-
 function cleanString(x, { allowEmpty = true } = {}) {
   if (x == null) return allowEmpty ? '' : null;
   const s = String(x).trim();
@@ -63,7 +62,7 @@ router.get('/_ping', (_req, res) => res.json({ ok: true }));
 /**
  * GET /me
  * Returns the authenticated user + attached Gardener/Owner profiles (if any)
- * Uses ENGLISH keys in the response for consistency with your frontend.
+ * Uses ENGLISH keys in the response to match the frontend.
  */
 router.get('/', auth, async (req, res) => {
   try {
@@ -146,6 +145,49 @@ router.get('/', auth, async (req, res) => {
 });
 
 /**
+ * POST /me/profile  (update basic account info)
+ * Body: { firstName, lastName, phone?, address?, bio?, avatarUrl? }
+ */
+router.post('/profile', auth, async (req, res) => {
+  try {
+    const userId = BigInt(req.userId);
+    const {
+      firstName = '',
+      lastName = '',
+      phone = '',
+      address = '',
+      bio = '',
+      avatarUrl = '',
+    } = req.body || {};
+
+    if (!String(firstName).trim() || !String(lastName).trim()) {
+      return res.status(400).json({ error: 'validation_error', fields: ['firstName','lastName'] });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName: String(firstName).trim(),
+        lastName:  String(lastName).trim(),
+        phone:     String(phone).trim() || null,
+        address:   String(address).trim() || null,
+        bio:       String(bio).trim() || null,
+        avatarUrl: String(avatarUrl).trim() || null,
+      },
+      select: {
+        id: true, firstName: true, lastName: true, email: true,
+        phone: true, address: true, bio: true, avatarUrl: true,
+      },
+    });
+
+    res.json({ user: { ...updated, id: Number(updated.id) } });
+  } catch (e) {
+    console.error('POST /me/profile failed:', isDev ? e?.stack || e : e?.message);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+/**
  * POST /me/gardener  (upsert)
  * Accepts EN keys (preferred) and FR aliases (mapped to EN):
  * EN: firstName, lastName, location, skills[], yearsExperience, intro, avatarUrl?, isOnline?, totalReviews?, rating?, published?
@@ -155,7 +197,6 @@ router.post('/gardener', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);
 
-    // Accept English AND French aliases
     const body = req.body || {};
     const firstName = cleanString(body.firstName ?? body.prenom);
     const lastName = cleanString(body.lastName ?? body.nom);
@@ -163,7 +204,6 @@ router.post('/gardener', auth, async (req, res) => {
     const intro = cleanString(body.intro ?? body.presentation);
     const yearsExperience = cleanInt(body.yearsExperience ?? body.experienceAnnees, { allowNull: true });
 
-    // skills as array of strings (FR: competences)
     const skills = asStringArray(body.skills ?? body.competences);
 
     const avatarUrl = body.avatarUrl == null ? null : cleanString(body.avatarUrl);
@@ -176,7 +216,6 @@ router.post('/gardener', auth, async (req, res) => {
           ? Number(body.rating)
           : null;
 
-    // Basic required validation for first/last/intro (keep lenient like your frontend)
     if (!firstName || !lastName || !intro) {
       return res.status(400).json({ error: 'validation_error', fields: ['firstName', 'lastName', 'intro'] });
     }
@@ -189,7 +228,7 @@ router.post('/gardener', auth, async (req, res) => {
       isOnline,
       location: location || null,
       skills, // string[]
-      yearsExperience: yearsExperience,
+      yearsExperience,
       intro,
       totalReviews: totalReviews || 0,
       rating,
