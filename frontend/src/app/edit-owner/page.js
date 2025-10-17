@@ -95,7 +95,7 @@ export default function EditOwnerPage() {
   return (
     <div className="min-h-screen p-6 bg-white">
       <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">
-        Edit my owner profile
+        Modifier mon profil propriétaire
       </h1>
 
       {err && (
@@ -110,7 +110,7 @@ export default function EditOwnerPage() {
         <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">First name</label>
+              <label className="block text-sm font-medium text-gray-700">Prénom</label>
               <input
                 name="firstName"
                 value={form.firstName}
@@ -120,7 +120,7 @@ export default function EditOwnerPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Last name</label>
+              <label className="block text-sm font-medium text-gray-700">Nom</label>
               <input
                 name="lastName"
                 value={form.lastName}
@@ -132,7 +132,7 @@ export default function EditOwnerPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Neighborhood</label>
+            <label className="block text-sm font-medium text-gray-700">Quartier</label>
             <input
               name="district"
               value={form.district}
@@ -143,13 +143,13 @@ export default function EditOwnerPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Availability</label>
+            <label className="block text-sm font-medium text-gray-700">Disponibilité</label>
             <input
               name="availability"
               value={form.availability}
               onChange={onChange}
               className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-              placeholder="e.g., evenings and weekends"
+              placeholder="e.g., soirées et week-ends"
             />
           </div>
 
@@ -167,7 +167,7 @@ export default function EditOwnerPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Garden type</label>
+              <label className="block text-sm font-medium text-gray-700">Type de jardin</label>
               <input
                 name="kind"
                 value={form.kind}
@@ -185,7 +185,7 @@ export default function EditOwnerPage() {
               value={form.intro}
               onChange={onChange}
               className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-              placeholder="A quick intro…"
+              placeholder="Une brève introduction…"
             />
           </div>
 
@@ -197,7 +197,7 @@ export default function EditOwnerPage() {
               onChange={onChange}
               rows={4}
               className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-              placeholder="Tell gardeners about your space, expectations, access, tools, etc."
+              placeholder="Parlez aux jardiniers de votre espace, de vos attentes, de l'accès, des outils, etc."
             />
           </div>
 
@@ -207,13 +207,13 @@ export default function EditOwnerPage() {
               disabled={submitting}
               className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-6 py-2 rounded-full"
             >
-              {submitting ? 'Saving…' : 'Save changes'}
+              {submitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
             <Link
               href="/profile"
               className="px-6 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              Annuler
             </Link>
           </div>
         </form>

@@ -81,7 +81,7 @@ export default function EditProfilePage() {
 
   return (
     <div className="min-h-screen p-6 bg-white">
-      <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">Edit my account</h1>
+      <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">Modifier mon profil</h1>
 
       {err && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
@@ -95,7 +95,7 @@ export default function EditProfilePage() {
         <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">First name</label>
+              <label className="block text-sm font-medium text-gray-700">Prénom</label>
               <input
                 name="firstName"
                 value={form.firstName}
@@ -105,7 +105,7 @@ export default function EditProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Last name</label>
+              <label className="block text-sm font-medium text-gray-700">Nom</label>
               <input
                 name="lastName"
                 value={form.lastName}
@@ -127,7 +127,7 @@ export default function EditProfilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
+            <label className="block text-sm font-medium text-gray-700">Téléphone</label>
             <input
               name="phone"
               value={form.phone}
@@ -138,13 +138,13 @@ export default function EditProfilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Address</label>
+            <label className="block text-sm font-medium text-gray-700">Adresse</label>
             <input
               name="address"
               value={form.address}
               onChange={onChange}
               className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-              placeholder="Street, city…"
+              placeholder="Rue, ville…"
             />
           </div>
 
@@ -167,7 +167,7 @@ export default function EditProfilePage() {
               onChange={onChange}
               rows={4}
               className="mt-1 w-full border rounded px-3 py-2 text-gray-700"
-              placeholder="A few words about you…"
+              placeholder="Quelques mots sur vous…"
             />
           </div>
 
@@ -177,13 +177,13 @@ export default function EditProfilePage() {
               disabled={submitting}
               className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-6 py-2 rounded-full"
             >
-              {submitting ? 'Saving…' : 'Save changes'}
+              {submitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
             <Link
               href="/profile"
               className="px-6 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              Annuler
             </Link>
           </div>
         </form>

@@ -297,13 +297,13 @@ export default function EditGardenerPage() {
               disabled={submitting}
               className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-6 py-2 rounded-full"
             >
-              {submitting ? 'Saving…' : 'Save changes'}
+              {submitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
             <Link
               href="/profile"
               className="px-6 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              Annuler
             </Link>
           </div>
         </form>
