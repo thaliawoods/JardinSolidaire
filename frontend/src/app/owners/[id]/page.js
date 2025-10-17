@@ -6,18 +6,22 @@ import { useEffect, useMemo, useState } from 'react';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
-/* ---------------- media helpers (same as other pages) ---------------- */
+/* ------- brand tokens (match navbar) ------- */
+const BRAND_GREEN = '#16a34a'; // tailwind green-600
+const BRAND_PINK  = '#E3107D';
+
+/* ---------------- media helpers ---------------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
-  if (s.startsWith('http') || s.startsWith('data:')) return s;           // absolute / data
-  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;                 // local public asset
-  if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;               // backend absolute
-  if (s.startsWith('/')) return s;                                       // other absolute local
-  const clean = s.replace(/^\.?\/*/, '');                                // strip ./ or /
-  if (clean.startsWith('uploads/')) return `${API_BASE}/${clean}`;       // backend relative
+  if (s.startsWith('http') || s.startsWith('data:')) return s;
+  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;
+  if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
+  if (s.startsWith('/')) return s;
+  const clean = s.replace(/^\.?\/*/, '');
+  if (clean.startsWith('uploads/')) return `${API_BASE}/${clean}`;
   if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
-  return `${API_BASE}/uploads/${clean}`;                                 // default backend
+  return `${API_BASE}/uploads/${clean}`;
 }
 const resolveAvatar = resolveMedia;
 
@@ -33,7 +37,7 @@ function greenPlaceholder(first, last) {
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#22C55E"/>
-      <stop offset="100%" stop-color="#16A34A"/>
+      <stop offset="100%" stop-color="${BRAND_GREEN}"/>
     </linearGradient>
   </defs>
   <rect width="256" height="256" rx="24" ry="24" fill="url(#g)"/>
@@ -42,21 +46,15 @@ function greenPlaceholder(first, last) {
 </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
-/* -------------------------------------------------------------------- */
-
 /* ---------------------------- normalizer ---------------------------- */
 function normalizeOwner(raw) {
   if (!raw) return null;
 
-  // Names
   const firstName = raw.firstName ?? raw.prenom ?? '';
   const lastName  = raw.lastName  ?? raw.nom    ?? '';
-
-  // Avatar / contact / location
   const avatarRaw = raw.avatarUrl ?? raw.photo_profil ?? null;
   const avatarUrl = resolveAvatar(avatarRaw);
 
-  // Core fields (try EN then FR)
   const address       = raw.address ?? raw.localisation ?? raw.adresse ?? '';
   const availability  = raw.availability ?? raw.disponibilite ?? '';
   const surface       = raw.surface ?? raw.superficie ?? raw.surface_m2 ?? raw.superficie_m2 ?? '';
@@ -64,7 +62,6 @@ function normalizeOwner(raw) {
   const rating        = raw.rating ?? raw.note_moyenne ?? null;
   const reviewsCount  = raw.reviewsCount ?? raw.nb_avis ?? raw.reviews?.length ?? null;
 
-  // Intro/comments
   const intro         = raw.intro ?? raw.presentation ?? raw.biographie ?? raw.description ?? '';
   const comments      = Array.isArray(raw.comments) ? raw.comments
                      : Array.isArray(raw.avis) ? raw.avis
@@ -82,7 +79,7 @@ function normalizeOwner(raw) {
     rating,
     reviewsCount,
     intro,
-    comments, // each item can be string or object { contenu/commentaire, author, note, date }
+    comments,
   };
 }
 /* -------------------------------------------------------------------- */
@@ -99,7 +96,7 @@ export default function OwnerDetailPage({ params }) {
       try {
         setLoading(true); setErr('');
 
-        // Try EN then FR endpoints
+        // EN then FR endpoints
         let res = await fetch(`${API_BASE}/api/owners/${id}`, { cache: 'no-store' });
         if (!res.ok) res = await fetch(`${API_BASE}/api/proprietaires/${id}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -108,7 +105,7 @@ export default function OwnerDetailPage({ params }) {
         if (!alive) return;
         setOwner(normalizeOwner(data));
       } catch (e) {
-        if (alive) { setErr("Impossible de charger le propriétaire."); setOwner(null); }
+        if (alive) { setErr('Impossible de charger le propriétaire.'); setOwner(null); }
       } finally {
         if (alive) setLoading(false);
       }
@@ -134,16 +131,20 @@ export default function OwnerDetailPage({ params }) {
     return (
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 mb-4">
-          {err || "Impossible de charger le propriétaire."}
+          {err || 'Impossible de charger le propriétaire.'}
         </div>
-        <Link href="/owners" className="inline-block mt-4 px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700">
+        <Link
+          href="/owners"
+          className="inline-block mt-4 px-4 py-2 rounded-full text-white hover:opacity-95"
+          style={{ backgroundColor: BRAND_GREEN }}
+        >
           ← Retour
         </Link>
       </main>
     );
   }
 
-  const avatarSrc = owner.avatarUrl || fallback; // if real avatar exists, it’ll be used first
+  const avatarSrc = owner.avatarUrl || fallback;
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-8">
@@ -151,7 +152,8 @@ export default function OwnerDetailPage({ params }) {
       <div className="flex items-center justify-between mb-6">
         <Link
           href="/owners"
-          className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+          className="px-4 py-2 rounded-full text-white hover:opacity-95"
+          style={{ backgroundColor: BRAND_GREEN }}
         >
           ← Propriétaires
         </Link>
@@ -163,22 +165,26 @@ export default function OwnerDetailPage({ params }) {
         <img
           src={avatarSrc}
           alt={`${owner.firstName} ${owner.lastName}`}
-          className="w-20 h-20 rounded-full object-cover border-4 border-green-300 shadow"
+          className="w-20 h-20 rounded-full object-cover shadow"
+          style={{ border: `4px solid rgba(22,163,74,0.35)` }}
           onError={(e) => { e.currentTarget.src = fallback; }}
         />
         <div className="flex-1">
-          <h1 className="text-xl font-semibold text-green-800">
+          <h1 className="text-2xl md:text-3xl font-bold text-green-700">
             {owner.firstName} {owner.lastName}
           </h1>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {!!owner.reviewsCount && (
-              <span className="inline-flex items-center gap-1 text-xs bg-white border border-emerald-200 text-emerald-700 px-2 py-1 rounded-full">
+              <span
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full"
+                style={{ backgroundColor: 'white', border: '1px solid rgba(22,163,74,0.25)', color: BRAND_GREEN }}
+              >
                 {owner.reviewsCount} avis
               </span>
             )}
             {owner.rating != null && (
-              <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800">
                 ★ {Number(owner.rating).toFixed(1)} note globale
               </span>
             )}
@@ -188,8 +194,7 @@ export default function OwnerDetailPage({ params }) {
 
       {/* details grid */}
       <section className="grid md:grid-cols-2 gap-4 mb-6">
-        <div className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100 shadow-sm">
-          <h2 className="text-sm font-semibold text-emerald-900 mb-3">Owner details</h2>
+        <Card title="Owner details">
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-700">
             <p><span className="font-medium text-gray-800">Full name</span><br />{owner.firstName} {owner.lastName}</p>
             {!!owner.address && <p><span className="font-medium text-gray-800">Neighborhood</span><br />{owner.address}</p>}
@@ -197,35 +202,43 @@ export default function OwnerDetailPage({ params }) {
             {!!owner.surface && <p><span className="font-medium text-gray-800">Surface</span><br />{owner.surface}</p>}
             {!!owner.gardenType && <p><span className="font-medium text-gray-800">Garden type</span><br />{owner.gardenType}</p>}
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100 shadow-sm">
-          <h2 className="text-sm font-semibold text-emerald-900 mb-3">Badges</h2>
+        <Card title="Badges">
           <div className="flex flex-wrap gap-2">
-            <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Propriétaire</span>
+            <span
+              className="px-2 py-1 text-xs rounded-full"
+              style={{ backgroundColor: 'rgba(22,163,74,0.12)', color: BRAND_GREEN }}
+            >
+              Propriétaire
+            </span>
             {!!owner.gardenType && (
-              <span className="px-2 py-1 text-xs rounded-full bg-white border border-emerald-200 text-emerald-700">
+              <span
+                className="px-2 py-1 text-xs rounded-full"
+                style={{ backgroundColor: 'white', border: '1px solid rgba(22,163,74,0.25)', color: BRAND_GREEN }}
+              >
                 {owner.gardenType}
               </span>
             )}
             {!!owner.address && (
-              <span className="px-2 py-1 text-xs rounded-full bg-white border border-emerald-200 text-emerald-700">
+              <span
+                className="px-2 py-1 text-xs rounded-full"
+                style={{ backgroundColor: 'white', border: '1px solid rgba(22,163,74,0.25)', color: BRAND_GREEN }}
+              >
                 📍 {owner.address}
               </span>
             )}
           </div>
-        </div>
+        </Card>
       </section>
 
       {/* intro */}
-      <section className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100 shadow-sm mb-6">
-        <h2 className="text-sm font-semibold text-emerald-900 mb-2">Introduction</h2>
+      <Card title="Introduction" className="mb-6">
         <p className="text-gray-700">{owner.intro || '—'}</p>
-      </section>
+      </Card>
 
       {/* comments */}
-      <section className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100 shadow-sm">
-        <h2 className="text-sm font-semibold text-emerald-900 mb-2">Comments</h2>
+      <Card title="Comments">
         {owner.comments?.length ? (
           <ul className="space-y-3">
             {owner.comments.map((c, i) => {
@@ -233,7 +246,11 @@ export default function OwnerDetailPage({ params }) {
               const who  = typeof c === 'object' ? (c.author || c.auteur || '') : '';
               const note = typeof c === 'object' && (c.note != null) ? ` • ★ ${c.note}` : '';
               return (
-                <li key={i} className="text-sm text-gray-700 bg-white/60 border border-emerald-100 rounded-xl px-3 py-2">
+                <li
+                  key={i}
+                  className="text-sm text-gray-700 rounded-xl px-3 py-2"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.6)', border: '1px solid rgba(22,163,74,0.15)' }}
+                >
                   <span className="block">{text}</span>
                   {(who || note) && <span className="text-xs text-gray-500">{who}{note}</span>}
                 </li>
@@ -243,7 +260,23 @@ export default function OwnerDetailPage({ params }) {
         ) : (
           <p className="text-gray-600 text-sm">No comments yet.</p>
         )}
-      </section>
+      </Card>
     </main>
+  );
+}
+
+/* ---------- Reusable soft-green card (same green, transparent) ---------- */
+function Card({ title, children, className = '' }) {
+  return (
+    <section
+      className={`rounded-2xl p-5 shadow-sm ${className}`}
+      style={{
+        backgroundColor: 'rgba(22,163,74,0.08)', // BRAND_GREEN @ 8%
+        border: '1px solid rgba(22,163,74,0.15)',
+      }}
+    >
+      <h2 className="text-sm font-semibold" style={{ color: BRAND_GREEN }}>{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
   );
 }
