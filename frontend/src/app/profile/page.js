@@ -51,7 +51,7 @@ export default function ProfilePage() {
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      <h1 className="text-2xl font-bold text-green-800 mb-6">My profile</h1>
+      <h1 className="text-2xl font-bold text-green-800 mb-6">Mon profil</h1>
 
       {loading && <Skeleton />}
 
@@ -66,22 +66,22 @@ export default function ProfilePage() {
           {/* Account info */}
           <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Account information</h2>
+              <h2 className="text-lg font-semibold">Informations du compte</h2>
               <Link
                 href="/edit-profile"
                 className="px-3 py-1.5 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700"
               >
-                Edit
+                Modifier 
               </Link>
             </div>
             <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
-              <Field label="Last name">{me.lastName || '—'}</Field>
-              <Field label="First name">{me.firstName || '—'}</Field>
+              <Field label="Nom">{me.lastName || '—'}</Field>
+              <Field label="Prénom">{me.firstName || '—'}</Field>
               <Field label="Email">{me.email || '—'}</Field>
-              <Field label="Role">{me.role || '—'}</Field>
-              <Field label="Phone">{me.phone || '—'}</Field>
-              <Field label="Address">{me.address || '—'}</Field>
-              <Field label="Average rating">{me.averageRating ?? '—'}</Field>
+              <Field label="Rôle">{me.role || '—'}</Field>
+              <Field label="Téléphone">{me.phone || '—'}</Field>
+              <Field label="Adresse">{me.address || '—'}</Field>
+              <Field label="Note">{me.averageRating ?? '—'}</Field>
               <Field label="Bio" full>{me.bio || '—'}</Field>
             </div>
           </section>
@@ -89,22 +89,22 @@ export default function ProfilePage() {
           {/* Gardener */}
           <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Gardener profile</h2>
+              <h2 className="text-lg font-semibold">Profil de jardinier</h2>
               {me.gardener?.published ? (
-                <Badge color="green">Published</Badge>
+                <Badge color="green">Publié</Badge>
               ) : (
-                <Badge color="gray">Unpublished</Badge>
+                <Badge color="gray">Non publié</Badge>
               )}
             </div>
 
             {!me.gardener && (
               <div className="flex items-center justify-between bg-white border rounded-lg p-4">
-                <p className="text-sm text-gray-700">No gardener profile yet.</p>
+                <p className="text-sm text-gray-700">Pas de profil de jardinier encore.</p>
                 <Link
                   href="/add-gardener"
                   className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
                 >
-                  Create my profile
+                  Créer mon profil
                 </Link>
               </div>
             )}
@@ -115,14 +115,14 @@ export default function ProfilePage() {
                   <Field label="Full name">
                     {me.gardener.firstName} {me.gardener.lastName}
                   </Field>
-                  <Field label="Location">{me.gardener.location || '—'}</Field>
-                  <Field label="Skills" full>
+                  <Field label="Adresse">{me.gardener.location || '—'}</Field>
+                  <Field label="Compétences" full>
                     {(me.gardener.skills || []).join(', ') || '—'}
                   </Field>
-                  <Field label="Experience (years)">
+                  <Field label="Expérience (années)">
                     {me.gardener.yearsExperience ?? '—'}
                   </Field>
-                  <Field label="Rating">{me.gardener.rating ?? '—'}</Field>
+                  <Field label="Note">{me.gardener.rating ?? '—'}</Field>
                   <Field label="Introduction" full>
                     {me.gardener.intro || '—'}
                   </Field>
@@ -133,14 +133,14 @@ export default function ProfilePage() {
                     href="/edit-gardener"
                     className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
                   >
-                    Edit
+                    Modifier
                   </Link>
                   <button
                     disabled={busy}
                     onClick={() => togglePublish('gardener', !me.gardener.published)}
                     className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
                   >
-                    {me.gardener.published ? 'Unpublish' : 'Publish'}
+                    {me.gardener.published ? 'Retirer' : 'Publier'}
                   </button>
                 </div>
               </>
@@ -150,22 +150,22 @@ export default function ProfilePage() {
           {/* Owner (left as-is; wire later if needed) */}
           <section className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Owner profile</h2>
+              <h2 className="text-lg font-semibold">Profil de propriétaire</h2>
               {me.owner?.published ? (
-                <Badge color="green">Published</Badge>
+                <Badge color="green">Publié</Badge>
               ) : (
-                <Badge color="gray">Unpublished</Badge>
+                <Badge color="gray">Non publié</Badge>
               )}
             </div>
 
             {!me.owner && (
               <div className="flex items-center justify-between bg-white border rounded-lg p-4">
-                <p className="text-sm text-gray-700">No owner profile yet.</p>
+                <p className="text-sm text-gray-700">Pas de profil de propriétaire encore.</p>
                 <Link
                   href="/create-owner"
                   className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
                 >
-                  Create my profile
+                  Créer mon profil
                 </Link>
               </div>
             )}
@@ -176,15 +176,15 @@ export default function ProfilePage() {
                   <Field label="Full name">
                     {me.owner.firstName} {me.owner.lastName}
                   </Field>
-                  <Field label="Neighborhood">{me.owner.district || '—'}</Field>
-                  <Field label="Availability">{me.owner.availability || '—'}</Field>
+                  <Field label="Quartier">{me.owner.district || '—'}</Field>
+                  <Field label="Disponibilité">{me.owner.availability || '—'}</Field>
                   <Field label="Surface">
                     {me.owner.area ? `${me.owner.area} m²` : '—'}
                   </Field>
-                  <Field label="Garden type">{me.owner.kind || '—'}</Field>
+                  <Field label="Type de jardin">{me.owner.kind || '—'}</Field>
                   <Field label="Introduction" full>{me.owner.intro || '—'}</Field>
                   <Field label="Description" full>{me.owner.description || '—'}</Field>
-                  <Field label="Rating">{me.owner.rating ?? '—'}</Field>
+                  <Field label="Note">{me.owner.rating ?? '—'}</Field>
                 </div>
 
                 <div className="mt-4 flex gap-2">
@@ -192,14 +192,14 @@ export default function ProfilePage() {
                     href="/edit-owner"
                     className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700"
                   >
-                    Edit
+                    Modifier
                   </Link>
                   <button
                     disabled={busy}
                     onClick={() => togglePublish('owner', !me.owner.published)}
                     className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
                   >
-                    {me.owner.published ? 'Unpublish' : 'Publish'}
+                    {me.owner.published ? 'Retirer' : 'Publier'}
                   </button>
                 </div>
               </>

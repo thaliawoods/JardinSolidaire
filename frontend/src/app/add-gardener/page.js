@@ -11,7 +11,7 @@ const SKILLS_URL =
 const LEGACY_COMP_URL = `${API_BASE}/competences`;
 
 export default function AddGardener() {
-  const session = useSession(); // may be undefined in your project; it's ok
+  const session = useSession(); 
   const router = useRouter();
 
   const hookToken = session?.token ?? null;
