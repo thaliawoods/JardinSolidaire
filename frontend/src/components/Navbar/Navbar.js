@@ -95,7 +95,7 @@ export default function Navbar() {
                     Se connecter
                   </button>
                 </Link>
-                <Link href="/signup">
+                <Link href="/register">
                   <button className="bg-[#e3107d] hover:bg-pink-700 text-white px-4 py-2 rounded">
                     S’inscrire
                   </button>

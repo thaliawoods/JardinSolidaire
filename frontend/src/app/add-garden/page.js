@@ -98,7 +98,7 @@ export default function AddGardenPage() {
 
   return (
     <div className="min-h-screen p-6 bg-white">
-      <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">Add a Garden</h1>
+      <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">Ajouter mon jardin</h1>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="flex flex-col items-center">
@@ -113,7 +113,7 @@ export default function AddGardenPage() {
             className="mt-1 w-full border rounded px-3 py-2 text-gray-400"
           />
           <p className="mt-2 text-xs text-gray-500">
-            Files are previewed locally only for now. Uploading to the server will be added soon.
+            Les fichiers sont uniquement prévisualisés en local pour le moment. Le téléversement vers le serveur sera ajouté bientôt.
           </p>
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 w-full">
             {formData.photos.map((file, index) => (
@@ -137,7 +137,7 @@ export default function AddGardenPage() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Listing title</label>
+            <label className="block text-sm font-medium text-gray-700">Titre de l’annonce</label>
             <input
               type="text"
               name="title"
@@ -161,7 +161,7 @@ export default function AddGardenPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Address</label>
+            <label className="block text-sm font-medium text-gray-700">Addresse</label>
             <input
               type="text"
               name="address"
@@ -173,7 +173,7 @@ export default function AddGardenPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Area (m²)</label>
+            <label className="block text-sm font-medium text-gray-700">Surface (m²)</label>
             <input
               type="number"
               name="area"
@@ -186,7 +186,7 @@ export default function AddGardenPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Needs</label>
+            <label className="block text-sm font-medium text-gray-700">Besoins du jardin</label>
             <input
               type="text"
               name="needs"
@@ -202,7 +202,7 @@ export default function AddGardenPage() {
             disabled={submitting}
             className="bg-[#E3107D] hover:bg-[#c30c6a] disabled:opacity-60 text-white px-6 py-2 rounded-full mt-4"
           >
-            {submitting ? 'Adding…' : 'Add my garden'}
+            {submitting ? 'Adding…' : 'Ajouter mon jardin'}
           </button>
         </div>
       </form>

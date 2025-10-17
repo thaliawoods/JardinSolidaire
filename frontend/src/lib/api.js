@@ -1,3 +1,4 @@
+// src/lib/api.js
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 function ensureLeadingSlash(p = '') {
@@ -15,18 +16,40 @@ function qs(obj = {}) {
   return s ? `?${s}` : '';
 }
 
+/* ---------- auth helpers ---------- */
+function readCookie(name) {
+  if (typeof document === 'undefined') return null;
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+export function getAnyToken() {
+  if (typeof window === 'undefined') return null;
+  const keys = ['jwt', 'token', 'accessToken', 'Authorization'];
+  for (const k of keys) {
+    const v = localStorage.getItem(k);
+    if (v) return v.replace(/^Bearer\s+/i, '');
+  }
+  const cookieKeys = ['jwt', 'token', 'accessToken'];
+  for (const k of cookieKeys) {
+    const v = readCookie(k);
+    if (v) return v.replace(/^Bearer\s+/i, '');
+  }
+  return null;
+}
+
 export async function apiFetch(
   path,
   {
     method = 'GET',
     body,
     headers = {},
-    query,             
-    signal,            
-    raw = false,        
+    query,          // object -> querystring
+    signal,         // AbortSignal
+    raw = false,    // return the Response as-is
   } = {}
 ) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = getAnyToken();
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const url = `${API_BASE}${ensureLeadingSlash(path)}${qs(query)}`;
@@ -41,30 +64,24 @@ export async function apiFetch(
     body: isFormData ? body : body ? JSON.stringify(body) : undefined,
     cache: 'no-store',
     signal,
+    ...(token ? {} : { credentials: 'include' }),
   });
 
-  if (raw) return res; 
+  if (raw) return res;
 
   const contentType = res.headers.get('content-type') || '';
   const canJson = contentType.includes('application/json');
-  const parse = async () => {
-    if (res.status === 204) return null;
-    if (!canJson) return null;
-    try {
-      return await res.json();
-    } catch {
-      return null;
-    }
-  };
-
-  const data = await parse();
+  let data = null;
+  if (res.status !== 204 && canJson) {
+    try { data = await res.json(); } catch { data = null; }
+  }
 
   if (!res.ok) {
-    const err = {
-      status: res.status,
-      error: (data && (data.error || data.message)) || `HTTP_${res.status}`,
-      details: data || null,
-    };
+    const err = new Error(
+      (data && (data.error || data.message)) || `HTTP_${res.status}`
+    );
+    err.status = res.status;
+    err.details = data || null;
     throw err;
   }
 
