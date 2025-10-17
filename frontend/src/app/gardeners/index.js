@@ -7,11 +7,12 @@ import { getFavGardeners, addFavGardener, removeFavGardener } from '@/lib/favori
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
+/* ---------- utils ---------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
   if (s.startsWith('http') || s.startsWith('data:')) return s;
-  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s; // use local asset as-is
+  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;
   if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
   if (s.startsWith('/')) return s;
   const clean = s.replace(/^\.?\/*/, '');
@@ -57,7 +58,7 @@ function normalizeGardeners(raw) {
       id: String(item.id ?? item.id_utilisateur ?? ''),
       firstName,
       lastName,
-      avatarUrl: resolveAvatar(avatarRaw), // local /assets kept; backend resolved
+      avatarUrl: resolveAvatar(avatarRaw),
       intro: item.intro ?? item.presentation ?? item.biographie ?? '',
       phone: item.phone ?? item.telephone ?? '',
       address: item.address ?? item.localisation ?? item.adresse ?? '',
@@ -66,6 +67,7 @@ function normalizeGardeners(raw) {
   });
 }
 
+/* ---------- component ---------- */
 export default function GardenersList() {
   const [gardeners, setGardeners] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -98,7 +100,7 @@ export default function GardenersList() {
         const data = await res.json();
         if (!alive) return;
         setGardeners(normalizeGardeners(data));
-      } catch (e) {
+      } catch (_e) {
         if (alive) { setErr('Impossible de charger les jardiniers.'); setGardeners([]); }
       } finally { if (alive) setLoading(false); }
     })();
@@ -108,7 +110,8 @@ export default function GardenersList() {
   const filtered = useMemo(() => {
     return gardeners.filter((g) => {
       const q = search.trim().toLowerCase();
-      const matchesSearch = !q || [g.firstName, g.lastName, g.intro, g.address].join(' ').toLowerCase().includes(q);
+      const matchesSearch =
+        !q || [g.firstName, g.lastName, g.intro, g.address].join(' ').toLowerCase().includes(q);
       const matchesRating = !minRating || (g.rating ?? 0) >= Number(minRating);
       return matchesSearch && matchesRating;
     });
@@ -122,7 +125,14 @@ export default function GardenersList() {
         removeFavGardener(id);
         return prev.filter((x) => x !== id);
       } else {
-        addFavGardener({ id, firstName: g.firstName, lastName: g.lastName, avatarUrl: g.avatarUrl, rating: g.rating, address: g.address });
+        addFavGardener({
+          id,
+          firstName: g.firstName,
+          lastName: g.lastName,
+          avatarUrl: g.avatarUrl,
+          rating: g.rating,
+          address: g.address,
+        });
         return [...prev, id];
       }
     });
@@ -131,55 +141,124 @@ export default function GardenersList() {
   const resetFilters = () => { setSearch(''); setMinRating(''); setKind(''); };
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <h1 className="text-3xl font-bold text-green-800">Jardiniers</h1>
-        <Link href="/favorites" className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700">Favoris ({favorites.length})</Link>
+    <main className="min-h-screen bg-white px-6 py-10">
+      {/* match Gardens page width */}
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <h1 className="text-3xl font-bold text-green-800">Jardiniers</h1>
+          <Link
+            href="/favorites"
+            className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            Favoris ({favorites.length})
+          </Link>
+        </div>
+
+        {/* Filters — identical layout/widths to Gardens */}
+        <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
+          {/* search */}
+          <div className="relative w-full lg:w-[30%]">
+            <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+            <input
+              type="text"
+              placeholder="Rechercher un·e jardinier·e…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-10 w-full pl-10 pr-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 text-sm text-gray-700"
+            />
+          </div>
+
+          {/* minimum rating */}
+          <select
+            value={minRating}
+            onChange={(e) => setMinRating(e.target.value)}
+            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
+          >
+            <option value="">Note minimale</option>
+            <option value="5">5★</option>
+            <option value="4.5">4.5★</option>
+            <option value="4">4★</option>
+            <option value="3.5">3.5★</option>
+            <option value="3">3★</option>
+          </select>
+
+          {/* kind / skill */}
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
+          >
+            <option value="">Tous les profils</option>
+            <option value="arrosage">Arrosage</option>
+            <option value="tonte">Tonte</option>
+            <option value="plantation">Plantation</option>
+            <option value="taille">Taille</option>
+          </select>
+
+          <button
+            onClick={resetFilters}
+            className="h-10 px-5 rounded-full bg-[#E3107D] hover:bg-[#c30c6a] text-white transition w-full lg:w-auto"
+          >
+            Reset
+          </button>
+        </div>
+
+        {loading && (
+          <div className="space-y-4">
+            <div className="h-28 bg-gray-100 rounded-2xl animate-pulse" />
+            <div className="h-28 bg-gray-100 rounded-2xl animate-pulse" />
+          </div>
+        )}
+        {!!err && !loading && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
+            {err}
+          </div>
+        )}
+        {!loading && !err && filtered.length === 0 && (
+          <p className="text-center text-gray-600">Aucun jardinier trouvé.</p>
+        )}
+
+        <div className="space-y-6">
+          {filtered.map((g) => {
+            const fallback = greenPlaceholder(g.firstName, g.lastName);
+            const src = g.avatarUrl || fallback;
+            return (
+              <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
+                <article className="flex bg-green-100 rounded-xl shadow p-4 hover:shadow-md transition">
+                  <div className="w-32 h-32 bg-green-300 rounded shadow relative overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt={`${g.firstName} ${g.lastName}`}
+                      className="object-cover w-full h-full"
+                      onError={(e) => { e.currentTarget.src = fallback; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
+                      className="absolute top-2 right-2 text-xl hover:scale-125 transition"
+                      aria-label="Add/remove from favorites"
+                    >
+                      {favorites.includes(String(g.id))
+                        ? <span className="text-pink-500">♥</span>
+                        : <span className="text-gray-400">♡</span>}
+                    </button>
+                  </div>
+
+                  <div className="ml-6 flex flex-col justify-center">
+                    <p className="text-sm text-gray-600"><strong>Nom&nbsp;:</strong> {g.lastName}</p>
+                    <p className="text-sm text-gray-600"><strong>Prénom&nbsp;:</strong> {g.firstName}</p>
+                    <p className="text-sm text-gray-600"><strong>Description&nbsp;:</strong> {g.intro}</p>
+                    <p className="text-sm text-gray-600"><strong>Téléphone&nbsp;:</strong> {g.phone}</p>
+                    <p className="text-sm text-gray-600">📍 {g.address}</p>
+                    <p className="text-sm text-gray-600"><strong>Note&nbsp;:</strong> {g.rating ?? '—'}★</p>
+                  </div>
+                </article>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-
-      {/* filters omitted for brevity — keep yours */}
-
-      {loading && (<div className="space-y-4"><div className="h-28 bg-gray-100 rounded-2xl animate-pulse"/><div className="h-28 bg-gray-100 rounded-2xl animate-pulse"/></div>)}
-      {!!err && !loading && (<div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">{err}</div>)}
-      {!loading && !err && filtered.length === 0 && (<p className="text-center text-gray-600">Aucun jardinier trouvé.</p>)}
-
-      <div className="space-y-6">
-        {filtered.map((g) => {
-          const fallback = greenPlaceholder(g.firstName, g.lastName);
-          const src = g.avatarUrl || fallback; // local asset wins if provided
-          return (
-            <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
-              <article className="flex bg-green-100 rounded-xl shadow p-4 hover:shadow-md transition">
-                <div className="w-32 h-32 bg-green-300 rounded shadow relative overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={src}
-                    alt={`${g.firstName} ${g.lastName}`}
-                    className="object-cover w-full h-full"
-                    onError={(e) => { e.currentTarget.src = fallback; }}
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
-                    className="absolute top-2 right-2 text-xl hover:scale-125 transition"
-                    aria-label="Add/remove from favorites"
-                  >
-                    {favorites.includes(String(g.id)) ? <span className="text-pink-500">♥</span> : <span className="text-gray-400">♡</span>}
-                  </button>
-                </div>
-                <div className="ml-6 flex flex-col justify-center">
-                  <p className="text-sm text-gray-600"><strong>Nom&nbsp;:</strong> {g.lastName}</p>
-                  <p className="text-sm text-gray-600"><strong>Prénom&nbsp;:</strong> {g.firstName}</p>
-                  <p className="text-sm text-gray-600"><strong>Description&nbsp;:</strong> {g.intro}</p>
-                  <p className="text-sm text-gray-600"><strong>Téléphone&nbsp;:</strong> {g.phone}</p>
-                  <p className="text-sm text-gray-600">📍 {g.address}</p>
-                  <p className="text-sm text-gray-600"><strong>Note&nbsp;:</strong> {g.rating ?? '—'}★</p>
-                </div>
-              </article>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
+    </main>
   );
 }
