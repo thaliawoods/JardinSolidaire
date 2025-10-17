@@ -54,7 +54,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <main className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-10">
-        <h1 className="text-3xl font-bold text-green-800 mb-6">Contact us</h1>
+        <h1 className="text-3xl font-bold text-green-800 mb-6">Contact</h1>
 
         {!!errText && (
           <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -69,7 +69,7 @@ export default function ContactPage() {
 
         <form className="space-y-5" onSubmit={onSubmit}>
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1">Nom</label>
             <input
               className="w-full border rounded px-3 py-2"
               value={name}
@@ -92,12 +92,12 @@ export default function ContactPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Subject</label>
+            <label className="block text-sm font-medium mb-1">Sujet</label>
             <input
               className="w-full border rounded px-3 py-2"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="About a garden…"
+              placeholder="À propos d'un jardin ou d'un jardinier…"
               required
             />
           </div>
@@ -109,7 +109,7 @@ export default function ContactPage() {
               rows={6}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Tell us more…"
+              placeholder="Dites-nous en plus…"
               required
             />
           </div>
@@ -119,12 +119,12 @@ export default function ContactPage() {
             disabled={submitting}
             className="rounded-full bg-[#E3107D] text-white px-5 py-2 font-semibold disabled:opacity-60"
           >
-            {submitting ? 'Sending…' : 'Send message'}
+            {submitting ? 'Envoi…' : 'Envoyer le message'}
           </button>
         </form>
 
         <p className="mt-6 text-sm text-gray-600">
-          Prefer email? Write to <a href="mailto:hello@jardinsolidaire.test" className="text-[#E3107D] underline">hello@jardinsolidaire.test</a>
+          Vous préférez par email ? Écrivez à <a href="mailto:hello@jardinsolidaire.test" className="text-[#E3107D] underline">hello@jardinsolidaire.test</a>
         </p>
       </main>
     </div>

@@ -8,36 +8,36 @@ export default function HelpCenterPage() {
 
   const seed = [
     {
-      q: 'How do I create an account?',
-      a: 'Go to the Register page, fill the form, then sign in from the Login page.',
+      q: 'Comment créer un compte ?',
+      a: 'Allez sur la page d\'inscription, remplissez le formulaire, puis connectez-vous depuis la page de connexion.',
       links: [
-        { href: '/register', label: 'Register' },
-        { href: '/login', label: 'Login' },
+        { href: '/register', label: 'Inscription' },
+        { href: '/login', label: 'Connexion' },
       ],
       tags: 'account register signup login',
     },
     {
-      q: 'I forgot my password',
-      a: 'On the Login page, click “Forgot password?” and follow the instructions.',
-      links: [{ href: '/login', label: 'Login' }],
+      q: 'J’ai oublié mon mot de passe, que faire ?',
+      a: 'Sur la page de connexion, cliquez sur « Mot de passe oublié ? » et suivez les instructions.',
+      links: [{ href: '/login', label: 'Connexion' }],
       tags: 'password reset email',
     },
     {
-      q: 'How do I add my garden?',
-      a: 'When logged in, click “Ajouter mon jardin” in the header or visit /add-garden.',
-      links: [{ href: '/add-garden', label: 'Add garden' }],
+      q: 'Comment ajouter mon jardin ?',
+      a: 'Une fois connecté, cliquez sur “Ajouter mon jardin” dans l’en-tête ou visitez /add-garden.',
+      links: [{ href: '/add-garden', label: 'Ajouter un jardin' }],
       tags: 'garden create listing owner',
     },
     {
-      q: 'How do I contact a gardener / owner?',
-      a: 'Open a garden or profile page and use “Send message” or “Reserve”. You must be logged in.',
-      links: [{ href: '/gardens', label: 'Browse gardens' }],
+      q: 'Comment contacter un jardinier / propriétaire ?',
+      a: 'Ouvrez une page de jardin ou de profil et utilisez “Envoyer un message” ou “Réserver”. Vous devez être connecté.',
+      links: [{ href: '/gardens', label: 'Parcourir les jardins' }],
       tags: 'contact message booking chat',
     },
     {
-      q: 'Where do favorites go?',
-      a: 'Tap the ♥ on a garden card to save it. Your list appears in the Favorites page.',
-      links: [{ href: '/favorites', label: 'Favorites' }],
+      q: 'Où vont les favoris ?',
+      a: 'Appuyez sur le ♥ sur une carte de jardin pour l\'enregistrer. Votre liste apparaît dans la page des Favoris.',
+      links: [{ href: '/favorites', label: 'Favoris' }],
       tags: 'favorites heart gardens',
     },
   ];
@@ -53,9 +53,9 @@ export default function HelpCenterPage() {
   return (
     <main className="min-h-screen bg-white">
       <section className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        <h1 className="text-3xl font-bold text-green-800 text-center">Help Center</h1>
+        <h1 className="text-3xl font-bold text-green-800 text-center">Centre d&apos;aide</h1>
         <p className="text-center text-gray-600 mt-2">
-          Find answers quickly or contact us if you’re stuck.
+          Trouvez des réponses rapidement ou contactez-nous si vous êtes bloqué.
         </p>
 
         {/* Search */}
@@ -64,7 +64,7 @@ export default function HelpCenterPage() {
             <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
             <input
               type="text"
-              placeholder="Search help (account, password, garden, …)"
+              placeholder="Rechercher de l'aide (compte, mot de passe, jardin, …)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 text-sm text-gray-700"
@@ -74,11 +74,11 @@ export default function HelpCenterPage() {
 
         {/* Quick links */}
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
-          <QuickLink href="/contact">Contact support</QuickLink>
-          <QuickLink href="/register">Create account</QuickLink>
-          <QuickLink href="/login">Sign in</QuickLink>
-          <QuickLink href="/gardens">Browse gardens</QuickLink>
-          <QuickLink href="/gardeners">Our gardeners</QuickLink>
+          <QuickLink href="/contact">Contact</QuickLink>
+          <QuickLink href="/register">Créer un compte</QuickLink>
+          <QuickLink href="/login">Se connecter</QuickLink>
+          <QuickLink href="/gardens">Parcourir les jardins</QuickLink>
+          <QuickLink href="/gardeners">Nos jardiniers</QuickLink>
         </div>
 
         {/* FAQ */}
@@ -112,29 +112,29 @@ export default function HelpCenterPage() {
 
           {faqs.length === 0 && (
             <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-              No results. Try different words, or{' '}
-              <Link href="/contact" className="underline text-[#E3107D]">contact us</Link>.
+              Pas de résultats. Essayez d&apos;autres mots, ou{' '}
+              <Link href="/contact" className="underline text-[#E3107D]">contactez-nous</Link>.
             </div>
           )}
         </div>
 
         <div className="mt-10 rounded-2xl bg-white border p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-green-900">Still need help?</h2>
+          <h2 className="text-lg font-semibold text-green-900">Besoin d&apos;aide supplémentaire ?</h2>
           <p className="text-sm text-gray-700 mt-2">
-            We’re happy to help with account issues, bugs, and feature requests.
+            Nous sommes heureux de vous aider avec les problèmes de compte, les bugs et les demandes de fonctionnalités.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href="/contact"
               className="px-5 py-2 rounded-full bg-[#E3107D] text-white hover:bg-[#c30c6a]"
             >
-              Contact support
+              Contact 
             </Link>
             <a
               href="mailto:support@jardinsolidaire.local"
               className="px-5 py-2 rounded-full border border-gray-300 text-gray-800 hover:bg-gray-50"
             >
-              Email us
+              Email 
             </a>
           </div>
         </div>
