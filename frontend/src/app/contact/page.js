@@ -5,18 +5,19 @@ import { useState } from 'react';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function ContactPage() {
-  const [name, setName]       = useState('');
-  const [email, setEmail]     = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-
   const [submitting, setSubmitting] = useState(false);
-  const [ok, setOk]   = useState('');
+  const [ok, setOk] = useState('');
   const [err, setErr] = useState('');
 
   async function onSubmit(e) {
     e.preventDefault();
-    setOk(''); setErr('');
+    setOk('');
+    setErr('');
+
     try {
       setSubmitting(true);
       const res = await fetch(`${API_BASE}/api/contact`, {
@@ -25,15 +26,16 @@ export default function ContactPage() {
         body: JSON.stringify({ name, email, subject, message }),
       });
       const data = await res.json().catch(() => ({}));
-
       if (!res.ok) {
         setErr(data?.error || `server_error (${res.status})`);
         setSubmitting(false);
         return;
       }
-
       setOk('Your message has been sent. Thank you! ✅');
-      setName(''); setEmail(''); setSubject(''); setMessage('');
+      setName('');
+      setEmail('');
+      setSubject('');
+      setMessage('');
       setSubmitting(false);
     } catch {
       setErr('network_error');
@@ -42,10 +44,13 @@ export default function ContactPage() {
   }
 
   const errText =
-    err === 'validation_error' ? 'Please fill in all fields correctly.' :
-    err === 'server_error'     ? 'Server error. Please try again.' :
-    err === 'network_error'    ? 'Network error. Please try again.' :
-    err || '';
+    err === 'validation_error'
+      ? 'Please fill in all fields correctly.'
+      : err === 'server_error'
+      ? 'Server error. Please try again.'
+      : err === 'network_error'
+      ? 'Network error. Please try again.'
+      : err || '';
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -65,10 +70,7 @@ export default function ContactPage() {
 
         <section
           className="rounded-2xl p-6 shadow-sm"
-          style={{
-            backgroundColor: 'rgba(22,163,74,0.08)',  
-            border: '1px solid rgba(22,163,74,0.15)',  
-          }}
+          style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
         >
           <form className="space-y-5" onSubmit={onSubmit}>
             <div>
@@ -129,7 +131,10 @@ export default function ContactPage() {
 
         <p className="mt-6 text-sm text-gray-600">
           Vous préférez par email ? Écrivez à{' '}
-          <a href="mailto:hello@jardinsolidaire.test" className="text-pink-500 hover:text-pink-600 underline">
+          <a
+            href="mailto:hello@jardinsolidaire.test"
+            className="text-pink-500 hover:text-pink-600 underline"
+          >
             hello@jardinsolidaire.test
           </a>
         </p>

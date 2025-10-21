@@ -4,6 +4,7 @@ import React, { use, useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import BookingButton from "@/components/booking/BookingButton";
+import { getAnyToken } from "@/lib/api";
 
 const AvailabilityCalendar = dynamic(
   () => import("@/components/availability/AvailabilityCalendar"),
@@ -182,13 +183,13 @@ export default function GardenDetailPage({ params }) {
             href="/gardens"
             aria-label="Retour aux jardins"
             className="
-              inline-flex items-center gap-2 rounded-full px-4 py-2
-              bg-white/80 text-[#16a34a]
-              border border-[rgba(22,163,74,0.28)]
-              hover:bg-[rgba(22,163,74,0.06)]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
-              shadow-sm transition
-            "
+inline-flex items-center gap-2 rounded-full px-4 py-2
+bg-white/80 text-[#16a34a]
+border border-[rgba(22,163,74,0.28)]
+hover:bg-[rgba(22,163,74,0.06)]
+focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
+shadow-sm transition
+"
           >
             <span aria-hidden>←</span> Retour aux jardins
           </Link>
@@ -289,15 +290,15 @@ export default function GardenDetailPage({ params }) {
 
         {/* Availability calendar for garden owner */}
         <section className="mt-8">
-            <h2 className="sr-only">Disponibilités du jardin</h2>
-  <div
-    className="rounded-2xl p-6"
-    style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
-  ></div>
+          <h2 className="sr-only">Disponibilités du jardin</h2>
+          <div
+            className="rounded-2xl p-6"
+            style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
+          ></div>
           <AvailabilityCalendar
             mode="garden"
-            ownerId={garden.id} // ← must be defined
-            token={localStorage.getItem("TOKEN")} // if you want to allow edits
+            ownerId={garden.id}
+            token={getAnyToken()}
           />
         </section>
       </main>
@@ -319,3 +320,4 @@ function Card({ title, children }) {
     </div>
   );
 }
+

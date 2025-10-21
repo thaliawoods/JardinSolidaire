@@ -1,8 +1,8 @@
 'use client';
-import useSession from '@/hooks/useSession';
+import { useAuth } from '@/lib/useAuth';
 
 export default function SessionBadge() {
-  const { me, loading, logout } = useSession();
+  const { user: me, loading, logout } = useAuth();
 
   if (loading) {
     return (
@@ -23,10 +23,7 @@ export default function SessionBadge() {
     );
   }
 
-  const displayName =
-    me.firstName?.trim() ||
-    me.prenom?.trim() || 
-    me.email;
+  const displayName = me.firstName?.trim() || me.prenom?.trim() || me.email;
 
   return (
     <div className="fixed bottom-4 right-4 bg-green-600 text-white px-3 py-2 rounded flex items-center gap-3">

@@ -4,9 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { getFavGardeners, addFavGardener, removeFavGardener } from '@/lib/favorites';
 
-const API_BASE   = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
-const BRAND_GREEN = '#16a34a'; 
+const BRAND_GREEN = '#16a34a';
 
 function resolveMedia(u) {
   if (!u) return null;
@@ -76,6 +76,7 @@ export default function GardenersList() {
   useEffect(() => { setFavorites(getFavGardeners().map((g) => String(g.id))); }, []);
 
   useEffect(() => {
+    const ac = new AbortController();
     let alive = true;
     (async () => {
       try {
@@ -84,13 +85,13 @@ export default function GardenersList() {
         if (search) en.searchParams.set('search', search);
         if (minRating) en.searchParams.set('minRating', minRating);
         if (kind) en.searchParams.set('kind', kind);
-        let res = await fetch(en.toString(), { cache: 'no-store' });
+        let res = await fetch(en.toString(), { cache: 'no-store', signal: ac.signal });
         if (!res.ok) {
           const fr = new URL(`${API_BASE}/api/jardiniers`);
           if (search) fr.searchParams.set('search', search);
           if (minRating) fr.searchParams.set('minRating', minRating);
           if (kind) fr.searchParams.set('kind', kind);
-          res = await fetch(fr.toString(), { cache: 'no-store' });
+          res = await fetch(fr.toString(), { cache: 'no-store', signal: ac.signal });
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -100,7 +101,7 @@ export default function GardenersList() {
         if (alive) { setErr('Impossible de charger les jardiniers.'); setGardeners([]); }
       } finally { if (alive) setLoading(false); }
     })();
-    return () => { alive = false; };
+    return () => { alive = false; ac.abort(); };
   }, [search, minRating, kind]);
 
   const filtered = useMemo(() => {
@@ -217,6 +218,7 @@ export default function GardenersList() {
           {filtered.map((g) => {
             const fallback = greenPlaceholder(g.firstName, g.lastName);
             const src = g.avatarUrl || fallback;
+            const favbed = favorites.includes(String(g.id));
             return (
               <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
                 <article
@@ -241,9 +243,9 @@ export default function GardenersList() {
                       type="button"
                       onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
                       className="absolute top-2 right-2 text-xl hover:scale-125 transition"
-                      aria-label={favorites.includes(String(g.id)) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                     >
-                      {favorites.includes(String(g.id))
+                      {favbed
                         ? <span className="text-pink-500">♥</span>
                         : <span className="text-gray-400">♡</span>}
                     </button>

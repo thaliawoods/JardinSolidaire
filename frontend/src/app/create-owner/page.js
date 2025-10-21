@@ -28,12 +28,12 @@ export default function CreateOwnerPage() {
         setLoading(true);
         setErr('');
         const me = await apiFetch('/api/me');
-        const o = me?.user?.owner;
+        const o = me?.user?.proprietaire || me?.user?.owner; // support both keys
         if (o) {
           setForm({
             firstName: o.firstName || '',
-            lastName:  o.lastName || '',
-            district:  o.district || '',
+            lastName: o.lastName || '',
+            district: o.district || '',
             availability: o.availability || '',
             area: o.area == null ? '' : String(o.area),
             kind: o.kind || '',
@@ -67,8 +67,8 @@ export default function CreateOwnerPage() {
 
     const payload = {
       firstName: form.firstName.trim(),
-      lastName:  form.lastName.trim(),
-      district:  form.district.trim(),
+      lastName: form.lastName.trim(),
+      district: form.district.trim(),
       availability: form.availability.trim(),
       area: Number.isFinite(areaInt) ? areaInt : null,
       kind: form.kind.trim(),
@@ -109,10 +109,7 @@ export default function CreateOwnerPage() {
         <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-5">
           <section
             className="rounded-2xl p-6 shadow-sm"
-            style={{
-              backgroundColor: 'rgba(22,163,74,0.08)',
-              border: '1px solid rgba(22,163,74,0.15)',
-            }}
+            style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Prénom">
