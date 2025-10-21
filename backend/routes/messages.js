@@ -1,4 +1,3 @@
-// backend/routes/messages.js
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
@@ -6,84 +5,91 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const router = express.Router();
 
-/** Auth middleware: extracts user id from Bearer token */
 function auth(req, res, next) {
   try {
-    const h = req.headers.authorization || '';
-    const token = h.startsWith('Bearer ') ? h.slice(7) : null;
-    if (!token) return res.status(401).json({ error: 'invalid_token' });
+    const header = String(req.headers.authorization || '');
+    const BEARER = 'bearer ';
+    if (!header.toLowerCase().startsWith(BEARER)) {
+      return res.status(401).json({ error: 'missing_authorization_header' });
+    }
+    const token = header.slice(BEARER.length).trim();
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return res.status(500).json({ error: 'server_misconfigured', detail: 'JWT_SECRET missing' });
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
-    const uid = Number(payload.id_utilisateur);
-    if (!uid || Number.isNaN(uid)) return res.status(401).json({ error: 'invalid_token' });
+    const payload = jwt.verify(token, secret);
+    const uid = Number(payload.userId ?? payload.id); // brief legacy allowance
+    if (!Number.isFinite(uid) || uid <= 0) return res.status(401).json({ error: 'invalid_token_payload' });
 
     req.userId = uid;
     next();
-  } catch (_e) {
+  } catch {
     return res.status(401).json({ error: 'invalid_token' });
   }
 }
 
 router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
-/**
- * GET /api/messages/threads
- * Returns the distinct conversation peers of the current user with the last message preview.
- */
 router.get('/threads', auth, async (req, res) => {
   try {
     const me = BigInt(req.userId);
 
-    // Get last 50 messages where I am sender or recipient
-    const msgs = await prisma.messagerie.findMany({
-      where: { OR: [{ id_envoyeur: me }, { id_destinataire: me }] },
-      orderBy: { date_envoi: 'desc' },
+    const msgs = await prisma.message.findMany({
+      where: { OR: [{ senderUserId: me }, { targetUserId: me }] },
+      orderBy: { sentAt: 'desc' },
       take: 200,
       select: {
-        id_message: true,
-        id_envoyeur: true,
-        id_destinataire: true,
-        contenu: true,
-        date_envoi: true,
-        lu: true,
+        id: true,
+        senderUserId: true,
+        targetUserId: true,
+        content: true,
+        sentAt: true,
+        read: true,
       },
     });
 
-    // Build threads {peerId, lastMessage}
     const seen = new Set();
-    const threads = [];
+    const peersInOrder = [];
     for (const m of msgs) {
-      const sender = Number(m.id_envoyeur);
-      const recipient = Number(m.id_destinataire);
+      const sender = Number(m.senderUserId);
+      const recipient = Number(m.targetUserId);
       const peerId = sender === req.userId ? recipient : sender;
-      if (seen.has(peerId)) continue;
-      seen.add(peerId);
-
-      // fetch basic user info for the peer
-      const peerUser = await prisma.utilisateur.findUnique({
-        where: { id_utilisateur: BigInt(peerId) },
-        select: { id_utilisateur: true, prenom: true, nom: true, photo_profil: true },
-      });
-
-      threads.push({
-        peerId,
-        peer: peerUser
-          ? {
-              id_utilisateur: Number(peerUser.id_utilisateur),
-              prenom: peerUser.prenom,
-              nom: peerUser.nom,
-              photo_profil: peerUser.photo_profil,
-            }
-          : { id_utilisateur: peerId, prenom: 'Utilisateur', nom: String(peerId), photo_profil: null },
-        lastMessage: {
-          id_message: Number(m.id_message),
-          contenu: m.contenu,
-          date_envoi: m.date_envoi,
-          outgoing: sender === req.userId,
-          lu: m.lu,
-        },
-      });
+      if (!seen.has(peerId)) {
+        seen.add(peerId);
+        peersInOrder.push({ peerId, lastMessage: m });
+      }
     }
+
+    const peerIds = peersInOrder.map((p) => BigInt(p.peerId));
+    const peerUsers = peerIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: peerIds } },
+          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
+        })
+      : [];
+
+    const userById = new Map(peerUsers.map((u) => [Number(u.id), u]));
+
+    const threads = peersInOrder.map(({ peerId, lastMessage }) => {
+      const u = userById.get(peerId);
+      return {
+        peerId,
+        peer: u
+          ? {
+              id: Number(u.id),
+              firstName: u.firstName ?? '',
+              lastName: u.lastName ?? '',
+              avatarUrl: u.avatarUrl ?? null,
+            }
+          : { id: peerId, firstName: 'User', lastName: String(peerId), avatarUrl: null },
+        lastMessage: {
+          id: Number(lastMessage.id),
+          content: lastMessage.content,
+          sentAt: lastMessage.sentAt,
+          outgoing: Number(lastMessage.senderUserId) === req.userId,
+          read: !!lastMessage.read,
+        },
+      };
+    });
 
     res.json({ threads });
   } catch (e) {
@@ -92,39 +98,36 @@ router.get('/threads', auth, async (req, res) => {
   }
 });
 
-/**
- * GET /api/messages/with/:peerId
- * Returns messages between me and peer (latest 100, ascending).
- */
 router.get('/with/:peerId', auth, async (req, res) => {
   try {
     const me = BigInt(req.userId);
     const peer = BigInt(Number(req.params.peerId));
-    const results = await prisma.messagerie.findMany({
+
+    const results = await prisma.message.findMany({
       where: {
         OR: [
-          { id_envoyeur: me, id_destinataire: peer },
-          { id_envoyeur: peer, id_destinataire: me },
+          { senderUserId: me, targetUserId: peer },
+          { senderUserId: peer, targetUserId: me },
         ],
       },
-      orderBy: { date_envoi: 'asc' },
+      orderBy: { sentAt: 'asc' },
       take: 100,
       select: {
-        id_message: true,
-        id_envoyeur: true,
-        id_destinataire: true,
-        contenu: true,
-        date_envoi: true,
-        lu: true,
+        id: true,
+        senderUserId: true,
+        targetUserId: true,
+        content: true,
+        sentAt: true,
+        read: true,
       },
     });
 
     const messages = results.map((m) => ({
-      id_message: Number(m.id_message),
-      contenu: m.contenu,
-      date_envoi: m.date_envoi,
-      outgoing: Number(m.id_envoyeur) === req.userId,
-      lu: m.lu,
+      id: Number(m.id),
+      content: m.content,
+      sentAt: m.sentAt,
+      outgoing: Number(m.senderUserId) === req.userId,
+      read: !!m.read,
     }));
 
     res.json({ messages });
@@ -134,36 +137,26 @@ router.get('/with/:peerId', auth, async (req, res) => {
   }
 });
 
-/**
- * POST /api/messages/send
- * body: { to: number, contenu: string }
- */
 router.post('/send', auth, async (req, res) => {
   try {
-    const { to, contenu } = req.body || {};
+    const { to, content } = req.body || {};
     const toNum = Number(to);
-    if (!toNum || !contenu || typeof contenu !== 'string') {
-      return res.status(400).json({ error: 'to_and_contenu_required' });
+    if (!Number.isFinite(toNum) || !content || typeof content !== 'string') {
+      return res.status(400).json({ error: 'to_and_content_required' });
     }
 
-    const created = await prisma.messagerie.create({
+    const created = await prisma.message.create({
       data: {
-        id_envoyeur: BigInt(req.userId),
-        id_destinataire: BigInt(toNum),
-        contenu,
-        lu: false,
+        senderUserId: BigInt(req.userId),
+        targetUserId: BigInt(toNum),
+        content,
+        read: false,
       },
-      select: {
-        id_message: true,
-        date_envoi: true,
-      },
+      select: { id: true, sentAt: true },
     });
 
     res.status(201).json({
-      sent: {
-        id_message: Number(created.id_message),
-        date_envoi: created.date_envoi,
-      },
+      sent: { id: Number(created.id), sentAt: created.sentAt },
     });
   } catch (e) {
     console.error('POST /messages/send failed:', e?.stack || e);

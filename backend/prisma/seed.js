@@ -1,29 +1,26 @@
-const { exec } = require('child_process');
+require('dotenv').config();
+const { spawn } = require('child_process');
+const path = require('path');
 
-const seeds = [
-  'seed_utilisateur.js',
-  'seed_competences.js',
-  'seed_jardin.js',
-  'seed_reservation.js',
-  'seed_proprietaire.js',
-  'seed_jardinier.js'
-];
+const seeds = ['seed_bookings.js']; // keep it simple for now
+
+function runSeed(file) {
+  return new Promise((resolve, reject) => {
+    const full = path.join(__dirname, file);
+    console.log(`▶ Running ${file}`);
+    const child = spawn(process.execPath, [full], { stdio: 'inherit' });
+    child.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`${file} exited ${code}`))));
+    child.on('error', reject);
+  });
+}
 
 (async () => {
-  for (const seedFile of seeds) {
-    console.log(`▶ Exécution de ${seedFile}`);
-    await new Promise((resolve, reject) => {
-      exec(`node ${__dirname}/${seedFile}`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`❌ Erreur dans ${seedFile} :`, error);
-          reject(error);
-          return;
-        }
-        console.log(stdout);
-        resolve();
-      });
-    });
+  try {
+    for (const file of seeds) await runSeed(file);
+    console.log('🎉 All seeds completed successfully.');
+    process.exit(0);
+  } catch (err) {
+    console.error('❌ Seeding pipeline failed:', err.message);
+    process.exit(1);
   }
-
-  console.log('✅ Tous les seeds ont été exécutés avec succès.');
 })();

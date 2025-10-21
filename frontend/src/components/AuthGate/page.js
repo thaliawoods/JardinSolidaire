@@ -9,14 +9,14 @@ export default function AuthGate({ children }) {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.replace('/connexion?next=/mon-espace');
+      router.replace('/login?next=/my-space');
     }
   }, [loading, isAuthenticated, router]);
 
   if (loading) {
     return <div className="pt-24 text-center text-gray-600">Vérification de la session…</div>;
   }
-  if (!isAuthenticated) return null; // redirected
+  if (!isAuthenticated) return null;
 
   return children;
 }
