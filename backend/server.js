@@ -19,7 +19,7 @@ const authResetPassword = require('./routes/auth.resetPassword');  // POST /api/
 const navbarRoutes      = require('./routes/navbar');
 const meRoutes          = require('./routes/me');
 const messagesRoutes    = require('./routes/messages');
-const bookingsRoutes    = require('./routes/bookings');
+const bookingsRoutes    = require('./routes/bookings');            // ✅ our bookings router
 const contactRoutes     = require('./routes/contact');
 
 // --- Middleware ---
@@ -52,17 +52,14 @@ app.use('/api/auth', authResetPassword);   // -> POST /api/auth/reset-password
 app.use('/api/navbar', navbarRoutes);
 app.use('/api/me', meRoutes);
 app.use('/api/messages', messagesRoutes);
-app.use('/api/bookings', bookingsRoutes);
+app.use('/api/bookings', bookingsRoutes);  // ✅ mounted
 app.use('/api/contact', contactRoutes);
 
-// --- (Optional) keep some legacy French paths working with safe 307 redirects ---
+// --- (Optional) legacy FR paths with redirects ---
 app.post('/api/verifier-email', (req, res) => res.redirect(307, '/api/auth/check-email'));
 app.post('/api/modifier_mdp',  (req, res) => res.redirect(307, '/api/auth/reset-password'));
-
-// If you previously used a broader /api/mdp* route, keep it explicit:
 app.post('/api/mdp/verifier-email', (req, res) => res.redirect(307, '/api/auth/check-email'));
 
-// Other old pluralized FR resources → 301 (safe for GETs)
 app.use('/api/jardins',       (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/jardins/, '/api/gardens')));
 app.use('/api/jardiniers',    (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/jardiniers/, '/api/gardeners')));
 app.use('/api/proprietaires', (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/proprietaires/, '/api/owners')));
