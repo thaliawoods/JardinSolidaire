@@ -41,10 +41,12 @@ export default function NewBookingPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setErr('');
+
     if (!gardenId || !startsAt || !endsAt) {
       setErr('merci de remplir au moins: jardin, début et fin');
       return;
     }
+
     try {
       setSubmitting(true);
       await createBooking({
@@ -70,7 +72,10 @@ export default function NewBookingPage() {
           <span className="block text-sm mb-1">Jardin (ID)</span>
           <input
             value={gardenId}
-            onChange={(e) => { setGardenId(e.target.value); runCheck(startsAt, endsAt, e.target.value); }}
+            onChange={(e) => {
+              setGardenId(e.target.value);
+              runCheck(startsAt, endsAt, e.target.value);
+            }}
             className="w-full rounded border p-2"
             placeholder="ex: 42"
           />
@@ -92,24 +97,32 @@ export default function NewBookingPage() {
             <input
               type="datetime-local"
               value={startsAt}
-              onChange={(e) => { setStartsAt(e.target.value); runCheck(e.target.value, endsAt, gardenId); }}
+              onChange={(e) => {
+                setStartsAt(e.target.value);
+                runCheck(e.target.value, endsAt, gardenId);
+              }}
               className="w-full rounded border p-2"
             />
           </label>
+
           <label className="block">
             <span className="block text-sm mb-1">Fin</span>
             <input
               type="datetime-local"
               value={endsAt}
-              onChange={(e) => { setEndsAt(e.target.value); runCheck(startsAt, e.target.value, gardenId); }}
+              onChange={(e) => {
+                setEndsAt(e.target.value);
+                runCheck(startsAt, e.target.value, gardenId);
+              }}
               className="w-full rounded border p-2"
             />
           </label>
         </div>
 
         {checking && <p className="text-sm text-gray-500">Vérification du créneau…</p>}
-        {can && (
-          can.ok ? (
+
+        {can &&
+          (can.ok ? (
             <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2 text-sm">
               Créneau disponible ✅
             </div>
@@ -117,11 +130,12 @@ export default function NewBookingPage() {
             <div className="text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-sm">
               Créneau indisponible ❌
               <ul className="list-disc ml-5 mt-1">
-                {can.reasons?.map((r, i) => <li key={i}>{r}</li>)}
+                {can.reasons?.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
               </ul>
             </div>
-          )
-        )}
+          ))}
 
         {err && <p className="text-red-600 text-sm">{err}</p>}
 

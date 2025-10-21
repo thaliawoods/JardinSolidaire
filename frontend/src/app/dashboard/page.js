@@ -11,10 +11,19 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      if (!token) { window.location.href = '/login'; return; }
-      const res = await fetch(`${API_BASE}/api/me`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
-      const data = await res.json().catch(()=>null);
-      if (res.ok && data?.user) { setMe(data.user); setRole(data.user.role || null); }
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+      const res = await fetch(`${API_BASE}/api/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.user) {
+        setMe(data.user);
+        setRole(data.user.role || null);
+      }
     })();
   }, [token]);
 
@@ -22,8 +31,11 @@ export default function Dashboard() {
     if (!token) return;
     const res = await fetch(`${API_BASE}/api/me/role`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ role: r })
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ role: r }),
     });
     if (res.ok) {
       const upd = await res.json();
@@ -37,8 +49,18 @@ export default function Dashboard() {
       <p className="mb-6">Bonjour {me?.email}</p>
 
       <div className="flex gap-3 mb-8">
-        <button className={`px-4 py-2 rounded ${role === 'OWNER' ? 'bg-green-700 text-white' : 'bg-gray-200'}`} onClick={() => setActiveRole('OWNER')}>Je suis propriétaire</button>
-        <button className={`px-4 py-2 rounded ${role === 'GARDENER' ? 'bg-green-700 text-white' : 'bg-gray-200'}`} onClick={() => setActiveRole('GARDENER')}>Je suis jardinier</button>
+        <button
+          className={`px-4 py-2 rounded ${role === 'OWNER' ? 'bg-green-700 text-white' : 'bg-gray-200'}`}
+          onClick={() => setActiveRole('OWNER')}
+        >
+          Je suis propriétaire
+        </button>
+        <button
+          className={`px-4 py-2 rounded ${role === 'GARDENER' ? 'bg-green-700 text-white' : 'bg-gray-200'}`}
+          onClick={() => setActiveRole('GARDENER')}
+        >
+          Je suis jardinier
+        </button>
       </div>
 
       {role === 'OWNER' && (

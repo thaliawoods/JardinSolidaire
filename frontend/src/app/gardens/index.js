@@ -39,6 +39,7 @@ export default function GardensList() {
   }, []);
 
   useEffect(() => {
+    const ac = new AbortController();
     let alive = true;
     async function load() {
       try {
@@ -47,15 +48,15 @@ export default function GardensList() {
 
         const en = new URL(`${API_BASE}/api/gardens`);
         if (search) en.searchParams.set('search', search);
-        if (kind) en.searchParams.set('kind', uiToApiKind[kind] ?? kind);
+        if (kind)   en.searchParams.set('kind', uiToApiKind[kind] ?? kind);
 
-        let res = await fetch(en.toString(), { cache: 'no-store' });
+        let res = await fetch(en.toString(), { cache: 'no-store', signal: ac.signal });
 
         if (!res.ok) {
           const fr = new URL(`${API_BASE}/api/jardins`);
           if (search) fr.searchParams.set('search', search);
-          if (kind) fr.searchParams.set('type', uiToApiKind[kind] ?? kind);
-          res = await fetch(fr.toString(), { cache: 'no-store' });
+          if (kind)   fr.searchParams.set('type', uiToApiKind[kind] ?? kind);
+          res = await fetch(fr.toString(), { cache: 'no-store', signal: ac.signal });
         }
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -74,7 +75,7 @@ export default function GardensList() {
       }
     }
     load();
-    return () => { alive = false; };
+    return () => { alive = false; ac.abort(); };
   }, [search, kind]);
 
   const toggleFavorite = (g) => {
@@ -216,4 +217,3 @@ export default function GardensList() {
     </div>
   );
 }
-

@@ -6,7 +6,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const router = express.Router();
 
-router.get("/_ping", (_req, res) => res.json({ ok: true }));
+router.get("/_ping", (_req, res) => res.json({ ok: true, where: "routes/login.js" }));
 
 router.post("/", async (req, res) => {
   try {
@@ -41,32 +41,19 @@ router.post("/", async (req, res) => {
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      return res
-        .status(500)
-        .json({
-          error: "server_misconfigured",
-          detail: "JWT_SECRET is not set",
-        });
+      return res.status(500).json({ error: "server_misconfigured", detail: "JWT_SECRET is not set" });
     }
 
-    const token = jwt.sign({ userId: Number(user.id) }, secret, {
-      expiresIn: "7d",
-    });
-
-    res.json({
+    const token = jwt.sign({ userId: Number(user.id) }, secret, { expiresIn: "7d" });
+    return res.json({
       token,
       user: {
         id: Number(user.id),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role || "user",
+        role: user.role || null,
       },
-    });
-
-    res.json({
-      token,
-      user: { id: Number(user.id), email: user.email, role: user.role || null },
     });
   } catch (e) {
     console.error("POST /login failed:", e?.stack || e);

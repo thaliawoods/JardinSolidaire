@@ -265,7 +265,10 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const id = BigInt(req.params.id);
     const { status, notes } = req.body || {};
 
-    const current = await prisma.booking.findUnique({ where: { id }, include: { slot: true } });
+    const current = await prisma.booking.findUnique({
+      where: { id },
+      include: { slot: true },
+    });
     if (!current) return res.status(404).json({ error: 'not_found' });
     if (current.userId !== BigInt(req.user.id)) return res.status(403).json({ error: 'forbidden' });
 
@@ -278,12 +281,47 @@ router.patch('/:id', requireAuth, async (req, res) => {
       patch.status = status;
     }
 
-    const updated = await prisma.booking.update({ where: { id }, data: patch, include: { slot: true } });
-    res.json(shapeBooking(updated));
+    const updated = await prisma.$transaction(async (tx) => {
+      const b = await tx.booking.update({
+        where: { id },
+        data: patch,
+        include: { slot: true },
+      });
+
+      // Free the slot if booking is no longer active
+      if (b.slotId && (b.status === 'cancelled' || b.status === 'completed')) {
+        await tx.availabilitySlot.update({
+          where: { id: b.slotId },
+          data: { status: 'free' },
+        });
+      }
+
+      return b;
+    });
+
+    // Same shape as before
+    const start = new Date(updated.slot.date);
+    const st = new Date(updated.slot.startTime);
+    start.setHours(st.getHours(), st.getMinutes(), st.getSeconds(), st.getMilliseconds());
+    const end = new Date(updated.slot.date);
+    const et = new Date(updated.slot.endTime);
+    end.setHours(et.getHours(), et.getMinutes(), et.getSeconds(), et.getMilliseconds());
+
+    res.json({
+      id: Number(updated.id),
+      gardenId: updated.gardenId != null ? Number(updated.gardenId) : null,
+      slotId: updated.slotId != null ? Number(updated.slotId) : null,
+      title: null,
+      notes: updated.notes ?? null,
+      status: updated.status || 'pending',
+      startsAt: start,
+      endsAt: end,
+    });
   } catch (e) {
     console.error('patch booking error:', e?.message || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
+
 
 module.exports = router;

@@ -1,7 +1,5 @@
-import GardensList from './index'; 
+import GardensList from './index';
 
 export default function GardensPage() {
-  return (
-        <GardensList />
-  );
+  return <GardensList />;
 }
