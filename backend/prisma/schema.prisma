@@ -280,9 +280,10 @@ model GardenerAvailabilitySlot {
   endTime    DateTime @db.Time(6)
   status     String // "free" | "unavailable"
 
-  // 👇 name the relation to match the back-reference on Gardener
+  // Relation to Gardener (named to match back-ref)
   gardener Gardener @relation("GardenerAvailabilities", fields: [gardenerId], references: [id], onDelete: Cascade)
 
   @@index([gardenerId, date, startTime, endTime])
-  @@unique([gardenId, date, startTime, endTime])
+  @@unique([gardenerId, date, startTime, endTime]) // <-- fixed here
 }
+
