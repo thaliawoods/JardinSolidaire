@@ -1,7 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const AvailabilityCalendar = dynamic(
+  () => import('@/components/availability/AvailabilityCalendar'),
+  { ssr: false }
+);
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
@@ -52,7 +58,7 @@ function normalizeGardener(raw) {
 }
 
 export default function GardenerDetailPage({ params }) {
-  const { id } = params || {};
+  const { id } = use(params) || {};
   const [gardener, setGardener] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -219,6 +225,20 @@ export default function GardenerDetailPage({ params }) {
             Envoyer un message
           </Link>
         </div>
+      </section>
+
+      {/* Personal availability calendar for the gardener */}
+      <section className="mt-8">
+          <h2 className="sr-only">Disponibilités du jardinier</h2>
+  <div
+    className="rounded-2xl p-6"
+    style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
+  ></div>
+        <AvailabilityCalendar
+          mode="gardener"
+          targetId={id}
+          title="Mes disponibilités (gardien·ne)"
+        />
       </section>
     </main>
   );

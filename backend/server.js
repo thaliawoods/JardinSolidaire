@@ -21,10 +21,13 @@ const meRoutes          = require('./routes/me');
 const messagesRoutes    = require('./routes/messages');
 const bookingsRoutes    = require('./routes/bookings');            // ✅ our bookings router
 const contactRoutes     = require('./routes/contact');
+const availabilityRoutes = require('./routes/availability');
 
 // --- Middleware ---
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: ['http://localhost:3000', process.env.FRONTEND_ORIGIN].filter(Boolean),
+  credentials: true,
+}));app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Health check ---
@@ -54,6 +57,8 @@ app.use('/api/me', meRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/bookings', bookingsRoutes);  // ✅ mounted
 app.use('/api/contact', contactRoutes);
+app.use('/api/availability', availabilityRoutes);
+
 
 // --- (Optional) legacy FR paths with redirects ---
 app.post('/api/verifier-email', (req, res) => res.redirect(307, '/api/auth/check-email'));
