@@ -14,6 +14,7 @@ const ACTIONS = [
 export default function BookingDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -51,7 +52,9 @@ export default function BookingDetailPage() {
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <button onClick={() => router.back()} className="text-sm underline">← retour</button>
+      <button onClick={() => router.back()} className="text-sm underline">
+        ← retour
+      </button>
 
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">

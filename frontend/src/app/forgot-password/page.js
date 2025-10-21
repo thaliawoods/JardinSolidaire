@@ -1,8 +1,6 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Footer from '../../components/Footer/Footer';
-import Navbar from '../../components/Navbar/Navbar';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
@@ -35,8 +33,8 @@ export default function ForgotPasswordPage() {
       const data = await res.json().catch(() => ({}));
 
       if (res.ok && data?.success) {
-        localStorage.setItem('email', email);
-        window.location.href = '/modifier_mdp';
+        localStorage.setItem('reset_email', email);  // unified key
+        window.location.href = '/reset-password';
         return;
       }
 
@@ -51,95 +49,61 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <div style={{ backgroundColor: '#f5f5f5', minHeight: '100vh', paddingTop: '100px' }}>
-        <div
-          style={{
-            maxWidth: '500px',
-            margin: '0 auto',
-            padding: '40px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-          }}
-        >
-          <h2
+    <div style={{ backgroundColor: '#f5f5f5', minHeight: '100vh', paddingTop: '100px' }}>
+      <div style={{ maxWidth: 500, margin: '0 auto', padding: '40px 20px' }}>
+        <h2 style={{ textAlign: 'center', color: '#021904', marginBottom: 20, fontSize: 28 }}>
+          Forgot your password?
+        </h2>
+        <p style={{ textAlign: 'center', color: '#4e784f', fontSize: 18, marginBottom: 30 }}>
+          No worries 🌱<br />
+          Enter your email and we’ll guide you to create a new one.
+        </p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
+          <input
+            type="email"
+            name="email"
+            value={email}
+            placeholder="Email address"
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            style={{ padding: 12, borderRadius: 10, border: '1px solid #ddd' }}
+            required
+            autoComplete="email"
+          />
+          <button
+            type="submit"
+            disabled={submitting}
             style={{
-              textAlign: 'center',
-              color: '#021904',
-              marginBottom: '20px',
-              fontSize: '28px',
+              padding: 14,
+              backgroundColor: '#6ec173',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              cursor: 'pointer',
+              fontSize: 18,
+              marginTop: 20,
+              opacity: submitting ? 0.7 : 1,
             }}
           >
-            Forgot your password?
-          </h2>
-          <p
-            style={{
-              textAlign: 'center',
-              color: '#4e784f',
-              fontSize: '18px',
-              marginBottom: '30px',
-            }}
-          >
-            No worries 🌱<br />
-            Enter your email and we’ll guide you to create a new one.
-          </p>
+            {submitting ? 'Sending…' : 'Reset password'}
+          </button>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
-            <input
-              type="email"
-              name="email"
-              value={email}
-              placeholder="Email address"
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded px-3 py-2"
-              style={{ padding: '12px', borderRadius: 10, border: '1px solid #ddd' }}
-              required
-              autoComplete="email"
-            />
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                padding: '14px',
-                backgroundColor: '#6ec173',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                fontSize: '18px',
-                marginTop: '20px',
-                opacity: submitting ? 0.7 : 1,
-              }}
-            >
-              {submitting ? 'Sending…' : 'Reset password'}
-            </button>
+          {msg && (
+            <p style={{ color: invalid ? '#e3107d' : '#021904', fontSize: 16, marginTop: 20, textAlign: 'center' }}>
+              {msg}
+            </p>
+          )}
 
-            {msg && (
-              <p
-                style={{
-                  color: invalid ? '#e3107d' : '#021904',
-                  fontSize: '16px',
-                  marginTop: '20px',
-                  textAlign: 'center',
-                }}
-              >
-                {msg}
-              </p>
-            )}
-
-            {invalid && (
-              <p style={{ textAlign: 'center', marginTop: '10px' }}>
-                <Link href="/inscription" className="text-[#6ec173] underline">
-                  Create an account
-                </Link>
-              </p>
-            )}
-          </form>
-        </div>
+          {invalid && (
+            <p style={{ textAlign: 'center', marginTop: 10 }}>
+              <Link href="/register" className="text-[#6ec173] underline">
+                Create an account
+              </Link>
+            </p>
+          )}
+        </form>
       </div>
-      <Footer />
-    </>
+    </div>
   );
 }

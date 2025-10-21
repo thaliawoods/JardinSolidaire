@@ -1,245 +1,202 @@
 'use client';
 
-import { use, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import dynamic from 'next/dynamic';
-
-const AvailabilityCalendar = dynamic(
-  () => import('@/components/availability/AvailabilityCalendar'),
-  { ssr: false }
-);
+import React, { useEffect, useState } from 'react';
+import { getAnyToken } from '@/lib/api';
+import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
-const BRAND_GREEN = '#16a34a';
 
-function resolveMedia(u) {
-  if (!u) return null;
-  const s = String(u).trim();
-  if (s.startsWith('http') || s.startsWith('data:')) return s;
-  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;
-  if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
-  if (s.startsWith('/')) return s;
-  const clean = s.replace(/^\.?\/*/, '');
-  if (clean.startsWith('uploads/')) return `${API_BASE}/${clean}`;
-  if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
-  return `${API_BASE}/uploads/${clean}`;
-}
-const resolveAvatar = resolveMedia;
-
-function initials(a = '', b = '') { const x=(a||'').trim()[0]||''; const y=(b||'').trim()[0]||''; return (`${x}${y}`.toUpperCase()||'U'); }
-function greenPlaceholder(first, last) {
-  const txt = initials(first, last);
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="24" ry="24" fill="${BRAND_GREEN}"/>
-  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
-        font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
-</svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
-function normalizeGardener(raw) {
-  if (!raw) return null;
-  const firstName = raw.firstName ?? raw.prenom ?? '';
-  const lastName  = raw.lastName  ?? raw.nom    ?? '';
-  const skillsArr = Array.isArray(raw.skills) ? raw.skills : (raw.competences ?? []);
-  const avatarRaw = raw.avatarUrl ?? raw.photo_profil ?? null;
-  return {
-    id: String(raw.id ?? raw.id_utilisateur ?? ''),
-    firstName, lastName,
-    avatarUrl: resolveAvatar(avatarRaw),
-    intro: raw.intro ?? raw.presentation ?? raw.biographie ?? '',
-    phone: raw.phone ?? raw.telephone ?? '',
-    address: raw.address ?? raw.localisation ?? raw.adresse ?? '',
-    rating: raw.rating ?? raw.note_moyenne ?? null,
-    skills: skillsArr,
-  };
-}
-
-export default function GardenerDetailPage({ params }) {
-  const { id } = use(params) || {};
+export default function GardenerPage({ params }) {
+  const { id } = params || {};
   const [gardener, setGardener] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState('');
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState('');
 
   useEffect(() => {
     let alive = true;
-    (async () => {
+
+    async function load() {
       try {
-        setLoading(true); setErr('');
-        let res = await fetch(`${API_BASE}/api/gardeners/${id}`, { cache: 'no-store' });
-        if (!res.ok) res = await fetch(`${API_BASE}/api/jardiniers/${id}`, { cache: 'no-store' });
+        setLoading(true);
+        setError('');
+        const res = await fetch(`${API_BASE}/api/gardeners/${id}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        if (!alive) return;
-        setGardener(normalizeGardener(data));
+
+        if (alive) {
+          setGardener({
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            avatarUrl: data.avatarUrl || '',
+            isOnline: !!data.isOnline,
+            totalReviews: data.totalReviews ?? 0,
+            rating: data.rating ?? null,
+            location: data.location || '—',
+            skills: Array.isArray(data.skills) ? data.skills : [],
+            yearsExperience: data.yearsExperience ?? null,
+            intro: data.intro || data.description || '—',
+            comments: data.comments || [],
+          });
+        }
       } catch (_e) {
-        if (alive) { setErr('Impossible de charger le jardinier.'); setGardener(null); }
-      } finally { if (alive) setLoading(false); }
-    })();
+        if (alive) {
+          setError("Couldn't load the gardener. Showing an example.");
+          setGardener({
+            firstName: 'Example',
+            lastName: 'Gardener',
+            avatarUrl: '',
+            isOnline: true,
+            totalReviews: 242,
+            rating: 4.9,
+            location: '—',
+            skills: ['mowing', 'weeding'],
+            yearsExperience: 2,
+            intro: 'Sample introduction text',
+            comments: [],
+          });
+        }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    if (id) load();
     return () => { alive = false; };
   }, [id]);
 
-  const fallback = useMemo(
-    () => greenPlaceholder(gardener?.firstName, gardener?.lastName),
-    [gardener?.firstName, gardener?.lastName]
-  );
-
-  if (loading) {
-    return (
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        <div className="h-24 bg-gray-100 rounded-2xl animate-pulse mb-4" />
-        <div className="h-40 bg-gray-100 rounded-2xl animate-pulse" />
-      </main>
-    );
-  }
-
-  if (err || !gardener) {
-    return (
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 mb-4">
-          {err || 'Impossible de charger le jardinier.'}
-        </div>
-        <Link
-          href="/gardeners"
-          aria-label="Retour à la liste des jardiniers"
-          className="
-            inline-flex items-center gap-2
-            rounded-full px-4 py-2
-            bg-white/80 text-[#16a34a]
-            border border-[rgba(22,163,74,0.28)]
-            hover:bg-[rgba(22,163,74,0.06)]
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
-            shadow-sm transition
-          "
-        >
-          <span aria-hidden>←</span> Retour à la liste
-        </Link>
-      </main>
-    );
-  }
-
-  const avatarSrc = gardener.avatarUrl || fallback;
-
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <Link
-          href="/gardeners"
-          aria-label="Retour aux jardiniers"
-          className="
-            inline-flex items-center gap-2
-            rounded-full px-4 py-2
-            bg-white/80 text-[#16a34a]
-            border border-[rgba(22,163,74,0.28)]
-            hover:bg-[rgba(22,163,74,0.06)]
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
-            shadow-sm transition
-          "
-        >
-          <span aria-hidden>←</span> Jardiniers
-        </Link>
-      </div>
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col">
+      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
+        <h1 className="sr-only">Gardener profile</h1>
 
-      <section className="flex items-center gap-4 mb-6">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={avatarSrc}
-          alt={`${gardener.firstName} ${gardener.lastName}`}
-          className="w-20 h-20 rounded-full object-cover shadow"
-          style={{ border: '4px solid rgba(22,163,74,0.35)' }}
-          onError={(e) => { e.currentTarget.src = fallback; }}
-        />
-        <div>
-          <h1 className="text-xl font-semibold text-green-800">
-            {gardener.firstName} {gardener.lastName}
-          </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span
-              className="text-xs px-2 py-1 rounded-full"
-              style={{ backgroundColor: 'rgba(22,163,74,0.12)', color: BRAND_GREEN }}
-            >
-              Jardinier
-            </span>
-            {gardener.rating != null && (
-              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
-                ★ {Number(gardener.rating).toFixed(1)}
-              </span>
-            )}
-            {!!gardener.address && (
-              <span
-                className="text-xs px-2 py-1 rounded-full"
-                style={{ backgroundColor: 'white', border: '1px solid rgba(22,163,74,0.25)', color: BRAND_GREEN }}
-              >
-                📍 {gardener.address}
-              </span>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section
-        className="rounded-2xl p-6 shadow-sm space-y-4"
-        style={{
-          backgroundColor: 'rgba(22,163,74,0.08)',
-          border: '1px solid rgba(22,163,74,0.15)',
-        }}
-      >
-        <p className="text-gray-700">
-          <strong className="text-gray-800">Description&nbsp;:</strong> {gardener.intro || '—'}
-        </p>
-
-        <div className="flex flex-wrap gap-3">
-          <p className="text-gray-700">
-            <strong className="text-gray-800">Téléphone&nbsp;:</strong> {gardener.phone || '—'}
-          </p>
-          <p className="text-gray-700">
-            <strong className="text-gray-800">Note&nbsp;:</strong> {gardener.rating ?? '—'}★
-          </p>
-        </div>
-
-        {!!gardener.skills?.length && (
-          <div>
-            <p className="font-medium text-gray-800 mb-2">Compétences :</p>
-            <div className="flex flex-wrap gap-2">
-              {gardener.skills.map((s, i) => (
-                <span
-                  key={i}
-                  className="px-2 py-1 text-xs rounded-full"
-                  style={{ backgroundColor: 'rgba(22,163,74,0.12)', color: BRAND_GREEN }}
-                >
-                  {typeof s === 'string' ? s : (s?.nom ?? '—')}
-                </span>
-              ))}
-            </div>
+        {loading && (
+          <div className="animate-pulse space-y-4">
+            <div className="h-28 bg-gray-100 rounded-2xl" />
+            <div className="h-40 bg-gray-100 rounded-2xl" />
+            <div className="h-40 bg-gray-100 rounded-2xl" />
           </div>
         )}
 
-        <div className="pt-2">
-          <Link
-            href="/messages"
-            aria-label="Envoyer un message"
-            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-white shadow-sm transition bg-pink-500 hover:bg-pink-600"
-          >
-            Envoyer un message
-          </Link>
-        </div>
-      </section>
+        {!!error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
-      {/* Personal availability calendar for the gardener */}
-      <section className="mt-8">
-          <h2 className="sr-only">Disponibilités du jardinier</h2>
-  <div
-    className="rounded-2xl p-6"
-    style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
-  ></div>
-        <AvailabilityCalendar
-          mode="gardener"
-          targetId={id}
-          title="Mes disponibilités (gardien·ne)"
-        />
-      </section>
-    </main>
+        {gardener && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <section className="flex items-start gap-4">
+                <div
+                  className="relative h-28 w-28 rounded-full bg-gray-200 overflow-hidden flex-shrink-0"
+                  aria-label="Gardener avatar"
+                >
+                  {gardener.avatarUrl && (
+                    <img
+                      src={gardener.avatarUrl}
+                      alt={`${gardener.firstName} ${gardener.lastName}`}
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                  {gardener.isOnline && (
+                    <span
+                      className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-lime-500 ring-2 ring-white"
+                      title="online"
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <StatBox value={gardener.totalReviews} label="reviews" />
+                  <StatBox value={gardener.rating != null ? `${gardener.rating}★` : '—'} label="average rating" />
+                </div>
+              </section>
+
+              <section className="lg:col-span-2">
+                <Card title="Gardener info">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
+                    <Field
+                      label="Name"
+                      value={`${gardener.firstName} ${gardener.lastName}`.trim() || '—'}
+                    />
+                    <Field label="Location" value={gardener.location} />
+                    <Field
+                      label="Skills"
+                      value={
+                        gardener.skills?.length
+                          ? (Array.isArray(gardener.skills) ? gardener.skills.join(', ') : String(gardener.skills))
+                          : '—'
+                      }
+                    />
+                    <Field
+                      label="Years of experience"
+                      value={gardener.yearsExperience != null ? String(gardener.yearsExperience) : '—'}
+                    />
+                  </div>
+                </Card>
+              </section>
+            </div>
+
+            <section className="mt-6">
+              <Card title="Introduction">
+                <p className="mt-3 text-gray-700 whitespace-pre-wrap">{gardener.intro}</p>
+              </Card>
+            </section>
+
+            <section className="mt-6">
+              <Card title="Comments">
+                <ul className="mt-3 space-y-3">
+                  {(gardener.comments || []).length === 0 && (
+                    <li className="text-gray-600 text-sm">No comments yet.</li>
+                  )}
+                  {(gardener.comments || []).map((c) => (
+                    <li key={c.id} className="border rounded-lg p-3">
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{c.text}</p>
+                      {c.author && <p className="mt-1 text-xs text-gray-500">by {c.author}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </section>
+
+            {/* Personal availability calendar for the gardener */}
+            <section className="mt-8">
+              <Card title="Disponibilités du jardinier">
+                <div className="rounded-2xl p-2" />
+              </Card>
+              <AvailabilityCalendar
+                mode="gardener"
+                ownerId={id}
+                token={getAnyToken()}
+              />
+            </section>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function Card({ title, children }) {
+  return (
+    <div className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {children}
+    </div>
+  );
+}
+function Field({ label, value }) {
+  return (
+    <div className="space-y-1">
+      <p className="font-medium">{label}</p>
+      <p className="text-gray-600">{value ?? '—'}</p>
+    </div>
+  );
+}
+function StatBox({ value, label }) {
+  return (
+    <div className="border rounded-md px-3 py-2 text-xs leading-tight w-28 bg-white">
+      <div className="font-semibold text-sm">{value}</div>
+      <div className="text-gray-500">{label}</div>
+    </div>
   );
 }

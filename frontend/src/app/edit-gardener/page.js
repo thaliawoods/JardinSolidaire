@@ -6,17 +6,14 @@ import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const SKILLS_URL =
-  process.env.NEXT_PUBLIC_API_SKILLS || `${API_BASE}/api/skills`;
+const SKILLS_URL = process.env.NEXT_PUBLIC_API_SKILLS || `${API_BASE}/api/skills`;
 const LEGACY_COMP_URL = `${API_BASE}/competences`;
 
 export default function EditGardenerPage() {
   const router = useRouter();
-
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
-
   const [skillsList, setSkillsList] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -33,7 +30,7 @@ export default function EditGardenerPage() {
     (async () => {
       try {
         let r = await fetch(SKILLS_URL, { cache: 'no-store' });
-        if (!r.ok) throw 0;
+        if (!r.ok) throw new Error();
         let data = await r.json();
         if (Array.isArray(data) && data.length && data[0].name === undefined) {
           data = data.map((c) => ({ id: c.id ?? c.id_competence, name: c.name ?? c.nom }));
@@ -43,7 +40,9 @@ export default function EditGardenerPage() {
         try {
           const r = await fetch(LEGACY_COMP_URL, { cache: 'no-store' });
           const data = await r.json();
-          setSkillsList((data || []).map((c) => ({ id: c.id ?? c.id_competence, name: c.name ?? c.nom })));
+          setSkillsList(
+            (data || []).map((c) => ({ id: c.id ?? c.id_competence, name: c.name ?? c.nom }))
+          );
         } catch {
           setSkillsList([]);
         }
@@ -57,7 +56,7 @@ export default function EditGardenerPage() {
         setLoading(true);
         setErr('');
         const me = await apiFetch('/api/me');
-        const g = me?.user?.gardener;
+        const g = me?.user?.jardinier || me?.user?.gardener;
         if (!g) {
           setLoading(false);
           return;
@@ -90,10 +89,14 @@ export default function EditGardenerPage() {
   const addSkill = () => {
     const clean = normalize(newSkill);
     if (!clean) return;
-    if (alreadyHas(clean)) { setNewSkill(''); return; }
+    if (alreadyHas(clean)) {
+      setNewSkill('');
+      return;
+    }
     setFormData((p) => ({ ...p, skills: [...p.skills, clean] }));
     setNewSkill('');
   };
+
   const removeSkill = (name) =>
     setFormData((p) => ({ ...p, skills: p.skills.filter((s) => s !== name) }));
 
@@ -104,7 +107,6 @@ export default function EditGardenerPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const years =
       formData.yearsExperience === '' || formData.yearsExperience == null
         ? null
@@ -112,9 +114,9 @@ export default function EditGardenerPage() {
 
     const payload = {
       firstName: (formData.firstName || '').trim(),
-      lastName:  (formData.lastName || '').trim(),
-      location:  (formData.location || '').trim(),
-      intro:     (formData.intro || '').trim(),
+      lastName: (formData.lastName || '').trim(),
+      location: (formData.location || '').trim(),
+      intro: (formData.intro || '').trim(),
       yearsExperience: Number.isFinite(years) ? years : null,
       skills: Array.isArray(formData.skills) ? formData.skills : [],
     };
@@ -126,10 +128,7 @@ export default function EditGardenerPage() {
 
     try {
       setSubmitting(true);
-      await apiFetch('/api/me/gardener', {
-        method: 'POST',
-        body: payload,
-      });
+      await apiFetch('/api/me/gardener', { method: 'POST', body: payload });
       router.push('/profile');
     } catch (e) {
       console.error('Update gardener failed:', e);
@@ -224,13 +223,17 @@ export default function EditGardenerPage() {
 
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700">Compétences</label>
-
               <div className="mt-2 flex gap-2">
                 <input
                   type="text"
                   value={newSkill}
                   onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSkill();
+                    }
+                  }}
                   placeholder="ex: arrosage, compost, potager…"
                   className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
                 />

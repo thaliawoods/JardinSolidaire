@@ -40,9 +40,7 @@ export default function BookingsListPage() {
       </div>
 
       {justCreated && (
-        <div className="rounded-md bg-emerald-50 p-3 text-emerald-800">
-          Réservation créée ✅
-        </div>
+        <div className="rounded-md bg-emerald-50 p-3 text-emerald-800">Réservation créée ✅</div>
       )}
 
       {err && <p className="text-red-600">{err}</p>}
@@ -51,14 +49,14 @@ export default function BookingsListPage() {
         {items.map((r) => (
           <li key={r.id} className="border rounded-xl p-4 flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium">
-                {r.title || `Réservation #${r.id}`}
-              </div>
+              <div className="font-medium">{r.title || `Réservation #${r.id}`}</div>
               <div className="text-sm text-gray-600">
-                Jardin #{r.gardenId} • {new Date(r.startsAt).toLocaleString()} → {new Date(r.endsAt).toLocaleString()}
+                Jardin #{r.gardenId} • {new Date(r.startsAt).toLocaleString()} →{' '}
+                {new Date(r.endsAt).toLocaleString()}
               </div>
               <BookingStatusBadge status={r.status} />
             </div>
+
             <Link href={`/bookings/${r.id}`} className="rounded-full px-4 py-2 border">
               Détails
             </Link>

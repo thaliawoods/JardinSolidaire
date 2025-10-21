@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { getAnyToken } from '@/lib/api';
+import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
@@ -154,6 +156,18 @@ export default function GardenerPage({ params }) {
                   ))}
                 </ul>
               </Card>
+            </section>
+
+            {/* Personal availability calendar for the gardener */}
+            <section className="mt-8">
+              <Card title="Disponibilités du jardinier">
+                <div className="rounded-2xl p-2" />
+              </Card>
+              <AvailabilityCalendar
+                mode="gardener"
+                ownerId={id}
+                token={getAnyToken()}
+              />
             </section>
           </>
         )}

@@ -8,7 +8,6 @@ import { apiFetch } from '@/lib/api';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const UPLOAD_ENDPOINT = process.env.NEXT_PUBLIC_UPLOAD_ENDPOINT || '/api/uploads';
 const UPLOAD_FIELD = process.env.NEXT_PUBLIC_UPLOAD_FIELD || 'file';
-
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
 function resolveMedia(u) {
@@ -29,17 +28,17 @@ function initials(a = '', b = '') {
   const y = (b || '').trim()[0] || '';
   return (`${x}${y}`.toUpperCase() || 'U');
 }
+
 function greenAvatar(first, last) {
   const txt = initials(first, last);
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/>
-  </linearGradient></defs>
-  <rect width="256" height="256" rx="24" ry="24" fill="url(#g)"/>
-  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
-        font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
-</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/>
+    </linearGradient></defs>
+    <rect width="256" height="256" rx="24" ry="24" fill="url(#g)"/>
+    <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
+      font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
+  </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
@@ -84,11 +83,11 @@ export default function EditProfilePage() {
         const u = me?.user || {};
         setForm({
           firstName: u.firstName || '',
-          lastName:  u.lastName || '',
-          email:     u.email || '',
-          phone:     u.phone || '',
-          address:   u.address || '',
-          bio:       u.bio || '',
+          lastName: u.lastName || '',
+          email: u.email || '',
+          phone: u.phone || '',
+          address: u.address || '',
+          bio: u.bio || '',
           avatarUrl: u.avatarUrl || u.photo_profil || u.avatar || '',
         });
       } catch (e) {
@@ -106,20 +105,22 @@ export default function EditProfilePage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+
     if (!form.firstName.trim() || !form.lastName.trim()) {
       alert('First name and last name are required.');
       return;
     }
+
     try {
       setSubmitting(true);
       await apiFetch('/api/me/profile', {
         method: 'POST',
         body: {
           firstName: form.firstName.trim(),
-          lastName:  form.lastName.trim(),
-          phone:     form.phone.trim(),
-          address:   form.address.trim(),
-          bio:       form.bio.trim(),
+          lastName: form.lastName.trim(),
+          phone: form.phone.trim(),
+          address: form.address.trim(),
+          bio: form.bio.trim(),
           avatarUrl: form.avatarUrl.trim(),
         },
       });
@@ -224,7 +225,6 @@ export default function EditProfilePage() {
             style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
           >
             <h2 className="text-lg font-semibold text-emerald-900 mb-4">Photo de profil</h2>
-
             <div className="flex items-start gap-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -232,16 +232,16 @@ export default function EditProfilePage() {
                 alt="Avatar"
                 className="w-20 h-20 rounded-full object-cover shadow"
                 style={{ border: '4px solid rgba(22,163,74,0.35)' }}
-                onError={(e) => { e.currentTarget.src = avatarFallback; }}
+                onError={(e) => {
+                  e.currentTarget.src = avatarFallback;
+                }}
               />
-
               <div className="flex-1 space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <label className="inline-flex items-center px-4 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition cursor-pointer">
                     {uploading ? 'Upload…' : 'Télécharger'}
                     <input type="file" accept="image/*" onChange={handleAvatarFile} className="hidden" />
                   </label>
-
                   {avatarSrc && (
                     <a
                       href={avatarSrc}
@@ -251,7 +251,6 @@ export default function EditProfilePage() {
                       Télécharger l’avatar
                     </a>
                   )}
-
                   <button
                     type="button"
                     onClick={removeAvatar}
@@ -271,7 +270,8 @@ export default function EditProfilePage() {
                     placeholder="https://… ou /uploads/mon-avatar.jpg"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Collez une URL directe, ou utilisez “Télécharger” pour choisir un fichier (le lien sera rempli).
+                    Collez une URL directe, ou utilisez “Télécharger” pour choisir un fichier (le lien sera
+                    rempli).
                   </p>
                 </div>
               </div>
@@ -283,7 +283,6 @@ export default function EditProfilePage() {
             style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
           >
             <h2 className="text-lg font-semibold text-emerald-900 mb-4">Informations du compte</h2>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Prénom</label>

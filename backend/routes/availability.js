@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const prisma = new PrismaClient();
 const router = express.Router();
 
-/* ---------------- Auth (same style as bookings) ---------------- */
+/* ---------------- Auth ---------------- */
 function requireAuth(req, res, next) {
   try {
     const h = req.headers.authorization || '';
@@ -23,7 +23,6 @@ function requireAuth(req, res, next) {
 }
 
 /* ---------------- Helpers (UTC-safe) ---------------- */
-// Parse 'YYYY-MM-DD' into a Date at **UTC midnight** (never shifts with locale)
 function parseISODate(iso) {
   if (!iso) return null;
   const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -32,8 +31,6 @@ function parseISODate(iso) {
   const dt = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d), 0, 0, 0, 0));
   return Number.isNaN(dt.getTime()) ? null : dt;
 }
-
-// Accept "HH:mm" or "HH:mm:ss"
 function normalizeTimeString(t) {
   if (!t) return null;
   const m = String(t).match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
@@ -41,8 +38,6 @@ function normalizeTimeString(t) {
   const hh = m[1], mm = m[2], ss = m[3] || '00';
   return `${hh}:${mm}:${ss}`;
 }
-
-// Format a Date as YYYY-MM-DD using **UTC** parts (for date-only columns)
 function toISODateUTC(d) {
   const x = new Date(d);
   const y = x.getUTCFullYear();
@@ -50,8 +45,6 @@ function toISODateUTC(d) {
   const dd = String(x.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 }
-
-// Format a Date(time-only) as HH:mm:ss using **UTC** parts
 function toTimeUTC(d) {
   const x = new Date(d);
   const hh = String(x.getUTCHours()).padStart(2, '0');
@@ -59,10 +52,7 @@ function toTimeUTC(d) {
   const ss = String(x.getUTCSeconds()).padStart(2, '0');
   return `${hh}:${mm}:${ss}`;
 }
-
-// Build a UTC Date for time-only comparisons/storage
 function timeOnlyUTC(hms) {
-  // hms like "10:00:00"
   return new Date(`1970-01-01T${hms}Z`);
 }
 
@@ -75,7 +65,7 @@ router.get('/gardens/:gardenId', async (req, res) => {
   try {
     const gardenId = BigInt(req.params.gardenId);
     const from = parseISODate(req.query.from);
-    const to = parseISODate(req.query.to); // exclusive
+    const to = parseISODate(req.query.to);
 
     const where = { gardenId };
     if (from && to) where.date = { gte: from, lt: to };
@@ -85,7 +75,6 @@ router.get('/gardens/:gardenId', async (req, res) => {
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
 
-    // Which of these slots are booked?
     const slotIds = slots.map((s) => s.id);
     let bookedMap = new Map();
     if (slotIds.length) {
@@ -111,43 +100,35 @@ router.get('/gardens/:gardenId', async (req, res) => {
   }
 });
 
-// POST /api/availability/gardens/:gardenId
-// body: { date:'YYYY-MM-DD', startTime:'HH:mm[:ss]', endTime:'HH:mm[:ss]', status:'free'|'unavailable' }
+// POST /api/availability/gardens/:gardenId  (OWNER of this garden only)
 router.post('/gardens/:gardenId', requireAuth, async (req, res) => {
   try {
     const gardenId = BigInt(req.params.gardenId);
+    const me = BigInt(req.user.id);
+
+    const garden = await prisma.garden.findUnique({ where: { id: gardenId }, select: { ownerUserId: true } });
+    if (!garden) return res.status(404).json({ error: 'garden_not_found' });
+    if (garden.ownerUserId !== me) return res.status(403).json({ error: 'forbidden_not_owner' });
+
     const date = parseISODate(req.body?.date);
     const start = normalizeTimeString(req.body?.startTime);
     const end   = normalizeTimeString(req.body?.endTime);
     const status = req.body?.status === 'unavailable' ? 'unavailable' : 'free';
-
-    if (!date || !start || !end) {
-      return res.status(400).json({ error: 'invalid_payload' });
-    }
+    if (!date || !start || !end) return res.status(400).json({ error: 'invalid_payload' });
 
     const startUTC = timeOnlyUTC(start);
     const endUTC   = timeOnlyUTC(end);
 
-    // Try to find an existing slot with same day+start+end
     const existing = await prisma.availabilitySlot.findFirst({
       where: { gardenId, date, startTime: startUTC, endTime: endUTC },
     });
 
     let slot;
     if (existing) {
-      slot = await prisma.availabilitySlot.update({
-        where: { id: existing.id },
-        data: { status },
-      });
+      slot = await prisma.availabilitySlot.update({ where: { id: existing.id }, data: { status } });
     } else {
       slot = await prisma.availabilitySlot.create({
-        data: {
-          gardenId,
-          date,
-          startTime: startUTC,
-          endTime: endUTC,
-          status,
-        },
+        data: { gardenId, date, startTime: startUTC, endTime: endUTC, status },
       });
     }
 
@@ -166,12 +147,17 @@ router.post('/gardens/:gardenId', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/availability/gardens/:gardenId/:slotId
+// DELETE /api/availability/gardens/:gardenId/:slotId  (OWNER of this garden only)
 router.delete('/gardens/:gardenId/:slotId', requireAuth, async (req, res) => {
   try {
+    const gardenId = BigInt(req.params.gardenId);
     const slotId = BigInt(req.params.slotId);
+    const me = BigInt(req.user.id);
 
-    // Prevent deleting when there’s a pending/confirmed booking
+    const garden = await prisma.garden.findUnique({ where: { id: gardenId }, select: { ownerUserId: true } });
+    if (!garden) return res.status(404).json({ error: 'garden_not_found' });
+    if (garden.ownerUserId !== me) return res.status(403).json({ error: 'forbidden_not_owner' });
+
     const conflict = await prisma.booking.findFirst({
       where: { slotId, status: { in: ['pending', 'confirmed'] } },
       select: { id: true },
@@ -195,7 +181,7 @@ router.get('/gardeners/:gardenerId', async (req, res) => {
   try {
     const gardenerId = Number(req.params.gardenerId);
     const from = parseISODate(req.query.from);
-    const to = parseISODate(req.query.to); // exclusive
+    const to = parseISODate(req.query.to);
 
     const where = { gardenerId };
     if (from && to) where.date = { gte: from, lt: to };
@@ -220,43 +206,37 @@ router.get('/gardeners/:gardenerId', async (req, res) => {
   }
 });
 
-// POST /api/availability/gardeners/:gardenerId
-// body: { date:'YYYY-MM-DD', startTime:'HH:mm[:ss]', endTime:'HH:mm[:ss]', status:'free'|'unavailable' }
+// POST /api/availability/gardeners/:gardenerId  (only that gardener)
 router.post('/gardeners/:gardenerId', requireAuth, async (req, res) => {
   try {
     const gardenerId = Number(req.params.gardenerId);
+
+    const profile = await prisma.gardener.findUnique({
+      where: { id: gardenerId },
+      select: { userId: true },
+    });
+    if (!profile) return res.status(404).json({ error: 'gardener_not_found' });
+    if (Number(profile.userId) !== req.user.id) return res.status(403).json({ error: 'forbidden_not_self' });
+
     const date = parseISODate(req.body?.date);
     const start = normalizeTimeString(req.body?.startTime);
     const end   = normalizeTimeString(req.body?.endTime);
     const status = req.body?.status === 'unavailable' ? 'unavailable' : 'free';
-
-    if (!date || !start || !end) {
-      return res.status(400).json({ error: 'invalid_payload' });
-    }
+    if (!date || !start || !end) return res.status(400).json({ error: 'invalid_payload' });
 
     const startUTC = timeOnlyUTC(start);
     const endUTC   = timeOnlyUTC(end);
 
-    // Simple upsert-by-(date,start,end)
     const existing = await prisma.gardenerAvailabilitySlot.findFirst({
       where: { gardenerId, date, startTime: startUTC, endTime: endUTC },
     });
 
     let slot;
     if (existing) {
-      slot = await prisma.gardenerAvailabilitySlot.update({
-        where: { id: existing.id },
-        data: { status },
-      });
+      slot = await prisma.gardenerAvailabilitySlot.update({ where: { id: existing.id }, data: { status } });
     } else {
       slot = await prisma.gardenerAvailabilitySlot.create({
-        data: {
-          gardenerId,
-          date,
-          startTime: startUTC,
-          endTime: endUTC,
-          status,
-        },
+        data: { gardenerId, date, startTime: startUTC, endTime: endUTC, status },
       });
     }
 
@@ -273,73 +253,25 @@ router.post('/gardeners/:gardenerId', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/availability/gardeners/:gardenerId/:slotId
+// DELETE /api/availability/gardeners/:gardenerId/:slotId  (only that gardener)
 router.delete('/gardeners/:gardenerId/:slotId', requireAuth, async (req, res) => {
   try {
-    const id = Number(req.params.slotId);
-    await prisma.gardenerAvailabilitySlot.delete({ where: { id } });
+    const gardenerId = Number(req.params.gardenerId);
+    const slotId = Number(req.params.slotId);
+
+    const profile = await prisma.gardener.findUnique({
+      where: { id: gardenerId },
+      select: { userId: true },
+    });
+    if (!profile) return res.status(404).json({ error: 'gardener_not_found' });
+    if (Number(profile.userId) !== req.user.id) return res.status(403).json({ error: 'forbidden_not_self' });
+
+    await prisma.gardenerAvailabilitySlot.delete({ where: { id: slotId } });
     res.json({ ok: true });
   } catch (e) {
     console.error('DELETE gardeners availability error:', e?.message || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
-
-// PATCH /api/bookings/:id  (update notes/status)
-router.patch('/:id', requireAuth, async (req, res) => {
-  try {
-    const id = BigInt(req.params.id);
-    const { status, notes } = req.body || {};
-
-    const current = await prisma.booking.findUnique({
-      where: { id },
-      include: { slot: true },
-    });
-    if (!current) return res.status(404).json({ error: 'not_found' });
-    if (current.userId !== BigInt(req.user.id)) return res.status(403).json({ error: 'forbidden' });
-
-    const patch = {};
-    if (typeof notes === 'string') patch.notes = notes;
-    if (typeof status === 'string') {
-      if (!['pending', 'confirmed', 'cancelled', 'completed'].includes(status)) {
-        return res.status(400).json({ error: 'invalid_status' });
-      }
-      patch.status = status;
-    }
-
-    const updated = await prisma.$transaction(async (tx) => {
-      const b = await tx.booking.update({
-        where: { id },
-        data: patch,
-        include: { slot: true },
-      });
-
-      // If booking is no longer active, free the linked slot
-      if (b.slotId && (b.status === 'cancelled' || b.status === 'completed')) {
-        await tx.availabilitySlot.update({
-          where: { id: b.slotId },
-          data: { status: 'free' },
-        });
-      }
-
-      return b;
-    });
-
-    const { startsAt, endsAt } = buildRangeFromSlot(updated.slot);
-    res.json({
-      id: Number(updated.id),
-      gardenId: updated.gardenId ? Number(updated.gardenId) : null,
-      title: null,
-      notes: updated.notes,
-      status: updated.status || 'pending',
-      startsAt,
-      endsAt,
-    });
-  } catch (e) {
-    console.error('patch booking error:', e?.message || e);
-    res.status(500).json({ error: 'server_error' });
-  }
-});
-
 
 module.exports = router;

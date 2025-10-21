@@ -3,44 +3,44 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
-export default function HelpCenterPage() {
-  const [query, setQuery] = useState('');
+const seed = [
+  {
+    q: 'Comment créer un compte ?',
+    a: "Allez sur la page d'inscription, remplissez le formulaire, puis connectez-vous depuis la page de connexion.",
+    links: [
+      { href: '/register', label: 'Inscription' },
+      { href: '/login', label: 'Connexion' },
+    ],
+    tags: 'account register signup login',
+  },
+  {
+    q: 'J’ai oublié mon mot de passe, que faire ?',
+    a: 'Sur la page de connexion, cliquez sur « Mot de passe oublié ? » et suivez les instructions.',
+    links: [{ href: '/login', label: 'Connexion' }],
+    tags: 'password reset email',
+  },
+  {
+    q: 'Comment ajouter mon jardin ?',
+    a: 'Une fois connecté, cliquez sur “Ajouter mon jardin” dans l’en-tête ou visitez /add-garden.',
+    links: [{ href: '/add-garden', label: 'Ajouter un jardin' }],
+    tags: 'garden create listing owner',
+  },
+  {
+    q: 'Comment contacter un jardinier / propriétaire ?',
+    a: 'Ouvrez une page de jardin ou de profil et utilisez “Envoyer un message” ou “Réserver”. Vous devez être connecté.',
+    links: [{ href: '/gardens', label: 'Parcourir les jardins' }],
+    tags: 'contact message booking chat',
+  },
+  {
+    q: 'Où vont les favoris ?',
+    a: "Appuyez sur le ♥ sur une carte de jardin pour l'enregistrer. Votre liste apparaît dans la page des Favoris.",
+    links: [{ href: '/favorites', label: 'Favoris' }],
+    tags: 'favorites heart gardens',
+  },
+];
 
-  const seed = [
-    {
-      q: 'Comment créer un compte ?',
-      a: "Allez sur la page d'inscription, remplissez le formulaire, puis connectez-vous depuis la page de connexion.",
-      links: [
-        { href: '/register', label: 'Inscription' },
-        { href: '/login', label: 'Connexion' },
-      ],
-      tags: 'account register signup login',
-    },
-    {
-      q: 'J’ai oublié mon mot de passe, que faire ?',
-      a: 'Sur la page de connexion, cliquez sur « Mot de passe oublié ? » et suivez les instructions.',
-      links: [{ href: '/login', label: 'Connexion' }],
-      tags: 'password reset email',
-    },
-    {
-      q: 'Comment ajouter mon jardin ?',
-      a: 'Une fois connecté, cliquez sur “Ajouter mon jardin” dans l’en-tête ou visitez /add-garden.',
-      links: [{ href: '/add-garden', label: 'Ajouter un jardin' }],
-      tags: 'garden create listing owner',
-    },
-    {
-      q: 'Comment contacter un jardinier / propriétaire ?',
-      a: 'Ouvrez une page de jardin ou de profil et utilisez “Envoyer un message” ou “Réserver”. Vous devez être connecté.',
-      links: [{ href: '/gardens', label: 'Parcourir les jardins' }],
-      tags: 'contact message booking chat',
-    },
-    {
-      q: 'Où vont les favoris ?',
-      a: "Appuyez sur le ♥ sur une carte de jardin pour l'enregistrer. Votre liste apparaît dans la page des Favoris.",
-      links: [{ href: '/favorites', label: 'Favoris' }],
-      tags: 'favorites heart gardens',
-    },
-  ];
+export default function Page() {
+  const [query, setQuery] = useState('');
 
   const faqs = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -85,7 +85,7 @@ export default function HelpCenterPage() {
               key={i}
               className="group rounded-2xl p-5"
               style={{
-                backgroundColor: 'rgba(22,163,74,0.08)',  
+                backgroundColor: 'rgba(22,163,74,0.08)',
                 border: '1px solid rgba(22,163,74,0.15)',
               }}
             >
@@ -130,7 +130,6 @@ export default function HelpCenterPage() {
             Nous sommes heureux de vous aider avec les problèmes de compte, les bugs et les demandes de fonctionnalités.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            {/* Your pink */}
             <Link
               href="/contact"
               className="px-5 py-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white shadow-sm transition"

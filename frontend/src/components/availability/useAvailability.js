@@ -74,7 +74,11 @@ export function useWeek(cursor) {
 async function authFetch(url, opts = {}) {
   const res = await fetch(url, opts);
   let body;
-  try { body = await res.json(); } catch { body = {}; }
+  try {
+    body = await res.json();
+  } catch {
+    body = {};
+  }
 
   if (!res.ok) {
     const err = new Error(body.error || `HTTP ${res.status}`);
@@ -114,7 +118,8 @@ function makeAvailabilityHook(kind) {
         const url = `${API_BASE}/api/availability/${plural}/${ownerId}?from=${encodeURIComponent(
           fromISO
         )}&to=${encodeURIComponent(toISO)}`;
-        const body = await authFetch(url, { method: 'GET' });
+        // IMPORTANT: include auth header even for GET
+        const body = await authFetch(url, { method: 'GET', headers: { ...authHeader } });
         setData(Array.isArray(body?.slots) ? body : { slots: [] });
       } catch (e) {
         console.error('useAvailability load error', e);
@@ -123,7 +128,7 @@ function makeAvailabilityHook(kind) {
       } finally {
         setLoading(false);
       }
-    }, [ownerId, fromISO, toISO, plural]);
+    }, [ownerId, fromISO, toISO, authHeader]);
 
     useEffect(() => {
       load();
