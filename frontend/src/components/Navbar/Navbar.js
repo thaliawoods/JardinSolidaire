@@ -11,6 +11,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [me, setMe] = useState(null);
   const [loadingMe, setLoadingMe] = useState(true);
+  const [role, setRole] = useState(null);
 
   const user = me?.user ?? null;
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -34,9 +35,8 @@ export default function Navbar() {
 
   useEffect(() => {
     let alive = true;
-
     async function hydrate() {
-      if (!token) { setLoadingMe(false); return; }
+      if (!token) { setLoadingMe(false); setMe(null); setRole(null); return; }
       try {
         const res = await fetch(`${API_BASE}/api/me`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -44,28 +44,49 @@ export default function Navbar() {
         });
         const data = await res.json();
         if (!alive) return;
-
-        if (res.ok && data?.user) setMe(data);
-        else {
+        if (res.ok && data?.user) {
+          setMe(data);
+          setRole(data.user.role || null);
+        } else {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           setMe(null);
+          setRole(null);
         }
       } catch {
-        if (alive) setMe(null);
+        if (alive) { setMe(null); setRole(null); }
       } finally {
         if (alive) setLoadingMe(false);
       }
     }
-
     hydrate();
     return () => { alive = false; };
   }, [token]);
+
+  async function switchRole(nextRole) {
+    try {
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/api/me/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ role: nextRole })
+      });
+      if (!res.ok) return;
+      const updated = await res.json();
+      setRole(updated.role || null);
+      // refresh /me to update owner/gardener skeletons if we created them
+      const r2 = await fetch(`${API_BASE}/api/me`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+      if (r2.ok) setMe(await r2.json());
+    } catch (e) {
+      console.error('switchRole failed', e);
+    }
+  }
 
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setMe(null);
+    setRole(null);
     setMenuOpen(false);
     window.location.href = "/";
   }
@@ -80,6 +101,9 @@ export default function Navbar() {
 
         <div className="flex items-center">
           <div className="hidden md:flex items-center space-x-3 mr-3">
+            <Link href="/gardens" className="hover:underline">Jardins</Link>
+            <Link href="/gardeners" className="hover:underline">Jardiniers</Link>
+
             {!loadingMe && !user && (
               <>
                 <Link href="/login">
@@ -97,6 +121,24 @@ export default function Navbar() {
 
             {!loadingMe && user && (
               <>
+                {/* role switch */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => switchRole('OWNER')}
+                    className={`px-3 py-1 rounded ${role === 'OWNER' ? 'bg-white text-green-700' : 'bg-white/20'}`}
+                    title="Interface Propriétaire"
+                  >
+                    Propriétaire
+                  </button>
+                  <button
+                    onClick={() => switchRole('GARDENER')}
+                    className={`px-3 py-1 rounded ${role === 'GARDENER' ? 'bg-white text-green-700' : 'bg-white/20'}`}
+                    title="Interface Jardinier"
+                  >
+                    Jardinier
+                  </button>
+                </div>
+
                 {ownerCTA && (
                   <Link href={ownerCTA.href}>
                     <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg">
@@ -114,7 +156,7 @@ export default function Navbar() {
                 )}
 
                 <span className="hidden md:inline-block text-sm bg-white/20 px-3 py-1 rounded-full">
-                  Connecté&nbsp;: {user.prenom || user.email}
+                  Connecté&nbsp;: {user.firstName || user.email}
                 </span>
               </>
             )}
@@ -137,39 +179,23 @@ export default function Navbar() {
       {menuOpen && (
         <div className="bg-green-600 w-full absolute top-16 left-0 border-t border-white/20">
           <ul className="flex flex-col space-y-2 p-4 text-white">
+            <li><Link href="/gardens" onClick={() => setMenuOpen(false)}>Jardins</Link></li>
+            <li><Link href="/gardeners" onClick={() => setMenuOpen(false)}>Jardiniers</Link></li>
+
             {!user ? (
               <>
-                <li>
-                  <Link href="/login" onClick={() => setMenuOpen(false)} className="block">
-                    Se connecter
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/signup" onClick={() => setMenuOpen(false)} className="block">
-                    S’inscrire
-                  </Link>
-                </li>
+                <li><Link href="/login" onClick={() => setMenuOpen(false)}>Se connecter</Link></li>
+                <li><Link href="/register" onClick={() => setMenuOpen(false)}>S’inscrire</Link></li>
               </>
             ) : (
               <>
-                {ownerCTA && (
-                  <li>
-                    <Link href={ownerCTA.href} onClick={() => setMenuOpen(false)} className="block font-semibold">
-                      {ownerCTA.label}
-                    </Link>
-                  </li>
-                )}
-                {gardenerCTA && (
-                  <li>
-                    <Link href={gardenerCTA.href} onClick={() => setMenuOpen(false)} className="block font-semibold">
-                      {gardenerCTA.label}
-                    </Link>
-                  </li>
-                )}
-                <li><Link href="/profile" onClick={() => setMenuOpen(false)} className="block">Mon profil</Link></li>
-                <li><Link href="/messages" onClick={() => setMenuOpen(false)} className="block">Ma messagerie</Link></li>
-                <li><Link href="/bookings" onClick={() => setMenuOpen(false)} className="block">Réservations</Link></li>
-                <li><Link href="/favorites" onClick={() => setMenuOpen(false)} className="block">Mes favoris</Link></li>
+                <li className="flex gap-2">
+                  <button onClick={() => { switchRole('OWNER'); setMenuOpen(false); }} className={`px-3 py-1 rounded ${role === 'OWNER' ? 'bg-white text-green-700' : 'bg-white/20'}`}>Propriétaire</button>
+                  <button onClick={() => { switchRole('GARDENER'); setMenuOpen(false); }} className={`px-3 py-1 rounded ${role === 'GARDENER' ? 'bg-white text-green-700' : 'bg-white/20'}`}>Jardinier</button>
+                </li>
+                {ownerCTA && <li><Link href={ownerCTA.href} onClick={() => setMenuOpen(false)} className="block font-semibold">{ownerCTA.label}</Link></li>}
+                {gardenerCTA && <li><Link href={gardenerCTA.href} onClick={() => setMenuOpen(false)} className="block font-semibold">{gardenerCTA.label}</Link></li>}
+                <li><Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block">Mon tableau de bord</Link></li>
                 <li><button onClick={handleLogout} className="block text-left w-full">Déconnexion</button></li>
               </>
             )}
