@@ -14,10 +14,12 @@ export default function Navbar() {
   const [role, setRole] = useState(null);
 
   const user = me?.user ?? null;
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const hasOwner = !!user?.proprietaire && (user.proprietaire.published ?? true);
-  const hasGardener = !!user?.jardinier && (user.jardinier.published ?? true);
+  const hasGardener =
+    !!user?.jardinier && (user.jardinier.published ?? true);
 
   const ownerCTA = useMemo(() => {
     if (!user) return null;
@@ -36,7 +38,12 @@ export default function Navbar() {
   useEffect(() => {
     let alive = true;
     async function hydrate() {
-      if (!token) { setLoadingMe(false); setMe(null); setRole(null); return; }
+      if (!token) {
+        setLoadingMe(false);
+        setMe(null);
+        setRole(null);
+        return;
+      }
       try {
         const res = await fetch(`${API_BASE}/api/me`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -54,31 +61,42 @@ export default function Navbar() {
           setRole(null);
         }
       } catch {
-        if (alive) { setMe(null); setRole(null); }
+        if (alive) {
+          setMe(null);
+          setRole(null);
+        }
       } finally {
         if (alive) setLoadingMe(false);
       }
     }
     hydrate();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [token]);
 
   async function switchRole(nextRole) {
     try {
       if (!token) return;
       const res = await fetch(`${API_BASE}/api/me/role`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ role: nextRole })
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role: nextRole }),
       });
       if (!res.ok) return;
       const updated = await res.json();
       setRole(updated.role || null);
       // refresh /me to update owner/gardener skeletons if we created them
-      const r2 = await fetch(`${API_BASE}/api/me`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+      const r2 = await fetch(`${API_BASE}/api/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
       if (r2.ok) setMe(await r2.json());
     } catch (e) {
-      console.error('switchRole failed', e);
+      console.error("switchRole failed", e);
     }
   }
 
@@ -101,13 +119,17 @@ export default function Navbar() {
 
         <div className="flex items-center">
           <div className="hidden md:flex items-center space-x-3 mr-3">
-            <Link href="/gardens" className="hover:underline">Jardins</Link>
-            <Link href="/gardeners" className="hover:underline">Jardiniers</Link>
+            <Link href="/gardens" className="hover:underline">
+              Jardins
+            </Link>
+            <Link href="/gardeners" className="hover:underline">
+              Jardiniers
+            </Link>
 
             {!loadingMe && !user && (
               <>
                 <Link href="/login">
-                  <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full">
+                  <button className="bg-ppink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full">
                     Se connecter
                   </button>
                 </Link>
@@ -119,20 +141,29 @@ export default function Navbar() {
               </>
             )}
 
+            {/* Signed-in desktop items */}
             {!loadingMe && user && (
               <>
                 {/* role switch */}
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => switchRole('OWNER')}
-                    className={`px-3 py-1 rounded ${role === 'OWNER' ? 'bg-white text-green-700' : 'bg-white/20'}`}
+                    onClick={() => switchRole("OWNER")}
+                    className={`px-3 py-1 rounded ${
+                      role === "OWNER"
+                        ? "bg-white text-green-700"
+                        : "bg-white/20"
+                    }`}
                     title="Interface Propriétaire"
                   >
                     Propriétaire
                   </button>
                   <button
-                    onClick={() => switchRole('GARDENER')}
-                    className={`px-3 py-1 rounded ${role === 'GARDENER' ? 'bg-white text-green-700' : 'bg-white/20'}`}
+                    onClick={() => switchRole("GARDENER")}
+                    className={`px-3 py-1 rounded ${
+                      role === "GARDENER"
+                        ? "bg-white text-green-700"
+                        : "bg-white/20"
+                    }`}
                     title="Interface Jardinier"
                   >
                     Jardinier
@@ -154,6 +185,14 @@ export default function Navbar() {
                     </button>
                   </Link>
                 )}
+
+                {/* NEW: Messages + Réservations (desktop) */}
+                <Link href="/messages" className="hover:underline">
+                  Messages
+                </Link>
+                <Link href="/bookings" className="hover:underline">
+                  Réservations
+                </Link>
 
                 <span className="hidden md:inline-block text-sm bg-white/20 px-3 py-1 rounded-full">
                   Connecté&nbsp;: {user.firstName || user.email}
@@ -179,24 +218,110 @@ export default function Navbar() {
       {menuOpen && (
         <div className="bg-green-600 w-full absolute top-16 left-0 border-t border-white/20">
           <ul className="flex flex-col space-y-2 p-4 text-white">
-            <li><Link href="/gardens" onClick={() => setMenuOpen(false)}>Jardins</Link></li>
-            <li><Link href="/gardeners" onClick={() => setMenuOpen(false)}>Jardiniers</Link></li>
+            <li>
+              <Link href="/gardens" onClick={() => setMenuOpen(false)}>
+                Jardins
+              </Link>
+            </li>
+            <li>
+              <Link href="/gardeners" onClick={() => setMenuOpen(false)}>
+                Jardiniers
+              </Link>
+            </li>
 
             {!user ? (
               <>
-                <li><Link href="/login" onClick={() => setMenuOpen(false)}>Se connecter</Link></li>
-                <li><Link href="/register" onClick={() => setMenuOpen(false)}>S’inscrire</Link></li>
+                <li>
+                  <Link href="/login" onClick={() => setMenuOpen(false)}>
+                    Se connecter
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/register" onClick={() => setMenuOpen(false)}>
+                    S’inscrire
+                  </Link>
+                </li>
               </>
             ) : (
               <>
-                <li className="flex gap-2">
-                  <button onClick={() => { switchRole('OWNER'); setMenuOpen(false); }} className={`px-3 py-1 rounded ${role === 'OWNER' ? 'bg-white text-green-700' : 'bg-white/20'}`}>Propriétaire</button>
-                  <button onClick={() => { switchRole('GARDENER'); setMenuOpen(false); }} className={`px-3 py-1 rounded ${role === 'GARDENER' ? 'bg-white text-green-700' : 'bg-white/20'}`}>Jardinier</button>
+                {/* NEW: Messages + Réservations (mobile/burger) */}
+                <li>
+                  <Link href="/messages" onClick={() => setMenuOpen(false)}>
+                    Messages
+                  </Link>
                 </li>
-                {ownerCTA && <li><Link href={ownerCTA.href} onClick={() => setMenuOpen(false)} className="block font-semibold">{ownerCTA.label}</Link></li>}
-                {gardenerCTA && <li><Link href={gardenerCTA.href} onClick={() => setMenuOpen(false)} className="block font-semibold">{gardenerCTA.label}</Link></li>}
-                <li><Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block">Mon tableau de bord</Link></li>
-                <li><button onClick={handleLogout} className="block text-left w-full">Déconnexion</button></li>
+                <li>
+                  <Link href="/bookings" onClick={() => setMenuOpen(false)}>
+                    Réservations
+                  </Link>
+                </li>
+
+                <li className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      switchRole("OWNER");
+                      setMenuOpen(false);
+                    }}
+                    className={`px-3 py-1 rounded ${
+                      role === "OWNER"
+                        ? "bg-white text-green-700"
+                        : "bg-white/20"
+                    }`}
+                  >
+                    Propriétaire
+                  </button>
+                  <button
+                    onClick={() => {
+                      switchRole("GARDENER");
+                      setMenuOpen(false);
+                    }}
+                    className={`px-3 py-1 rounded ${
+                      role === "GARDENER"
+                        ? "bg-white text-green-700"
+                        : "bg-white/20"
+                    }`}
+                  >
+                    Jardinier
+                  </button>
+                </li>
+
+                {ownerCTA && (
+                  <li>
+                    <Link
+                      href={ownerCTA.href}
+                      onClick={() => setMenuOpen(false)}
+                      className="block font-semibold"
+                    >
+                      {ownerCTA.label}
+                    </Link>
+                  </li>
+                )}
+                {gardenerCTA && (
+                  <li>
+                    <Link
+                      href={gardenerCTA.href}
+                      onClick={() => setMenuOpen(false)}
+                      className="block font-semibold"
+                    >
+                      {gardenerCTA.label}
+                    </Link>
+                  </li>
+                )}
+
+                <li>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMenuOpen(false)}
+                    className="block"
+                  >
+                    Mon tableau de bord
+                  </Link>
+                </li>
+                <li>
+                  <button onClick={handleLogout} className="block text-left w-full">
+                    Déconnexion
+                  </button>
+                </li>
               </>
             )}
           </ul>
