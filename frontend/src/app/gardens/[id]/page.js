@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import BookingButton from '@/components/booking/BookingButton';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const BRAND_GREEN = '#16a34a';
@@ -151,26 +152,23 @@ export default function GardenDetailPage({ params }) {
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
-        {/* NEW: Retour button */}
-{/* Softer pill, same green tint as navbar */}
-<div className="mb-4">
-  <Link
-    href="/gardens"
-    aria-label="Retour aux jardins"
-    className="
-      inline-flex items-center gap-2 rounded-full px-4 py-2
-      bg-white/80 text-[#16a34a]
-      border border-[rgba(22,163,74,0.28)]
-      hover:bg-[rgba(22,163,74,0.06)]
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
-      shadow-sm transition
-    "
-  >
-    <span aria-hidden>←</span> Retour aux jardins
-  </Link>
-</div>
-
-
+        {/* Retour */}
+        <div className="mb-4">
+          <Link
+            href="/gardens"
+            aria-label="Retour aux jardins"
+            className="
+              inline-flex items-center gap-2 rounded-full px-4 py-2
+              bg-white/80 text-[#16a34a]
+              border border-[rgba(22,163,74,0.28)]
+              hover:bg-[rgba(22,163,74,0.06)]
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
+              shadow-sm transition
+            "
+          >
+            <span aria-hidden>←</span> Retour aux jardins
+          </Link>
+        </div>
 
         <h1 className="text-3xl md:text-4xl font-bold text-green-700 mb-5">
           {garden.title}
@@ -246,6 +244,11 @@ export default function GardenDetailPage({ params }) {
             </Card>
           </section>
         )}
+
+        {/* ✅ Place the booking CTA here (outside Card): */}
+        <section className="mt-6">
+          <BookingButton gardenId={garden.id} />
+        </section>
       </main>
     </div>
   );
