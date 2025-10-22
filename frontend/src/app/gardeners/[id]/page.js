@@ -1,10 +1,46 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getAnyToken } from '@/lib/api';
+import Link from 'next/link';
 import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar';
+import { getAnyToken } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const BRAND_GREEN = '#16a34a';
+const BRAND_PINK  = '#E3107D';
+const LOCAL_DIRS  = ['/assets/', '/images/', '/img/', '/icons/'];
+
+/* -------- helpers (same as list) -------- */
+function resolveMedia(u) {
+  if (!u) return null;
+  const s = String(u).trim();
+  if (s.startsWith('http') || s.startsWith('data:')) return s;
+  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;
+  if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
+  if (s.startsWith('/')) return s;
+  const clean = s.replace(/^\.?\/*/, '');
+  if (clean.startsWith('uploads/')) return `${API_BASE}/${clean}`;
+  if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
+  return `${API_BASE}/uploads/${clean}`;
+}
+const resolveAvatar = resolveMedia;
+
+function initials(a = '', b = '') {
+  const x = (a || '').trim()[0] || '';
+  const y = (b || '').trim()[0] || '';
+  return (`${x}${y}`.toUpperCase() || 'U');
+}
+function greenPlaceholder(first, last) {
+  const txt = initials(first, last);
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="24" fill="${BRAND_GREEN}"/>
+  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
+        font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
+</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+/* --------------------------------------- */
 
 export default function GardenerPage({ params }) {
   const { id } = params || {};
@@ -26,16 +62,16 @@ export default function GardenerPage({ params }) {
         if (alive) {
           setGardener({
             firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            avatarUrl: data.avatarUrl || '',
-            isOnline: !!data.isOnline,
+            lastName:  data.lastName  || '',
+            avatarUrl: resolveAvatar(data.avatarUrl || data.photo_profil || null),
+            isOnline:  !!data.isOnline,
             totalReviews: data.totalReviews ?? 0,
-            rating: data.rating ?? null,
-            location: data.location || '—',
-            skills: Array.isArray(data.skills) ? data.skills : [],
+            rating:    data.rating ?? null,
+            location:  data.location || '—',
+            skills:    Array.isArray(data.skills) ? data.skills : [],
             yearsExperience: data.yearsExperience ?? null,
-            intro: data.intro || data.description || '—',
-            comments: data.comments || [],
+            intro:     data.intro || data.description || '—',
+            comments:  data.comments || [],
           });
         }
       } catch (_e) {
@@ -43,16 +79,16 @@ export default function GardenerPage({ params }) {
           setError("Couldn't load the gardener. Showing an example.");
           setGardener({
             firstName: 'Example',
-            lastName: 'Gardener',
-            avatarUrl: '',
-            isOnline: true,
+            lastName:  'Gardener',
+            avatarUrl: null,
+            isOnline:  true,
             totalReviews: 242,
-            rating: 4.9,
-            location: '—',
-            skills: ['mowing', 'weeding'],
+            rating:    4.9,
+            location:  '—',
+            skills:    ['mowing', 'weeding'],
             yearsExperience: 2,
-            intro: 'Sample introduction text',
-            comments: [],
+            intro:     'Sample introduction text',
+            comments:  [],
           });
         }
       } finally {
@@ -64,9 +100,32 @@ export default function GardenerPage({ params }) {
     return () => { alive = false; };
   }, [id]);
 
+  const avatarSrc = (() => {
+    if (!gardener) return null;
+    return gardener.avatarUrl || greenPlaceholder(gardener.firstName, gardener.lastName);
+  })();
+
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
+        {/* Retour button — same style as gardens */}
+        <div className="mb-4">
+          <Link
+            href="/gardeners"
+            aria-label="Retour aux jardiniers"
+            className="
+inline-flex items-center gap-2 rounded-full px-4 py-2
+bg-white/80 text-[#16a34a]
+border border-[rgba(22,163,74,0.28)]
+hover:bg-[rgba(22,163,74,0.06)]
+focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
+shadow-sm transition
+"
+          >
+            <span aria-hidden>←</span> Retour aux jardiniers
+          </Link>
+        </div>
+
         <h1 className="sr-only">Gardener profile</h1>
 
         {loading && (
@@ -78,7 +137,7 @@ export default function GardenerPage({ params }) {
         )}
 
         {!!error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
             {error}
           </div>
         )}
@@ -90,14 +149,15 @@ export default function GardenerPage({ params }) {
                 <div
                   className="relative h-28 w-28 rounded-full bg-gray-200 overflow-hidden flex-shrink-0"
                   aria-label="Gardener avatar"
+                  style={{ border: `4px solid rgba(22,163,74,0.35)` }}
                 >
-                  {gardener.avatarUrl && (
-                    <img
-                      src={gardener.avatarUrl}
-                      alt={`${gardener.firstName} ${gardener.lastName}`}
-                      className="h-full w-full object-cover"
-                    />
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={avatarSrc}
+                    alt={`${gardener.firstName} ${gardener.lastName}`}
+                    className="h-full w-full object-cover"
+                    onError={(e) => { e.currentTarget.src = greenPlaceholder(gardener.firstName, gardener.lastName); }}
+                  />
                   {gardener.isOnline && (
                     <span
                       className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-lime-500 ring-2 ring-white"
@@ -114,10 +174,7 @@ export default function GardenerPage({ params }) {
               <section className="lg:col-span-2">
                 <Card title="Gardener info">
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-                    <Field
-                      label="Name"
-                      value={`${gardener.firstName} ${gardener.lastName}`.trim() || '—'}
-                    />
+                    <Field label="Name" value={`${gardener.firstName} ${gardener.lastName}`.trim() || '—'} />
                     <Field label="Location" value={gardener.location} />
                     <Field
                       label="Skills"
@@ -158,11 +215,13 @@ export default function GardenerPage({ params }) {
               </Card>
             </section>
 
-            {/* Personal availability calendar for the gardener */}
+            {/* Availability calendar for this gardener */}
             <section className="mt-8">
-              <Card title="Disponibilités du jardinier">
-                <div className="rounded-2xl p-2" />
-              </Card>
+              <h2 className="sr-only">Disponibilités du jardinier</h2>
+              <div
+                className="rounded-2xl p-6 mb-3"
+                style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
+              />
               <AvailabilityCalendar
                 mode="gardener"
                 ownerId={id}
@@ -178,8 +237,14 @@ export default function GardenerPage({ params }) {
 
 function Card({ title, children }) {
   return (
-    <div className="rounded-2xl bg-emerald-50 p-6 border border-emerald-100">
-      <h2 className="text-lg font-semibold">{title}</h2>
+    <div
+      className="rounded-2xl p-6"
+      style={{
+        backgroundColor: 'rgba(22,163,74,0.08)',
+        border: '1px solid rgba(22,163,74,0.15)',
+      }}
+    >
+      <h2 className="text-lg font-semibold text-green-800">{title}</h2>
       {children}
     </div>
   );
