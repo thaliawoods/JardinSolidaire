@@ -1,231 +1,198 @@
 'use client';
 
-import React, { useState } from 'react';
-import { removePhotoFromArray } from '@/utils/removePhoto';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import useSession from '@/hooks/useSession';
-import { getAnyToken } from '@/lib/api';
+import Link from 'next/link';
+import { apiFetch } from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const BRAND = '#16a34a';
 
 export default function AddGardenPage() {
   const router = useRouter();
-  // useSession returns { user, isAuthenticated, loading, refetch }
-  const { user, loading } = useSession();
 
-  const [formData, setFormData] = useState({
+  // existing gardens (for a small info note; we DO NOT block the form anymore)
+  const [mine, setMine] = useState(null);
+  const [loadingMine, setLoadingMine] = useState(true);
+
+  // form
+  const [form, setForm] = useState({
     title: '',
     description: '',
     address: '',
     area: '',
     needs: '',
-    photos: [],
   });
-  const [submitting, setSubmitting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
 
-  const handleChange = (e) => {
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingMine(true);
+        const rows = await apiFetch('/api/gardens', { query: { mine: 1 } });
+        setMine(Array.isArray(rows) ? rows : []);
+      } catch {
+        setMine([]);
+      } finally {
+        setLoadingMine(false);
+      }
+    })();
+  }, []);
+
+  const countPublished = useMemo(
+    () => (mine || []).filter((g) => !!g.publishedAt).length,
+    [mine]
+  );
+
+  function onChange(e) {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    setForm((p) => ({ ...p, [name]: value }));
+  }
 
-  const handleFileChange = (e) => {
-    const newFiles = Array.from(e.target.files || []);
-    const total = formData.photos.length + newFiles.length;
-    if (total > 5) {
-      alert('You can add up to 5 photos maximum.');
-      return;
-    }
-    setFormData((prev) => ({ ...prev, photos: [...prev.photos, ...newFiles] }));
-  };
-
-  const removePhoto = (indexToRemove) => {
-    setFormData((prev) => ({
-      ...prev,
-      photos: removePhotoFromArray(prev.photos, indexToRemove),
-    }));
-  };
-
-  const handleSubmit = async (e) => {
+  async function onSubmit(e) {
     e.preventDefault();
+    setMsg('');
 
-    // Grab a real token from localStorage/cookies
-    const token = getAnyToken();
-
-    if (!user?.id || !token) {
-      alert('You must be signed in to add a garden.');
-      return;
-    }
-
-    const payload = {
-      title: formData.title.trim(),
-      description: formData.description.trim(),
-      address: formData.address.trim(),
-      area: formData.area ? Number(formData.area) : null,
-      needs: formData.needs.trim(),
-      photos: [], // keep client-only for now
-    };
-
-    if (!payload.title || !payload.address) {
-      alert('Title and address are required.');
+    if (!form.title.trim() || !form.address.trim()) {
+      setMsg('Titre et adresse sont requis.');
       return;
     }
 
     try {
-      setSubmitting(true);
-      const res = await fetch(`${API_BASE}/api/gardens`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      setBusy(true);
+      const payload = {
+        title: form.title.trim(),
+        description: form.description.trim() || undefined,
+        address: form.address.trim(),
+        needs: form.needs.trim() || undefined,
+      };
+      const created = await apiFetch('/api/gardens', { method: 'POST', body: payload });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error || 'request_failed');
-      }
+      // tell other tabs to refresh lists
+      try {
+        localStorage.setItem('gardensChanged', '1');
+        setTimeout(() => localStorage.removeItem('gardensChanged'), 500);
+      } catch {}
 
-      alert('Garden added!');
-      router.push('/gardens');
+      // go see it in "Brouillons"
+      router.push('/my-gardens?tab=drafts');
     } catch (err) {
-      console.error('Add garden failed:', err);
-      alert("Couldn't add the garden. Please try again.");
+      if (err?.status === 409 && err?.details?.error === 'owner_already_has_garden') {
+        // legacy backend case; keep a friendly message
+        setMsg("Le serveur a refusé la création (409). Votre configuration actuelle limite à un seul jardin.");
+      } else if (err?.details?.error) {
+        setMsg(`Erreur: ${err.details.error}`);
+      } else {
+        setMsg("Impossible d'ajouter le jardin. Réessayez.");
+      }
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen p-6 bg-white">
-      <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">Ajouter mon jardin</h1>
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-2">Ajouter mon jardin</h1>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Photos */}
-        <section
-          className="rounded-2xl p-6 border shadow-sm"
-          style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
+      {/* small info banner — we NEVER block the form */}
+      {!loadingMine && mine && (
+        <div
+          className="mb-6 rounded-lg border px-4 py-3 text-sm"
+          style={{ backgroundColor: 'rgba(22,163,74,0.06)', borderColor: 'rgba(22,163,74,0.22)' }}
         >
-          <label className="block w-full text-sm font-medium text-gray-800">Photos (max 5)</label>
+          Vous avez déjà <strong>{mine.length}</strong> jardin{mine.length > 1 ? 's' : ''} (dont{' '}
+          <strong>{countPublished}</strong> publié{countPublished > 1 ? 's' : ''}). Vous pouvez en ajouter un autre ci-dessous.
+          <Link href="/my-gardens" className="ml-2 underline" style={{ color: BRAND }}>
+            Retour à mes jardins
+          </Link>
+        </div>
+      )}
+
+      {msg && (
+        <div className="mb-6 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          {msg}
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Titre de l’annonce</label>
           <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleFileChange}
-            className="mt-2 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+            name="title"
+            value={form.title}
+            onChange={onChange}
+            className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+            placeholder="Ex. Mon beau jardin"
+            required
           />
-          <p className="mt-2 text-xs text-gray-600">
-            Les fichiers sont uniquement prévisualisés en local pour le moment.
-          </p>
+        </div>
 
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {formData.photos.map((file, index) => (
-              <div key={index} className="relative group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={`Photo ${index + 1}`}
-                  className="w-full h-40 object-cover rounded-lg shadow"
-                />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(index)}
-                  className="absolute top-1 right-1 inline-flex items-center justify-center rounded-full w-7 h-7 text-sm bg-white/90 text-red-600 border border-red-200 hover:bg-red-50 transition"
-                  aria-label="Retirer la photo"
-                  title="Retirer"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={onChange}
+            rows={4}
+            className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900"
+            placeholder="Parlez un peu de votre jardin…"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Adresse</label>
+          <input
+            name="address"
+            value={form.address}
+            onChange={onChange}
+            className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+            placeholder="Ex. 12 rue des Plantes, Paris"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Surface (m²)</label>
+            <input
+              name="area"
+              value={form.area}
+              onChange={onChange}
+              className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+              placeholder="Ex. 50"
+              inputMode="numeric"
+            />
           </div>
-        </section>
-
-        {/* Form */}
-        <section
-          className="rounded-2xl p-6 border shadow-sm"
-          style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
-        >
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Titre de l’annonce</label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                required
-                placeholder="Jardin ensoleillé à partager…"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={4}
-                className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                required
-                placeholder="Parlez de votre espace, de l’accès, des outils, etc."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Adresse</label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                placeholder="86 avenue de la République, Paris"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Surface (m²)</label>
-                <input
-                  type="number"
-                  name="area"
-                  value={formData.area}
-                  onChange={handleChange}
-                  min={0}
-                  inputMode="numeric"
-                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="Ex. 50"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Besoins du jardin</label>
-                <input
-                  type="text"
-                  name="needs"
-                  value={formData.needs}
-                  onChange={handleChange}
-                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="arrosage, désherbage, tondre…"
-                />
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={submitting || loading}
-                className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
-              >
-                {submitting ? 'Adding…' : 'Ajouter mon jardin'}
-              </button>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Besoins du jardin</label>
+            <input
+              name="needs"
+              value={form.needs}
+              onChange={onChange}
+              className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+              placeholder="Ex. arrosage, désherbage…"
+            />
           </div>
-        </section>
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
+          >
+            {busy ? 'Ajout…' : 'Ajouter'}
+          </button>
+
+          <Link
+            href="/my-gardens"
+            className="rounded-full px-4 py-2 border bg-white hover:bg-gray-50 text-gray-800"
+            style={{ borderColor: 'rgba(22,163,74,0.28)' }}
+          >
+            Annuler
+          </Link>
+        </div>
       </form>
-    </div>
+    </main>
   );
 }

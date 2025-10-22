@@ -31,7 +31,11 @@ export default function Navbar() {
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const roleLabel =
-    role === "OWNER" ? "Propriétaire" : role === "GARDENER" ? "Jardinier" : null;
+    role === "OWNER"
+      ? "Propriétaire"
+      : role === "GARDENER"
+      ? "Jardinier"
+      : null;
 
   /* ---------- session hydration ---------- */
   useEffect(() => {
@@ -78,7 +82,8 @@ export default function Navbar() {
   /* Listen for role changes fired by Dashboard (and other places) */
   useEffect(() => {
     // seed from cache on mount if server didn't give one yet
-    const cached = sessionStorage.getItem("role") || localStorage.getItem("role");
+    const cached =
+      sessionStorage.getItem("role") || localStorage.getItem("role");
     if (cached && !role) setRole(cached);
 
     function onCustom(e) {
@@ -146,7 +151,10 @@ export default function Navbar() {
   /* ---------- small UI helpers ---------- */
   const RoleBadge = () =>
     user && roleLabel ? (
-      <span className="ml-3 text-xs px-2 py-1 rounded-full bg-white/20" aria-live="polite">
+      <span
+        className="ml-3 text-xs px-2 py-1 rounded-full bg-white/20"
+        aria-live="polite"
+      >
         Mode&nbsp;: <strong>{roleLabel}</strong>
       </span>
     ) : null;
@@ -157,7 +165,9 @@ export default function Navbar() {
         <button
           onClick={() => switchRole("OWNER")}
           className={`px-3 py-1 rounded-full text-sm transition ${
-            role === "OWNER" ? "bg-pink-500 text-white" : "text-white hover:bg-white/10"
+            role === "OWNER"
+              ? "bg-pink-500 text-white"
+              : "text-white hover:bg-white/10"
           }`}
           title="Interface Propriétaire"
         >
@@ -166,7 +176,9 @@ export default function Navbar() {
         <button
           onClick={() => switchRole("GARDENER")}
           className={`px-3 py-1 rounded-full text-sm transition ${
-            role === "GARDENER" ? "bg-pink-500 text-white" : "text-white hover:bg-white/10"
+            role === "GARDENER"
+              ? "bg-pink-500 text-white"
+              : "text-white hover:bg-white/10"
           }`}
           title="Interface Jardinier"
         >
@@ -174,7 +186,6 @@ export default function Navbar() {
         </button>
       </div>
     ) : null;
-
 
   /* ---------- render ---------- */
   return (
@@ -247,14 +258,18 @@ export default function Navbar() {
                     Mode actuel&nbsp;: <strong>{roleLabel}</strong>
                   </li>
                 )}
-
                 <li>
                   <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
                     Tableau de bord
                   </Link>
                 </li>
-                                <li>
+                <li>
                   <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
+                    Mon profil
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/my-gardens" onClick={() => setMenuOpen(false)}>
                     Mes jardins
                   </Link>
                 </li>
@@ -274,7 +289,10 @@ export default function Navbar() {
                   </Link>
                 </li>
                 <li>
-                  <button onClick={handleLogout} className="block text-left w-full">
+                  <button
+                    onClick={handleLogout}
+                    className="block text-left w-full"
+                  >
                     Déconnexion
                   </button>
                 </li>
