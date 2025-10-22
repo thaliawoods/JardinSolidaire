@@ -3,11 +3,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { getFavGardeners, addFavGardener, removeFavGardener } from '@/lib/favorites';
+import { getAnyToken } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 const BRAND_GREEN = '#16a34a';
 
+/* ---------- helpers ---------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -43,7 +45,6 @@ function unwrapGardeners(raw) {
   if (!raw || typeof raw !== 'object') return [];
   return raw.gardeners ?? raw.gardener ?? raw.jardiniers ?? raw.jardinier ?? raw.data ?? [];
 }
-
 function normalizeGardeners(raw) {
   const arr = unwrapGardeners(raw);
   if (!Array.isArray(arr)) return [];
@@ -63,18 +64,36 @@ function normalizeGardeners(raw) {
     };
   });
 }
+/* -------------------------------- */
 
 export default function GardenersList() {
-  const [gardeners, setGardeners] = useState([]);
-  const [favorites, setFavorites] = useState([]);
-  const [minRating, setMinRating] = useState('');
-  const [kind, setKind] = useState('');
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState('');
+  const [gardeners, setGardeners]   = useState([]);
+  const [favorites, setFavorites]   = useState([]);
+  const [minRating, setMinRating]   = useState('');
+  const [kind, setKind]             = useState('');
+  const [search, setSearch]         = useState('');
+  const [loading, setLoading]       = useState(true);
+  const [err, setErr]               = useState('');
+  const [isAuthed, setIsAuthed]     = useState(false); // NEW
 
-  useEffect(() => { setFavorites(getFavGardeners().map((g) => String(g.id))); }, []);
+  // auth watcher (login/logout)
+  useEffect(() => {
+    const sync = () => setIsAuthed(!!getAnyToken());
+    sync();
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
 
+  // only keep local favorites if logged in
+  useEffect(() => {
+    if (isAuthed) {
+      setFavorites(getFavGardeners().map((g) => String(g.id)));
+    } else {
+      setFavorites([]);
+    }
+  }, [isAuthed]);
+
+  // load data
   useEffect(() => {
     const ac = new AbortController();
     let alive = true;
@@ -115,6 +134,7 @@ export default function GardenersList() {
   }, [gardeners, search, minRating]);
 
   const toggleFavorite = (g) => {
+    if (!isAuthed) return; // guard
     const id = String(g.id);
     setFavorites((prev) => {
       const isFav = prev.includes(id);
@@ -142,13 +162,17 @@ export default function GardenersList() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-4">
           <h1 className="text-3xl font-bold text-green-800">Jardiniers</h1>
-          <Link
-            href="/favorites"
-            className="px-4 py-2 rounded-full text-white"
-            style={{ backgroundColor: BRAND_GREEN }}
-          >
-            Favoris ({favorites.length})
-          </Link>
+
+          {/* favorites link hidden if not connected */}
+          {isAuthed && (
+            <Link
+              href="/favorites"
+              className="px-4 py-2 rounded-full text-white"
+              style={{ backgroundColor: BRAND_GREEN }}
+            >
+              Favoris ({favorites.length})
+            </Link>
+          )}
         </div>
 
         <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
@@ -239,16 +263,20 @@ export default function GardenersList() {
                       className="object-cover w-full h-full"
                       onError={(e) => { e.currentTarget.src = fallback; }}
                     />
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
-                      className="absolute top-2 right-2 text-xl hover:scale-125 transition"
-                      aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                    >
-                      {favbed
-                        ? <span className="text-pink-500">♥</span>
-                        : <span className="text-gray-400">♡</span>}
-                    </button>
+
+                    {/* heart hidden if not connected */}
+                    {isAuthed && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
+                        className="absolute top-2 right-2 text-xl hover:scale-125 transition"
+                        aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      >
+                        {favbed
+                          ? <span className="text-pink-500">♥</span>
+                          : <span className="text-gray-400">♡</span>}
+                      </button>
+                    )}
                   </div>
 
                   <div className="ml-6 flex flex-col justify-center gap-1.5">

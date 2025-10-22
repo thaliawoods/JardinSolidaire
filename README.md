@@ -44,3 +44,8 @@ docker-compose up -d
 
 - to go on pgadmin :
 http://localhost:5050
+
+
+
+lsof -ti :3000 | xargs kill -9
+lsof -ti :5001 | xargs kill -9
