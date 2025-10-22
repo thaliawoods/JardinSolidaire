@@ -1,9 +1,7 @@
 // src/lib/api.js
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
-function ensureLeadingSlash(p = '') {
-  return p.startsWith('/') ? p : `/${p}`;
-}
+function ensureLeadingSlash(p = '') { return p.startsWith('/') ? p : `/${p}`; }
 
 function qs(obj = {}) {
   const sp = new URLSearchParams();
@@ -40,18 +38,10 @@ export function getAnyToken() {
 
 export async function apiFetch(
   path,
-  {
-    method = 'GET',
-    body,
-    headers = {},
-    query,          // object -> querystring
-    signal,         // AbortSignal
-    raw = false,    // return the Response as-is
-  } = {}
+  { method = 'GET', body, headers = {}, query, signal, raw = false } = {}
 ) {
   const token = getAnyToken();
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
-
   const url = `${API_BASE}${ensureLeadingSlash(path)}${qs(query)}`;
 
   const res = await fetch(url, {
@@ -69,21 +59,21 @@ export async function apiFetch(
 
   if (raw) return res;
 
-  const contentType = res.headers.get('content-type') || '';
-  const canJson = contentType.includes('application/json');
+  const ct = res.headers.get('content-type') || '';
+  const canJson = ct.includes('application/json');
   let data = null;
   if (res.status !== 204 && canJson) {
     try { data = await res.json(); } catch { data = null; }
   }
 
   if (!res.ok) {
-    const err = new Error(
-      (data && (data.error || data.message)) || `HTTP_${res.status}`
-    );
+    const msg =
+      (data && (data.error || data.message || data.detail)) ||
+      `HTTP_${res.status}`;
+    const err = new Error(msg);
     err.status = res.status;
     err.details = data || null;
     throw err;
   }
-
   return data;
 }

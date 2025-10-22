@@ -68,7 +68,7 @@ model HoursTotal {
  */
 model Garden {
   id            BigInt    @id @default(autoincrement()) @map("id_jardin")
-  ownerUserId   BigInt    @unique @map("id_proprietaire")
+  ownerUserId   BigInt    @map("id_proprietaire")
   title         String?   @map("titre")
   description   String?   @map("description")
   address       String?   @map("adresse")
@@ -76,16 +76,18 @@ model Garden {
   kind          String?   @map("type")
   needs         String?   @map("besoins")
   photos        Json?     @map("photos") @db.Json
-  publishedAt   DateTime? @default(now()) @map("date_publication") @db.Timestamptz(6)
+  // Draft by default: no auto default timestamp
+  publishedAt   DateTime? @map("date_publication") @db.Timestamptz(6)
   status        String?   @map("statut")
   averageRating Float?    @map("note_moyenne")
 
   reviews      Review[]
   availability AvailabilitySlot[]
-  ownerUser    User               @relation(fields: [ownerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ownerUser    User       @relation(fields: [ownerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   bookings     Booking[]
 
   @@map("jardin")
+  @@index([ownerUserId])
 }
 
 /**
@@ -150,7 +152,7 @@ model User {
 
   reviews     Review[]
   hoursTotals HoursTotal[]
-  garden      Garden? // one max
+  gardens     Garden[] // many gardens per owner
   received    Message[]    @relation("messagerie_id_destinataireToutilisateur")
   sent        Message[]    @relation("messagerie_id_envoyeurToutilisateur")
   bookings    Booking[]
@@ -284,6 +286,5 @@ model GardenerAvailabilitySlot {
   gardener Gardener @relation("GardenerAvailabilities", fields: [gardenerId], references: [id], onDelete: Cascade)
 
   @@index([gardenerId, date, startTime, endTime])
-  @@unique([gardenerId, date, startTime, endTime]) // <-- fixed here
+  @@unique([gardenerId, date, startTime, endTime])
 }
-
