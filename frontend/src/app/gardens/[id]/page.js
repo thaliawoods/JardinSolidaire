@@ -1,42 +1,51 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import BookingButton from '@/components/booking/BookingButton';
+import React, { use, useEffect, useState } from "react";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import BookingButton from "@/components/booking/BookingButton";
+import { getAnyToken } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const BRAND_GREEN = '#16a34a';
-const BRAND_PINK  = '#E3107D';
+const AvailabilityCalendar = dynamic(
+  () => import("@/components/availability/AvailabilityCalendar"),
+  { ssr: false }
+);
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const BRAND_GREEN = "#16a34a";
+const BRAND_PINK = "#E3107D";
 
 function normalizeGarden(payload) {
   if (!payload) return null;
   const photosRaw = payload.photos ?? [];
   const photos = Array.isArray(photosRaw)
     ? photosRaw
-    : typeof photosRaw === 'string'
-      ? [photosRaw]
-      : [];
+    : typeof photosRaw === "string"
+    ? [photosRaw]
+    : [];
 
   // English-first shape
-  if ('title' in payload || 'owner' in payload) {
+  if ("title" in payload || "owner" in payload) {
     return {
-      id: String(payload.id ?? payload.id_jardin ?? ''),
-      title: payload.title ?? payload.titre ?? '',
-      description: payload.description ?? '',
-      address: payload.address ?? payload.adresse ?? '',
-      kind: payload.kind ?? payload.type ?? '',
-      needs: payload.needs ?? payload.besoins ?? '',
+      id: String(payload.id ?? payload.id_jardin ?? ""),
+      title: payload.title ?? payload.titre ?? "",
+      description: payload.description ?? "",
+      address: payload.address ?? payload.adresse ?? "",
+      kind: payload.kind ?? payload.type ?? "",
+      needs: payload.needs ?? payload.besoins ?? "",
       photos,
       averageRating: payload.averageRating ?? payload.note_moyenne ?? null,
       owner: payload.owner
         ? {
-            id: String(payload.owner.id ?? payload.owner.id_utilisateur ?? ''),
-            firstName: payload.owner.firstName ?? payload.owner.prenom ?? '',
-            lastName: payload.owner.lastName ?? payload.owner.nom ?? '',
-            avatarUrl: payload.owner.avatarUrl ?? payload.owner.photo_profil ?? null,
+            id: String(payload.owner.id ?? payload.owner.id_utilisateur ?? ""),
+            firstName: payload.owner.firstName ?? payload.owner.prenom ?? "",
+            lastName: payload.owner.lastName ?? payload.owner.nom ?? "",
+            avatarUrl:
+              payload.owner.avatarUrl ?? payload.owner.photo_profil ?? null,
             phone: payload.owner.phone ?? payload.owner.telephone ?? null,
             address: payload.owner.address ?? payload.owner.adresse ?? null,
-            averageRating: payload.owner.averageRating ?? payload.owner.note ?? null,
+            averageRating:
+              payload.owner.averageRating ?? payload.owner.note ?? null,
             intro: payload.owner.bio ?? payload.owner.presentation ?? null,
             ownerId:
               payload.owner.ownerId ??
@@ -46,26 +55,31 @@ function normalizeGarden(payload) {
               null,
           }
         : null,
-      demoOwnerId: payload.ownerProfileId ?? payload.ownerDemoId ?? payload.proprietaireDemoId ?? null,
+      demoOwnerId:
+        payload.ownerProfileId ??
+        payload.ownerDemoId ??
+        payload.proprietaireDemoId ??
+        null,
     };
   }
 
   // Legacy FR shape
   return {
-    id: String(payload.id_jardin ?? ''),
-    title: payload.titre ?? '',
-    description: payload.description ?? '',
-    address: payload.adresse ?? '',
-    kind: payload.type ?? '',
-    needs: payload.besoins ?? '',
+    id: String(payload.id_jardin ?? ""),
+    title: payload.titre ?? "",
+    description: payload.description ?? "",
+    address: payload.adresse ?? "",
+    kind: payload.type ?? "",
+    needs: payload.besoins ?? "",
     photos,
     averageRating: payload.note_moyenne ?? null,
     owner: payload.owner
       ? {
-          id: String(payload.owner.id_utilisateur ?? ''),
-          firstName: payload.owner.prenom ?? '',
-          lastName: payload.owner.nom ?? '',
-          avatarUrl: payload.owner.avatarUrl ?? payload.owner.photo_profil ?? null,
+          id: String(payload.owner.id_utilisateur ?? ""),
+          firstName: payload.owner.prenom ?? "",
+          lastName: payload.owner.nom ?? "",
+          avatarUrl:
+            payload.owner.avatarUrl ?? payload.owner.photo_profil ?? null,
           phone: payload.owner.telephone ?? null,
           address: payload.owner.adresse ?? null,
           averageRating: payload.owner.note ?? null,
@@ -78,10 +92,10 @@ function normalizeGarden(payload) {
 }
 
 export default function GardenDetailPage({ params }) {
-  const { id } = params || {};
-  const [garden, setGarden]   = useState(null);
+  const { id } = use(params) || {};
+  const [garden, setGarden] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -89,23 +103,33 @@ export default function GardenDetailPage({ params }) {
     async function load() {
       try {
         setLoading(true);
-        setError('');
+        setError("");
 
-        let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: 'no-store' });
-        if (!res.ok) res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
+        let res = await fetch(`${API_BASE}/api/gardens/${id}`, {
+          cache: "no-store",
+        });
+        if (!res.ok)
+          res = await fetch(`${API_BASE}/api/jardins/${id}`, {
+            cache: "no-store",
+          });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
         if (alive) setGarden(normalizeGarden(data));
       } catch {
-        if (alive) { setError("Couldn't load this garden."); setGarden(null); }
+        if (alive) {
+          setError("Couldn't load this garden.");
+          setGarden(null);
+        }
       } finally {
         if (alive) setLoading(false);
       }
     }
 
     if (id) load();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
   if (loading) {
@@ -125,13 +149,14 @@ export default function GardenDetailPage({ params }) {
       <div className="min-h-screen bg-white text-gray-900 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
-            {error || 'Unknown error'}
+            {error || "Unknown error"}
           </div>
           <p className="text-gray-600">
-            Back to{' '}
+            Retour aux{" "}
             <Link href="/gardens" className="underline text-green-700">
-              gardens
-            </Link>.
+              jardins
+            </Link>
+            .
           </p>
         </div>
       </div>
@@ -158,13 +183,13 @@ export default function GardenDetailPage({ params }) {
             href="/gardens"
             aria-label="Retour aux jardins"
             className="
-              inline-flex items-center gap-2 rounded-full px-4 py-2
-              bg-white/80 text-[#16a34a]
-              border border-[rgba(22,163,74,0.28)]
-              hover:bg-[rgba(22,163,74,0.06)]
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
-              shadow-sm transition
-            "
+inline-flex items-center gap-2 rounded-full px-4 py-2
+bg-white/80 text-[#16a34a]
+border border-[rgba(22,163,74,0.28)]
+hover:bg-[rgba(22,163,74,0.06)]
+focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
+shadow-sm transition
+"
           >
             <span aria-hidden>←</span> Retour aux jardins
           </Link>
@@ -178,28 +203,37 @@ export default function GardenDetailPage({ params }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={garden.photos[0]}
-            alt={garden.title || 'Photo de jardin'}
+            alt={garden.title || "Photo de jardin"}
             className="w-full h-56 md:h-72 lg:h-80 object-cover rounded-2xl mb-6"
           />
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <section className="lg:col-span-2">
-            <Card title="Garden information">
+            <Card title="Informations sur le jardin">
               <div className="mt-3 space-y-1.5 text-sm text-gray-700">
                 <p>{garden.description}</p>
-                <p><strong>Address:</strong> {garden.address || '—'}</p>
-                <p><strong>Kind:</strong> {garden.kind || '—'}</p>
-                <p><strong>Needs:</strong> {garden.needs || '—'}</p>
-                <p><strong>Average rating:</strong> {garden.averageRating ?? '—'}★</p>
+                <p>
+                  <strong>Addresse:</strong> {garden.address || "—"}
+                </p>
+                <p>
+                  <strong>Type:</strong> {garden.kind || "—"}
+                </p>
+                <p>
+                  <strong>Besoins:</strong> {garden.needs || "—"}
+                </p>
+                <p>
+                  <strong>Note moyenne:</strong> {garden.averageRating ?? "—"}
+                  ★
+                </p>
               </div>
             </Card>
           </section>
 
           <aside>
-            <Card title="Owner">
+            <Card title="Propriétaire du jardin">
               {!owner ? (
-                <p className="text-sm text-gray-600">No owner linked.</p>
+                <p className="text-sm text-gray-600">Pas de propriétaire lié.</p>
               ) : (
                 <div className="mt-3 grid grid-cols-1 gap-3 text-sm text-gray-700">
                   <div className="flex items-center gap-3">
@@ -217,8 +251,10 @@ export default function GardenDetailPage({ params }) {
                       )}
                     </div>
                     <div>
-                      <p className="font-medium">{owner.firstName} {owner.lastName}</p>
-                      <p className="text-gray-500">{owner.address || '—'}</p>
+                      <p className="font-medium">
+                        {owner.firstName} {owner.lastName}
+                      </p>
+                      <p className="text-gray-500">{owner.address || "—"}</p>
                     </div>
                   </div>
 
@@ -239,15 +275,31 @@ export default function GardenDetailPage({ params }) {
 
         {owner?.intro && (
           <section className="mt-6">
-            <Card title="Owner introduction">
-              <p className="mt-3 text-gray-700 whitespace-pre-wrap">{owner.intro}</p>
+            <Card title="Introduction du propriétaire">
+              <p className="mt-3 text-gray-700 whitespace-pre-wrap">
+                {owner.intro}
+              </p>
             </Card>
           </section>
         )}
 
-        {/* ✅ Place the booking CTA here (outside Card): */}
+        {/* Booking CTA */}
         <section className="mt-6">
           <BookingButton gardenId={garden.id} />
+        </section>
+
+        {/* Availability calendar for garden owner */}
+        <section className="mt-8">
+          <h2 className="sr-only">Disponibilités du jardin</h2>
+          <div
+            className="rounded-2xl p-6"
+            style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
+          ></div>
+          <AvailabilityCalendar
+            mode="garden"
+            ownerId={garden.id}
+            token={getAnyToken()}
+          />
         </section>
       </main>
     </div>
@@ -259,8 +311,8 @@ function Card({ title, children }) {
     <div
       className="rounded-2xl p-6"
       style={{
-        backgroundColor: 'rgba(22,163,74,0.08)',
-        border: '1px solid rgba(22,163,74,0.15)',
+        backgroundColor: "rgba(22,163,74,0.08)",
+        border: "1px solid rgba(22,163,74,0.15)",
       }}
     >
       <h2 className="text-lg font-semibold text-green-800">{title}</h2>
@@ -268,3 +320,4 @@ function Card({ title, children }) {
     </div>
   );
 }
+

@@ -6,8 +6,7 @@ import useSession from '@/hooks/useSession';
 import { apiFetch, getAnyToken } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const SKILLS_URL =
-  process.env.NEXT_PUBLIC_API_SKILLS || `${API_BASE}/api/skills`;
+const SKILLS_URL = process.env.NEXT_PUBLIC_API_SKILLS || `${API_BASE}/api/skills`;
 const LEGACY_COMP_URL = `${API_BASE}/competences`;
 
 export default function AddGardener() {
@@ -16,10 +15,13 @@ export default function AddGardener() {
 
   const hookToken = session?.token ?? null;
   const token = hookToken || (typeof window !== 'undefined' ? getAnyToken() : null);
-  const user  = session?.user ?? null;
+  const user = session?.user ?? null;
   const loading = Boolean(session?.loading);
-  const isReady = (!loading && (!!token || !!user));
-  const debugSource = useMemo(() => (hookToken ? 'hook' : token ? 'storage/cookie' : 'none'), [hookToken, token]);
+  const isReady = !loading && (!!token || !!user);
+  const debugSource = useMemo(
+    () => (hookToken ? 'hook' : token ? 'storage/cookie' : 'none'),
+    [hookToken, token]
+  );
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -30,7 +32,6 @@ export default function AddGardener() {
     skills: [],
     photos: [],
   });
-
   const [skillsList, setSkillsList] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [newSkill, setNewSkill] = useState('');
@@ -39,7 +40,7 @@ export default function AddGardener() {
     (async () => {
       try {
         let r = await fetch(SKILLS_URL, { cache: 'no-store' });
-        if (!r.ok) throw 0;
+        if (!r.ok) throw new Error();
         let data = await r.json();
         if (Array.isArray(data) && data.length && data[0].name === undefined) {
           data = data.map((c) => ({ id: c.id ?? c.id_competence, name: c.name ?? c.nom }));
@@ -49,7 +50,9 @@ export default function AddGardener() {
         try {
           const r = await fetch(LEGACY_COMP_URL, { cache: 'no-store' });
           const data = await r.json();
-          setSkillsList((data || []).map((c) => ({ id: c.id ?? c.id_competence, name: c.name ?? c.nom })));
+          setSkillsList(
+            (data || []).map((c) => ({ id: c.id ?? c.id_competence, name: c.name ?? c.nom }))
+          );
         } catch (e) {
           console.error('Failed to load skills:', e);
           setSkillsList([]);
@@ -62,19 +65,21 @@ export default function AddGardener() {
     if (!isReady) return;
     (async () => {
       try {
-        const g = await apiFetch('/api/me/gardener'); 
+        const g = await apiFetch('/api/me/gardener');
         if (g) {
           setFormData((p) => ({
             ...p,
-            firstName: g.prenom ?? g.firstName ?? p.firstName,
-            lastName: g.nom ?? g.lastName ?? p.lastName,
-            intro: g.presentation ?? g.intro ?? p.intro,
-            location: g.localisation ?? g.location ?? p.location,
-            yearsExperience: g.experienceAnnees ?? g.yearsExperience ?? p.yearsExperience,
-            skills: Array.isArray(g.competences) ? g.competences : (Array.isArray(g.skills) ? g.skills : p.skills),
+            firstName: g.firstName ?? p.firstName,
+            lastName: g.lastName ?? p.lastName,
+            intro: g.intro ?? p.intro,
+            location: g.location ?? p.location,
+            yearsExperience: g.yearsExperience ?? p.yearsExperience,
+            skills: Array.isArray(g.skills) ? g.skills : p.skills,
           }));
         }
-      } catch (_) { /* no profile yet is fine */ }
+      } catch {
+        /* ok: no profile yet */
+      }
     })();
   }, [isReady]);
 
@@ -90,10 +95,14 @@ export default function AddGardener() {
     setFormData((p) => ({ ...p, photos: [...p.photos, ...files] }));
     e.target.value = '';
   };
-  const removePhoto = (i) => setFormData((p) => ({ ...p, photos: p.photos.filter((_, k) => k !== i) }));
+
+  const removePhoto = (i) =>
+    setFormData((p) => ({ ...p, photos: p.photos.filter((_, k) => k !== i) }));
 
   const normalize = (s) => s.trim().replace(/\s+/g, ' ');
-  const alreadyHas = (name) => formData.skills.map((x) => x.toLowerCase()).includes(name.toLowerCase());
+  const alreadyHas = (name) =>
+    formData.skills.map((x) => x.toLowerCase()).includes(name.toLowerCase());
+
   const addSkill = () => {
     const clean = normalize(newSkill);
     if (!clean) return;
@@ -101,84 +110,39 @@ export default function AddGardener() {
     setFormData((p) => ({ ...p, skills: [...p.skills, clean] }));
     setNewSkill('');
   };
-  const removeSkill = (name) => setFormData((p) => ({ ...p, skills: p.skills.filter((s) => s !== name) }));
+
+  const removeSkill = (name) =>
+    setFormData((p) => ({ ...p, skills: p.skills.filter((s) => s !== name) }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isReady) return;
 
-    const selectedNames = formData.skills || [];
-    const nameToId = new Map(
-      (skillsList || []).map(s => [
-        (s.name ?? s.nom ?? '').toLowerCase(),
-        s.id ?? s.id_competence
-      ])
-    );
-    const selectedIds = selectedNames
-      .map(n => nameToId.get(String(n).toLowerCase()))
-      .filter((v) => Number.isFinite(v));
+    const years =
+      formData.yearsExperience === '' || formData.yearsExperience == null
+        ? null
+        : Number.parseInt(formData.yearsExperience, 10);
 
-    const exp = formData.yearsExperience;
-    const expInt = exp === '' || exp == null ? 0 : Number.parseInt(exp, 10);
-    const experience = Number.isFinite(expInt) ? expInt : 0;
+    const payload = {
+      firstName: (formData.firstName || '').trim(),
+      lastName: (formData.lastName || '').trim(),
+      location: (formData.location || '').trim(),
+      intro: (formData.intro || '').trim(),
+      yearsExperience: Number.isFinite(years) ? years : null,
+      skills: Array.isArray(formData.skills) ? formData.skills : [],
+    };
 
-    const prenom = (formData.firstName || '').trim();
-    const nom = (formData.lastName || '').trim();
-    const localisation = (formData.location || '').trim();
-    const presentation = (formData.intro || '').trim();
-
-    if (!prenom || !nom || !presentation) {
+    if (!payload.firstName || !payload.lastName || !payload.intro) {
       alert('First name, last name, and description are required.');
       return;
     }
 
-    const baseFR = { prenom, nom, localisation, presentation, experienceAnnees: experience };
-    const aliasFR2 = { prenom, nom, adresse: localisation, description: presentation, anneesExperience: experience };
-    const aliasEN  = { firstName: prenom, lastName: nom, location: localisation, intro: presentation, yearsExperience: experience };
-
-    const skillsBlocks = [
-      { competencesIds: selectedIds },
-      { competenceIds: selectedIds },
-      { competence_ids: selectedIds },
-      { competences: selectedNames },
-      { skills: selectedNames },
-      { competencesCsv: selectedNames.join(',') },
-    ].filter(b => (('competencesIds' in b || 'competenceIds' in b || 'competence_ids' in b) ? selectedIds.length > 0 : true));
-
-    const variants = [
-      { body: { ...baseFR } },
-      ...skillsBlocks.map(b => ({ body: { ...baseFR, ...b } })),
-      ...skillsBlocks.map(b => ({ body: { ...aliasFR2, ...b } })),
-      ...skillsBlocks.map(b => ({ body: { ...aliasEN,  ...b } })),
-    ];
-
     try {
       setSubmitting(true);
-
-      let ok = false;
-      let lastStatus = 0;
-      let lastText = '';
-
-      for (const v of variants) {
-        const cleaned = Object.fromEntries(
-          Object.entries(v.body).filter(([_, val]) => (Array.isArray(val) ? true : val !== undefined))
-        );
-
-        const res = await apiFetch('/api/me/gardener', { method: 'POST', body: cleaned, raw: true });
-        lastStatus = res.status;
-        lastText = await res.text().catch(() => '');
-        if (res.ok) { ok = true; break; }
-        console.error('Variant failed:', lastStatus, lastText);
-      }
-
-      if (!ok) {
-        alert(`Couldn't save the gardener profile.\nServer said: ${lastStatus} ${lastText || '(no body)'}`);
-        return;
-      }
-
+      await apiFetch('/api/me/gardener', { method: 'POST', body: payload });
       router.push('/profile');
     } catch (err) {
-      console.error('Save gardener failed (thrown):', err);
+      console.error('Save gardener failed:', err);
       alert(`Couldn't save the gardener profile. ${err?.message || ''}`);
     } finally {
       setSubmitting(false);
@@ -194,19 +158,17 @@ export default function AddGardener() {
           className="rounded-2xl p-6 border shadow-sm"
           style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
         >
-          <label className="block w-full text-sm font-medium text-gray-800 mb-2">Photos (max 5)</label>
+          <label className="block w-full text-sm font-medium text-gray-800 mb-2">
+            Photos (max 5)
+          </label>
           <input
             type="file"
             multiple
             accept="image/*"
             onChange={handleFileChange}
-            className="w-full h-11 rounded-xl px-3
-                       border border-gray-300
-                       bg-white text-gray-900 placeholder:text-gray-400
-                       focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+            className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
           />
           <p className="mt-2 text-xs text-gray-600">{formData.photos.length}/5 éléments sélectionnés</p>
-
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
             {formData.photos.map((file, idx) => (
               <div key={idx} className="relative group">
@@ -219,10 +181,7 @@ export default function AddGardener() {
                 <button
                   type="button"
                   onClick={() => removePhoto(idx)}
-                  className="absolute top-1 right-1 inline-flex items-center justify-center
-                             rounded-full w-7 h-7 text-sm
-                             bg-white/90 text-red-600 border border-red-200
-                             hover:bg-red-50 transition"
+                  className="absolute top-1 right-1 inline-flex items-center justify-center rounded-full w-7 h-7 text-sm bg-white/90 text-red-600 border border-red-200 hover:bg-red-50 transition"
                   aria-label="Retirer la photo"
                   title="Retirer"
                 >
@@ -288,7 +247,9 @@ export default function AddGardener() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nombre d’années d’expérience</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Nombre d’années d’expérience
+              </label>
               <input
                 type="number"
                 name="yearsExperience"
@@ -301,13 +262,17 @@ export default function AddGardener() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Compétences</label>
-
               <div className="mt-2 flex gap-2">
                 <input
                   type="text"
                   value={newSkill}
                   onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSkill();
+                    }
+                  }}
                   placeholder="ex: arrosage, compost, potager…"
                   className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
                 />

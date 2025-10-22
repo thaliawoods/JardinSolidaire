@@ -7,240 +7,284 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/* -------------------------
-   Reviews (avis)
-   ------------------------- */
+/**
+ * -------------------------
+ * Reviews (avis)
+ * -------------------------
+ */
 model Review {
-  id         BigInt     @id @default(autoincrement()) @map("id_avis")
-  userId     BigInt?    @map("id_utilisateur")
-  gardenId   BigInt?    @map("id_jardin")
-  rating     Int?       @map("note")
-  comment    String?    @map("commentaire")
-  createdAt  DateTime?  @default(now()) @db.Timestamptz(6) @map("date_avis")
+  id        BigInt    @id @default(autoincrement()) @map("id_avis")
+  userId    BigInt?   @map("id_utilisateur")
+  gardenId  BigInt?   @map("id_jardin")
+  rating    Int?      @map("note")
+  comment   String?   @map("commentaire")
+  createdAt DateTime? @default(now()) @map("date_avis") @db.Timestamptz(6)
 
-  garden     Garden?    @relation(fields: [gardenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user       User?      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  garden Garden? @relation(fields: [gardenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("avis")
 }
 
-/* -------------------------
-   Availability slots (disponibilites)
-   ------------------------- */
+/**
+ * -------------------------
+ * Availability slots (disponibilites)
+ * -------------------------
+ */
 model AvailabilitySlot {
-  id           BigInt       @id @default(autoincrement()) @map("id_disponibilite")
-  gardenId     BigInt?      @map("id_jardin")
-  date         DateTime?    @db.Date @map("date_dispo")
-  startTime    DateTime?    @db.Time(6) @map("heure_debut")
-  endTime      DateTime?    @db.Time(6) @map("heure_fin")
-  status       String?      @map("statut")
+  id        BigInt    @id @default(autoincrement()) @map("id_disponibilite")
+  gardenId  BigInt?   @map("id_jardin")
+  date      DateTime? @map("date_dispo") @db.Date
+  startTime DateTime? @map("heure_debut") @db.Time(6)
+  endTime   DateTime? @map("heure_fin") @db.Time(6)
+  status    String?   @map("statut")
 
-  garden       Garden?      @relation(fields: [gardenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  bookings     Booking[]
+  garden   Garden?   @relation(fields: [gardenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bookings Booking[]
 
   @@map("disponibilites")
 }
 
-/* -------------------------
-   Cumulated hours (heurescumulées)
-   ------------------------- */
+/**
+ * -------------------------
+ * Cumulated hours (heurescumulées)
+ * -------------------------
+ */
 model HoursTotal {
   id        BigInt    @id @default(autoincrement()) @map("id_historique")
   userId    BigInt?   @map("id_utilisateur")
   hours     Float?    @map("heures_travaillees")
-  updatedAt DateTime? @default(now()) @db.Timestamptz(6) @map("date_maj")
+  updatedAt DateTime? @default(now()) @map("date_maj") @db.Timestamptz(6)
 
-  user      User?     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user User? @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("heurescumulées")
 }
 
-/* -------------------------
-   Gardens (jardin)
-   ------------------------- */
+/**
+ * -------------------------
+ * Gardens (jardin)
+ * -------------------------
+ */
 model Garden {
-  id             BigInt     @id @default(autoincrement()) @map("id_jardin")
-  ownerUserId    BigInt     @unique @map("id_proprietaire")
-  title          String?    @map("titre")
-  description    String?    @map("description")
-  address        String?    @map("adresse")
-  area           Float?     @map("superficie")
-  kind           String?    @map("type")
-  needs          String?    @map("besoins")
-  photos         Json?      @db.Json @map("photos")
-  publishedAt    DateTime?  @default(now()) @db.Timestamptz(6) @map("date_publication")
-  status         String?    @map("statut")
-  averageRating  Float?     @map("note_moyenne")
+  id            BigInt    @id @default(autoincrement()) @map("id_jardin")
+  ownerUserId   BigInt    @map("id_proprietaire")
+  title         String?   @map("titre")
+  description   String?   @map("description")
+  address       String?   @map("adresse")
+  area          Float?    @map("superficie")
+  kind          String?   @map("type")
+  needs         String?   @map("besoins")
+  photos        Json?     @map("photos") @db.Json
+  // Draft by default: no auto default timestamp
+  publishedAt   DateTime? @map("date_publication") @db.Timestamptz(6)
+  status        String?   @map("statut")
+  averageRating Float?    @map("note_moyenne")
 
-  reviews        Review[]
-  availability   AvailabilitySlot[]
-  ownerUser      User       @relation(fields: [ownerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  bookings       Booking[]
+  reviews      Review[]
+  availability AvailabilitySlot[]
+  ownerUser    User       @relation(fields: [ownerUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bookings     Booking[]
 
   @@map("jardin")
+  @@index([ownerUserId])
 }
 
-/* -------------------------
-   Messages (messagerie)
-   ------------------------- */
+/**
+ * -------------------------
+ * Messages (messagerie)
+ * -------------------------
+ */
 model Message {
-  id            BigInt     @id @default(autoincrement()) @map("id_message")
-  senderUserId  BigInt?    @map("id_envoyeur")
-  targetUserId  BigInt?    @map("id_destinataire")
-  content       String?    @map("contenu")
-  sentAt        DateTime?  @default(now()) @db.Timestamptz(6) @map("date_envoi")
-  read          Boolean?   @default(false) @map("lu")
+  id           BigInt    @id @default(autoincrement()) @map("id_message")
+  senderUserId BigInt?   @map("id_envoyeur")
+  targetUserId BigInt?   @map("id_destinataire")
+  content      String?   @map("contenu")
+  sentAt       DateTime? @default(now()) @map("date_envoi") @db.Timestamptz(6)
+  read         Boolean?  @default(false) @map("lu")
 
   // keep relation names to match existing ones
-  targetUser    User?      @relation("messagerie_id_destinataireToutilisateur", fields: [targetUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  senderUser    User?      @relation("messagerie_id_envoyeurToutilisateur", fields: [senderUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  targetUser User? @relation("messagerie_id_destinataireToutilisateur", fields: [targetUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  senderUser User? @relation("messagerie_id_envoyeurToutilisateur", fields: [senderUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("messagerie")
 }
 
-/* -------------------------
-   Bookings (reservation)
-   ------------------------- */
+/**
+ * -------------------------
+ * Bookings (reservation)
+ * -------------------------
+ */
 model Booking {
-  id              BigInt            @id @default(autoincrement()) @map("id_reservation")
-  userId          BigInt?           @map("id_utilisateur")
-  gardenId        BigInt?           @map("id_jardin")
-  slotId          BigInt?           @map("id_disponibilite")
-  status          String?           @map("statut")
-  bookedAt        DateTime?         @default(now()) @db.Timestamptz(6) @map("date_reservation")
-  notes           String?           @map("commentaires")
+  id       BigInt    @id @default(autoincrement()) @map("id_reservation")
+  userId   BigInt?   @map("id_utilisateur")
+  gardenId BigInt?   @map("id_jardin")
+  slotId   BigInt?   @map("id_disponibilite")
+  status   String?   @map("statut")
+  bookedAt DateTime? @default(now()) @map("date_reservation") @db.Timestamptz(6)
+  notes    String?   @map("commentaires")
 
-  slot            AvailabilitySlot? @relation(fields: [slotId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  garden          Garden?           @relation(fields: [gardenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user            User?             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  slot   AvailabilitySlot? @relation(fields: [slotId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  garden Garden?           @relation(fields: [gardenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user   User?             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("reservation")
 }
 
-/* -------------------------
-   Users (utilisateur)
-   ------------------------- */
+/**
+ * -------------------------
+ * Users (utilisateur)
+ * -------------------------
+ */
 model User {
-  id             BigInt     @id @default(autoincrement()) @map("id_utilisateur")
-  firstName      String?    @map("prenom")
-  lastName       String?    @map("nom")
-  email          String?    @unique @map("email")
-  passwordHash   String?    @map("mot_de_passe")
-  role           String?    @map("role")
-  avatarUrl      String?    @map("photo_profil")
-  bio            String?    @map("biographie")
-  joinedAt       DateTime?  @default(now()) @db.Timestamptz(6) @map("date_inscription")
-  phone          String?    @map("telephone")
-  address        String?    @map("adresse")
-  averageRating  Float?     @map("note_moyenne")
+  id            BigInt    @id @default(autoincrement()) @map("id_utilisateur")
+  firstName     String?   @map("prenom")
+  lastName      String?   @map("nom")
+  email         String?   @unique @map("email")
+  passwordHash  String?   @map("mot_de_passe")
+  role          String?   @map("role")
+  avatarUrl     String?   @map("photo_profil")
+  bio           String?   @map("biographie")
+  joinedAt      DateTime? @default(now()) @map("date_inscription") @db.Timestamptz(6)
+  phone         String?   @map("telephone")
+  address       String?   @map("adresse")
+  averageRating Float?    @map("note_moyenne")
 
-  reviews        Review[]
-  hoursTotals    HoursTotal[]
-  garden         Garden?    // one max
-  received       Message[]  @relation("messagerie_id_destinataireToutilisateur")
-  sent           Message[]  @relation("messagerie_id_envoyeurToutilisateur")
-  bookings       Booking[]
-  userSkills     UserSkill[]
+  reviews     Review[]
+  hoursTotals HoursTotal[]
+  gardens     Garden[] // many gardens per owner
+  received    Message[]    @relation("messagerie_id_destinataireToutilisateur")
+  sent        Message[]    @relation("messagerie_id_envoyeurToutilisateur")
+  bookings    Booking[]
+  userSkills  UserSkill[]
 
   // Reverse profile tables
-  gardener       Gardener?
-  owner          Owner?
+  gardener Gardener?
+  owner    Owner?
 
   @@map("utilisateur")
 }
 
-/* -------------------------
-   Skills (competence) & UserSkill (utilisateurCompetence)
-   ------------------------- */
+/**
+ * -------------------------
+ * Skills (competence) & UserSkill (utilisateurCompetence)
+ * -------------------------
+ */
 model Skill {
-  id         Int         @id @default(autoincrement()) @map("id_competence")
-  name       String      @unique @map("nom")
-  users      UserSkill[]
+  id    Int         @id @default(autoincrement()) @map("id_competence")
+  name  String      @unique @map("nom")
+  users UserSkill[]
 
   @@map("competence")
 }
 
 model UserSkill {
-  id          Int    @id @default(autoincrement()) @map("id_utilisateur_competence")
-  user        User   @relation(fields: [userId], references: [id])
-  userId      BigInt @map("id_utilisateur")
-  skill       Skill  @relation(fields: [skillId], references: [id])
-  skillId     Int    @map("id_competence")
+  id      Int    @id @default(autoincrement()) @map("id_utilisateur_competence")
+  user    User   @relation(fields: [userId], references: [id])
+  userId  BigInt @map("id_utilisateur")
+  skill   Skill  @relation(fields: [skillId], references: [id])
+  skillId Int    @map("id_competence")
 
   @@map("utilisateurCompetence")
 }
 
-/* -------------------------
-   Owners (proprietaire) + comments
-   ------------------------- */
+/**
+ * -------------------------
+ * Owners (proprietaire) + comments
+ * -------------------------
+ */
 model Owner {
-  id             Int                 @id @default(autoincrement()) @map("id_proprietaire")
-  userId         BigInt?             @unique @map("userId")
-  user           User?               @relation(fields: [userId], references: [id])
+  id     Int     @id @default(autoincrement()) @map("id_proprietaire")
+  userId BigInt? @unique @map("userId")
+  user   User?   @relation(fields: [userId], references: [id])
 
-  firstName      String?             @map("prenom")
-  lastName       String?             @map("nom")
-  avatarUrl      String?             @map("avatarUrl")
-  isOnline       Boolean?            @default(false) @map("isOnline")
-  totalReviews   Int?                @default(0) @map("totalReviews")
-  rating         Float?              @default(4.8) @map("rating")
-  district       String?             @map("quartier")
-  availability   String?             @map("disponibilites")
-  area           Int?                @map("surface")
-  kind           String?             @map("type")
-  intro          String?             @map("presentation")
-  description    String?             @map("description")
-  published      Boolean             @default(false) @map("published")
+  firstName    String?  @map("prenom")
+  lastName     String?  @map("nom")
+  avatarUrl    String?  @map("avatarUrl")
+  isOnline     Boolean? @default(false) @map("isOnline")
+  totalReviews Int?     @default(0) @map("totalReviews")
+  rating       Float?   @default(4.8) @map("rating")
+  district     String?  @map("quartier")
+  availability String?  @map("disponibilites")
+  area         Int?     @map("surface")
+  kind         String?  @map("type")
+  intro        String?  @map("presentation")
+  description  String?  @map("description")
+  published    Boolean  @default(false) @map("published")
 
-  comments       OwnerComment[]
+  comments OwnerComment[]
 
   @@map("proprietaire")
 }
 
 model OwnerComment {
-  id            Int      @id @default(autoincrement()) @map("id")
-  text          String   @map("text")
-  authorName    String?  @map("authorName")
-  createdAt     DateTime @default(now()) @map("createdAt")
-  ownerId       Int?     @map("proprietaireId")
-  owner Owner? @relation(fields: [ownerId], references: [id]) 
+  id         Int      @id @default(autoincrement()) @map("id")
+  text       String   @map("text")
+  authorName String?  @map("authorName")
+  createdAt  DateTime @default(now()) @map("createdAt")
+  ownerId    Int?     @map("proprietaireId")
+  owner      Owner?   @relation(fields: [ownerId], references: [id])
+
   @@map("CommentProprietaire")
 }
 
-/* -------------------------
-   Gardeners (Jardinier) + comments
-   ------------------------- */
+/**
+ * -------------------------
+ * Gardeners (Jardinier) + comments + personal availability
+ * -------------------------
+ */
 model Gardener {
-  id               Int       @id @default(autoincrement()) @map("id")
-  userId           BigInt?   @unique @map("userId")
-  user             User?     @relation(fields: [userId], references: [id])
+  id     Int     @id @default(autoincrement()) @map("id")
+  userId BigInt? @unique @map("userId")
+  user   User?   @relation(fields: [userId], references: [id])
 
-  firstName        String    @map("prenom")
-  lastName         String    @map("nom")
-  avatarUrl        String?   @map("avatarUrl")
-  isOnline         Boolean   @default(false) @map("isOnline")
-  location         String?   @map("localisation")
-  skills           String[]  @map("competences")
-  yearsExperience  Int?      @map("experienceAnnees")
-  intro            String?   @map("presentation")
-  totalReviews     Int       @default(0) @map("totalReviews")
-  rating           Float?    @map("rating")
-  published        Boolean   @default(false) @map("published")
+  firstName       String   @map("prenom")
+  lastName        String   @map("nom")
+  avatarUrl       String?  @map("avatarUrl")
+  isOnline        Boolean  @default(false) @map("isOnline")
+  location        String?  @map("localisation")
+  skills          String[] @map("competences")
+  yearsExperience Int?     @map("experienceAnnees")
+  intro           String?  @map("presentation")
+  totalReviews    Int      @default(0) @map("totalReviews")
+  rating          Float?   @map("rating")
+  published       Boolean  @default(false) @map("published")
 
-  comments         GardenerComment[]
-  createdAt        DateTime  @default(now()) @map("createdAt")
-  updatedAt        DateTime  @updatedAt @map("updatedAt")
+  // comments on the gardener profile
+  comments GardenerComment[]
+
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  // 👇 back-relation to the personal availability slots (relation is named)
+  personalAvailability GardenerAvailabilitySlot[] @relation("GardenerAvailabilities")
 
   @@map("Jardinier")
 }
 
 model GardenerComment {
-  id          Int       @id @default(autoincrement()) @map("id")
-  text        String    @map("text")
-  authorName  String?   @map("authorName")
-  createdAt   DateTime  @default(now()) @map("createdAt")
-  gardenerId  Int       @map("jardinierId")
-  gardener    Gardener  @relation(fields: [gardenerId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement()) @map("id")
+  text       String   @map("text")
+  authorName String?  @map("authorName")
+  createdAt  DateTime @default(now()) @map("createdAt")
+
+  gardenerId Int      @map("jardinierId")
+  gardener   Gardener @relation(fields: [gardenerId], references: [id], onDelete: Cascade)
 
   @@map("CommentJardinier")
+}
+
+model GardenerAvailabilitySlot {
+  id         Int      @id @default(autoincrement())
+  gardenerId Int
+  date       DateTime @db.Date
+  startTime  DateTime @db.Time(6)
+  endTime    DateTime @db.Time(6)
+  status     String // "free" | "unavailable"
+
+  // Relation to Gardener (named to match back-ref)
+  gardener Gardener @relation("GardenerAvailabilities", fields: [gardenerId], references: [id], onDelete: Cascade)
+
+  @@index([gardenerId, date, startTime, endTime])
+  @@unique([gardenerId, date, startTime, endTime])
 }

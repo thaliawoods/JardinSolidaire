@@ -1,9 +1,7 @@
-import Navbar from '@/components/Navbar/Navbar';
-import Footer from '@/components/Footer/Footer';
+'use client';
+
 import GardenersList from './index';
 
 export default function GardenersPage() {
-  return (
-        <GardenersList />
-  );
+  return <GardenersList />;
 }

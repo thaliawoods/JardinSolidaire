@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
-  getFavGardens, getFavGardeners,
-  removeFavGarden, removeFavGardener, clearAllFavorites
+  getFavGardens,
+  getFavGardeners,
+  removeFavGarden,
+  removeFavGardener,
+  clearAllFavorites,
 } from '@/lib/favorites';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -14,7 +17,7 @@ function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
   if (s.startsWith('http') || s.startsWith('data:')) return s;
-  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s; 
+  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;
   if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
   if (s.startsWith('/')) return s;
   const clean = s.replace(/^\.?\/*/, '');
@@ -29,6 +32,7 @@ function initials(a = '', b = '') {
   const t = `${x}${y}`.toUpperCase();
   return t || 'U';
 }
+
 function greenAvatarPlaceholder(first, last) {
   const txt = initials(first, last);
   const svg = `
@@ -66,7 +70,11 @@ async function fetchGardenCoverById(id) {
   const data = await res.json();
 
   const candidates = [
-    data.cover, data.image, data.mainImage, data.coverImage, data.photo_couverture,
+    data.cover,
+    data.image,
+    data.mainImage,
+    data.coverImage,
+    data.photo_couverture,
     Array.isArray(data.images) ? data.images[0] : null,
     Array.isArray(data.photos) ? data.photos[0] : null,
   ].filter(Boolean);
@@ -87,11 +95,12 @@ export default function FavoritesPage() {
   const [gardeners, setGardeners] = useState([]);
 
   useEffect(() => {
-    const storedGardens = getFavGardens().map(g => ({
+    // Load from local storage (delegated to lib)
+    const storedGardens = getFavGardens().map((g) => ({
       ...g,
       cover: resolveMedia(g.cover) || null,
     }));
-    const storedGardeners = getFavGardeners().map(p => ({
+    const storedGardeners = getFavGardeners().map((p) => ({
       ...p,
       avatarUrl: resolveMedia(p.avatarUrl) || null,
     }));
@@ -99,23 +108,42 @@ export default function FavoritesPage() {
     setGardens(storedGardens);
     setGardeners(storedGardeners);
 
+    // Fetch covers only for items missing one, in parallel, then update once.
     (async () => {
-      const needs = storedGardens.filter(g => !g.cover);
+      const needs = storedGardens.filter((g) => !g.cover);
       if (needs.length === 0) return;
 
-      const updated = await Promise.all(storedGardens.map(async (g) => {
-        if (g.cover) return g;
-        const fetchedCover = await fetchGardenCoverById(g.id);
-        return { ...g, cover: fetchedCover || null };
-      }));
+      const results = await Promise.all(
+        storedGardens.map(async (g) => {
+          if (g.cover) return g;
+          const fetchedCover = await fetchGardenCoverById(g.id);
+          return { ...g, cover: fetchedCover || null };
+        })
+      );
 
-      setGardens(updated);
+      setGardens(results);
     })();
   }, []);
 
-  const removeGarden = (id) => setGardens(removeFavGarden(id));
-  const removeGardener = (id) => setGardeners(removeFavGardener(id));
-  const clearAll = () => { clearAllFavorites(); setGardens([]); setGardeners([]); };
+  const syncGardens = () => setGardens(getFavGardens().map((g) => ({ ...g, cover: resolveMedia(g.cover) || null })));
+  const syncGardeners = () =>
+    setGardeners(getFavGardeners().map((p) => ({ ...p, avatarUrl: resolveMedia(p.avatarUrl) || null })));
+
+  const removeGarden = (id) => {
+    removeFavGarden(id);
+    syncGardens();
+  };
+
+  const removeGardener = (id) => {
+    removeFavGardener(id);
+    syncGardeners();
+  };
+
+  const clearAll = () => {
+    clearAllFavorites();
+    setGardens([]);
+    setGardeners([]);
+  };
 
   return (
     <main className="min-h-screen bg-white px-6 py-10">
@@ -126,44 +154,56 @@ export default function FavoritesPage() {
             <button
               onClick={clearAll}
               className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+              title="Supprimer tous les favoris"
             >
               Tout effacer
             </button>
           )}
         </div>
 
+        {/* Gardens */}
         <section className="mt-8">
           <h2 className="text-xl font-semibold text-green-900 mb-4">Jardins</h2>
           {gardens.length === 0 ? (
             <p className="text-gray-600 text-sm">
               Pas encore de jardins favoris. Allez voir{' '}
-              <Link href="/gardens" className="underline text-[#E3107D]">Jardins</Link>.
+              <Link href="/gardens" className="underline text-[#E3107D]">
+                Jardins
+              </Link>
+              .
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {gardens.map((g) => {
-                const secondFallback = gardenCoverPlaceholder(g.title || `Jardin #${g.id}`);
+                const title = g.title || `Jardin #${g.id}`;
+                const coverFallback = gardenCoverPlaceholder(title);
                 const firstChoice = g.cover || '/assets/default.jpg';
                 return (
-                  <div key={g.id} className="bg-green-50 border border-emerald-100 rounded-2xl overflow-hidden shadow-sm hover:shadow transition">
+                  <div
+                    key={g.id}
+                    className="bg-green-50 border border-emerald-100 rounded-2xl overflow-hidden shadow-sm hover:shadow transition"
+                  >
                     <Link href={`/gardens/${g.id}`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={firstChoice}
-                        alt={g.title || `Garden #${g.id}`}
+                        alt={title}
                         className="h-40 w-full object-cover"
-                        onError={(e) => { e.currentTarget.src = secondFallback; }}
+                        onError={(e) => {
+                          e.currentTarget.src = coverFallback;
+                        }}
                       />
                     </Link>
                     <div className="p-4 text-sm">
                       <div className="flex justify-between items-start gap-3">
                         <Link href={`/gardens/${g.id}`} className="font-semibold text-green-900">
-                          {g.title || `Garden #${g.id}`}
+                          {title}
                         </Link>
                         <button
                           onClick={() => removeGarden(g.id)}
                           className="text-gray-400 hover:text-pink-600"
-                          title="Supprimer"
+                          title="Retirer des favoris"
+                          aria-label={`Retirer ${title} des favoris`}
                         >
                           ✕
                         </button>
@@ -182,32 +222,42 @@ export default function FavoritesPage() {
           )}
         </section>
 
+        {/* Gardeners */}
         <section className="mt-10">
           <h2 className="text-xl font-semibold text-green-900 mb-4">Jardiniers</h2>
           {gardeners.length === 0 ? (
             <p className="text-gray-600 text-sm">
               Pas encore de jardiniers favoris. Allez voir{' '}
-              <Link href="/gardeners" className="underline text-[#E3107D]">Jardiniers</Link>.
+              <Link href="/gardeners" className="underline text-[#E3107D]">
+                Jardiniers
+              </Link>
+              .
             </p>
           ) : (
             <div className="space-y-4">
               {gardeners.map((p) => {
+                const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || `Jardinier #${p.id}`;
                 const avatarFallback = greenAvatarPlaceholder(p.firstName, p.lastName);
                 const src = p.avatarUrl || avatarFallback;
                 return (
-                  <div key={p.id} className="flex items-center gap-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 shadow-sm">
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 shadow-sm"
+                  >
                     <Link href={`/gardeners/${p.id}`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={src}
-                        alt={`${p.firstName} ${p.lastName}`}
+                        alt={name}
                         className="w-16 h-16 rounded-full object-cover border-4 border-green-300 shadow"
-                        onError={(e) => { e.currentTarget.src = avatarFallback; }}
+                        onError={(e) => {
+                          e.currentTarget.src = avatarFallback;
+                        }}
                       />
                     </Link>
                     <div className="flex-1 text-sm">
                       <Link href={`/gardeners/${p.id}`} className="font-medium text-green-900">
-                        {p.firstName} {p.lastName}
+                        {name}
                       </Link>
                       {!!p.address && <p className="text-gray-600">📍 {p.address}</p>}
                       <p className="text-gray-600">{p.rating != null ? `${p.rating}★` : '—'}</p>
@@ -215,7 +265,8 @@ export default function FavoritesPage() {
                     <button
                       onClick={() => removeGardener(p.id)}
                       className="text-gray-400 hover:text-pink-600"
-                      title="Supprimer"
+                      title="Retirer des favoris"
+                      aria-label={`Retirer ${name} des favoris`}
                     >
                       ✕
                     </button>

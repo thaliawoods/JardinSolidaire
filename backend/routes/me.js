@@ -1,3 +1,4 @@
+// backend/routes/me.js
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
@@ -53,9 +54,7 @@ function asStringArray(arr) {
   );
 }
 
-
-router.get('/_ping', (_req, res) => res.json({ ok: true }));
-
+/* ---------- GET /api/me ---------- */
 router.get('/', auth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -73,38 +72,16 @@ router.get('/', auth, async (req, res) => {
         averageRating: true,
         gardener: {
           select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatarUrl: true,
-            isOnline: true,
-            location: true,
-            skills: true,          
-            yearsExperience: true,
-            intro: true,
-            totalReviews: true,
-            rating: true,
-            published: true,
-            createdAt: true,
-            updatedAt: true,
+            id: true, firstName: true, lastName: true, avatarUrl: true, isOnline: true,
+            location: true, skills: true, yearsExperience: true, intro: true,
+            totalReviews: true, rating: true, published: true, createdAt: true, updatedAt: true,
           },
         },
         owner: {
           select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatarUrl: true,
-            isOnline: true,
-            totalReviews: true,
-            rating: true,
-            district: true,
-            availability: true,
-            area: true,
-            kind: true,
-            intro: true,
-            description: true,
-            published: true,
+            id: true, firstName: true, lastName: true, avatarUrl: true, isOnline: true,
+            totalReviews: true, rating: true, district: true, availability: true,
+            area: true, kind: true, intro: true, description: true, published: true,
           },
         },
       },
@@ -118,16 +95,15 @@ router.get('/', auth, async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        role: user.role,
+        role: user.role, // OWNER | GARDENER | null
         avatarUrl: user.avatarUrl,
         bio: user.bio,
         phone: user.phone,
         address: user.address,
         averageRating: user.averageRating,
-        gardener: user.gardener
-          ? { ...user.gardener, id: Number(user.gardener.id) }
-          : null,
-        owner: user.owner ? { ...user.owner, id: Number(user.owner.id) } : null,
+        // expose both keys your frontend expects:
+        jardinier: user.gardener ? { ...user.gardener, id: Number(user.gardener.id) } : null,
+        proprietaire: user.owner ? { ...user.owner, id: Number(user.owner.id) } : null,
       },
     });
   } catch (e) {
@@ -136,6 +112,57 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+/* ---------- PUT /api/me/role  (OWNER | GARDENER) ---------- */
+router.put('/role', auth, async (req, res) => {
+  try {
+    const raw = String(req.body?.role || '').trim().toUpperCase();
+    if (!['OWNER', 'GARDENER'].includes(raw)) {
+      return res.status(400).json({ error: 'bad_role', allowed: ['OWNER', 'GARDENER'] });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: BigInt(req.userId) },
+      data: { role: raw },
+      select: { id: true, role: true }
+    });
+
+    // ensure skeleton profile exists
+    if (raw === 'OWNER') {
+      const existing = await prisma.owner.findUnique({ where: { userId: BigInt(req.userId) } });
+      if (!existing) {
+        await prisma.owner.create({
+          data: {
+            userId: BigInt(req.userId),
+            firstName: '',
+            lastName: '',
+            published: false
+          }
+        });
+      }
+    } else if (raw === 'GARDENER') {
+      const existing = await prisma.gardener.findUnique({ where: { userId: BigInt(req.userId) } });
+      if (!existing) {
+        await prisma.gardener.create({
+          data: {
+            userId: BigInt(req.userId),
+            firstName: '',
+            lastName: '',
+            isOnline: false,
+            totalReviews: 0,
+            published: false
+          }
+        });
+      }
+    }
+
+    res.json({ id: Number(updated.id), role: updated.role });
+  } catch (e) {
+    console.error('PUT /me/role failed:', isDev ? e?.stack || e : e?.message);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+/* ---------- POST /api/me/profile (basic user info) ---------- */
 router.post('/profile', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);
@@ -175,6 +202,7 @@ router.post('/profile', auth, async (req, res) => {
   }
 });
 
+/* ---------- POST /api/me/gardener (create/update gardener profile) ---------- */
 router.post('/gardener', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);
@@ -185,7 +213,6 @@ router.post('/gardener', auth, async (req, res) => {
     const location = cleanString(body.location ?? body.localisation);
     const intro = cleanString(body.intro ?? body.presentation);
     const yearsExperience = cleanInt(body.yearsExperience ?? body.experienceAnnees, { allowNull: true });
-
     const skills = asStringArray(body.skills ?? body.competences);
 
     const avatarUrl = body.avatarUrl == null ? null : cleanString(body.avatarUrl);
@@ -257,6 +284,7 @@ router.post('/gardener/publish', auth, async (req, res) => {
   }
 });
 
+/* ---------- POST /api/me/owner (create/update owner profile) ---------- */
 router.post('/owner', auth, async (req, res) => {
   try {
     const userId = BigInt(req.userId);

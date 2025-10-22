@@ -1,21 +1,18 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
-import useSession from '@/hooks/useSession';
+import { getAnyToken } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function IWantToGardenPage() {
-  const { token } = useSession();
-
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     intro: '',
     location: '',
     yearsExperience: '',
-    skills: [],   
-    photos: [],  
+    skills: [],
+    photos: [],
   });
 
   const [skillsList, setSkillsList] = useState([]);
@@ -78,6 +75,8 @@ export default function IWantToGardenPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const token = getAnyToken();
     if (!token) {
       alert('You must be signed in.');
       return;
@@ -89,7 +88,7 @@ export default function IWantToGardenPage() {
       location: formData.location.trim(),
       intro: formData.intro.trim(),
       yearsExperience: formData.yearsExperience ? Number(formData.yearsExperience) : null,
-      skills: formData.skills, 
+      skills: formData.skills,
       // photos not uploaded yet—add /api/uploads later and pass URLs here
     };
 

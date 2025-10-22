@@ -1,10 +1,18 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { Suspense, useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBooking, canBook } from '@/lib/bookings';
 
-export default function NewBookingPage() {
+export default function Page() {
+  return (
+    <Suspense fallback={<main className="max-w-3xl mx-auto p-6">chargement…</main>}>
+      <NewBookingInner />
+    </Suspense>
+  );
+}
+
+function NewBookingInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const prefilledGardenId = useMemo(() => sp.get('gardenId') || '', [sp]);
@@ -24,6 +32,13 @@ export default function NewBookingPage() {
     if (!token) router.push('/login');
   }, [router]);
 
+  // keep gardenId in sync if URL param changes (optional but nice)
+  useEffect(() => {
+    if (prefilledGardenId && prefilledGardenId !== gardenId) {
+      setGardenId(prefilledGardenId);
+    }
+  }, [prefilledGardenId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function runCheck(s = startsAt, e = endsAt, g = gardenId) {
     setCan(null);
     if (!g || !s || !e) return;
@@ -41,10 +56,12 @@ export default function NewBookingPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setErr('');
+
     if (!gardenId || !startsAt || !endsAt) {
       setErr('merci de remplir au moins: jardin, début et fin');
       return;
     }
+
     try {
       setSubmitting(true);
       await createBooking({
@@ -70,7 +87,10 @@ export default function NewBookingPage() {
           <span className="block text-sm mb-1">Jardin (ID)</span>
           <input
             value={gardenId}
-            onChange={(e) => { setGardenId(e.target.value); runCheck(startsAt, endsAt, e.target.value); }}
+            onChange={(e) => {
+              setGardenId(e.target.value);
+              runCheck(startsAt, endsAt, e.target.value);
+            }}
             className="w-full rounded border p-2"
             placeholder="ex: 42"
           />
@@ -92,24 +112,32 @@ export default function NewBookingPage() {
             <input
               type="datetime-local"
               value={startsAt}
-              onChange={(e) => { setStartsAt(e.target.value); runCheck(e.target.value, endsAt, gardenId); }}
+              onChange={(e) => {
+                setStartsAt(e.target.value);
+                runCheck(e.target.value, endsAt, gardenId);
+              }}
               className="w-full rounded border p-2"
             />
           </label>
+
           <label className="block">
             <span className="block text-sm mb-1">Fin</span>
             <input
               type="datetime-local"
               value={endsAt}
-              onChange={(e) => { setEndsAt(e.target.value); runCheck(startsAt, e.target.value, gardenId); }}
+              onChange={(e) => {
+                setEndsAt(e.target.value);
+                runCheck(startsAt, e.target.value, gardenId);
+              }}
               className="w-full rounded border p-2"
             />
           </label>
         </div>
 
         {checking && <p className="text-sm text-gray-500">Vérification du créneau…</p>}
-        {can && (
-          can.ok ? (
+
+        {can &&
+          (can.ok ? (
             <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2 text-sm">
               Créneau disponible ✅
             </div>
@@ -117,11 +145,12 @@ export default function NewBookingPage() {
             <div className="text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-sm">
               Créneau indisponible ❌
               <ul className="list-disc ml-5 mt-1">
-                {can.reasons?.map((r, i) => <li key={i}>{r}</li>)}
+                {can.reasons?.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
               </ul>
             </div>
-          )
-        )}
+          ))}
 
         {err && <p className="text-red-600 text-sm">{err}</p>}
 
@@ -145,3 +174,4 @@ export default function NewBookingPage() {
     </main>
   );
 }
+
