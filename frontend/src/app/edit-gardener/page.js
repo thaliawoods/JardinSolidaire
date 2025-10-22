@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
@@ -10,7 +9,6 @@ const SKILLS_URL = process.env.NEXT_PUBLIC_API_SKILLS || `${API_BASE}/api/skills
 const LEGACY_COMP_URL = `${API_BASE}/competences`;
 
 export default function EditGardenerPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
@@ -26,6 +24,7 @@ export default function EditGardenerPage() {
   });
   const [newSkill, setNewSkill] = useState('');
 
+  // Load skills (API then legacy)
   useEffect(() => {
     (async () => {
       try {
@@ -50,6 +49,7 @@ export default function EditGardenerPage() {
     })();
   }, []);
 
+  // Prefill with existing gardener
   useEffect(() => {
     (async () => {
       try {
@@ -129,7 +129,10 @@ export default function EditGardenerPage() {
     try {
       setSubmitting(true);
       await apiFetch('/api/me/gardener', { method: 'POST', body: payload });
-      router.push('/profile');
+
+      // 🔴 Signal dashboard to refresh and go back there
+      localStorage.setItem('gardenerUpdated', String(Date.now()));
+      window.location.href = '/dashboard';
     } catch (e) {
       console.error('Update gardener failed:', e);
       alert(`Couldn't save your changes. ${e?.message || ''}`);
@@ -140,7 +143,9 @@ export default function EditGardenerPage() {
 
   return (
     <div className="min-h-screen p-6 bg-white">
-      <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">Modifier mon profil jardinier</h1>
+      <h1 className="text-2xl font-bold text-green-800 mb-6 text-center">
+        Modifier mon profil jardinier
+      </h1>
 
       {err && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
@@ -209,7 +214,9 @@ export default function EditGardenerPage() {
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700">Nombre d’années d’expérience</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Nombre d’années d’expérience
+              </label>
               <input
                 type="number"
                 name="yearsExperience"
@@ -306,7 +313,7 @@ export default function EditGardenerPage() {
               {submitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
             <Link
-              href="/profile"
+              href="/dashboard"
               className="px-6 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
             >
               Annuler

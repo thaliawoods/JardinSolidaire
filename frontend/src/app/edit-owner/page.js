@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
 export default function EditOwnerPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
@@ -22,6 +20,7 @@ export default function EditOwnerPage() {
     description: '',
   });
 
+  // Prefill with existing owner
   useEffect(() => {
     (async () => {
       try {
@@ -79,7 +78,10 @@ export default function EditOwnerPage() {
     try {
       setSubmitting(true);
       await apiFetch('/api/me/owner', { method: 'POST', body: payload });
-      router.push('/profile');
+
+      // 🔴 Signal dashboard to refresh and go back there
+      localStorage.setItem('ownerUpdated', String(Date.now()));
+      window.location.href = '/dashboard';
     } catch (e) {
       console.error('Update owner failed:', e);
       alert(`Couldn't save your changes. ${e?.message || ''}`);
@@ -205,7 +207,7 @@ export default function EditOwnerPage() {
               {submitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
             <Link
-              href="/profile"
+              href="/dashboard"
               className="px-6 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
             >
               Annuler

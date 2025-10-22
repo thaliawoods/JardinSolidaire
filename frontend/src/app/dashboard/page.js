@@ -1,15 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const UPLOAD_ENDPOINT = process.env.NEXT_PUBLIC_UPLOAD_ENDPOINT || '/api/uploads';
-const UPLOAD_FIELD = process.env.NEXT_PUBLIC_UPLOAD_FIELD || 'file';
+const BRAND_GREEN = '#16a34a';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
-/* ---------------- helpers ---------------- */
+/* ---------------- utils ---------------- */
 function resolveMedia(u) {
   if (!u) return '';
   const s = String(u).trim();
@@ -39,28 +38,67 @@ function greenAvatar(first, last) {
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
-function pickFirstUrl(json) {
-  if (!json || typeof json !== 'object') return '';
-  if (typeof json.url === 'string') return json.url;
-  if (typeof json.path === 'string') return json.path;
-  if (Array.isArray(json.urls) && json.urls[0]) return json.urls[0];
-  if (Array.isArray(json.paths) && json.paths[0]) return json.paths[0];
-  if (Array.isArray(json.files) && json.files.length) {
-    const f = json.files[0];
-    if (typeof f === 'string') return f;
-    if (typeof f?.url === 'string') return f.url;
-    if (typeof f?.path === 'string') return f.path;
-  }
-  return '';
+
+/** Tell the navbar (and other tabs) about role changes */
+function broadcastRoleChange(role) {
+  try {
+    window.dispatchEvent(new CustomEvent('role:changed', { detail: role }));
+    window.postMessage({ type: 'role:changed', role }, '*');
+    sessionStorage.setItem('role', role);
+    localStorage.setItem('role', role);
+  } catch {}
 }
 
-/* ---------------- small UI bits ---------------- */
-function InfoRow({ label, children }) {
+/* ---------------- small UI helpers ---------------- */
+function Badge({ color = 'gray', children }) {
+  const palette =
+    color === 'green'
+      ? 'bg-green-100 text-green-800 border-green-200'
+      : 'bg-gray-100 text-gray-800 border-gray-200';
+  return <span className={`text-xs px-2 py-1 rounded-full border ${palette}`}>{children}</span>;
+}
+
+function Field({ label, children, full }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-gray-600">{label}</span>
-      <span className="font-medium text-gray-900">{children || '—'}</span>
+    <div className={full ? 'sm:col-span-2' : ''}>
+      <p className="font-medium">{label}</p>
+      <p className="text-gray-700">{children}</p>
     </div>
+  );
+}
+
+function SectionHeader({ title, avatarSrc, fallback, rightEl, children }) {
+  return (
+    <div className="flex items-start gap-5 mb-4">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={avatarSrc || fallback}
+        alt=""
+        className="w-16 h-16 rounded-full object-cover shadow"
+        style={{ border: '4px solid rgba(22,163,74,0.35)' }}
+        onError={(e) => {
+          e.currentTarget.src = fallback;
+        }}
+      />
+      <div className="flex-1 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-emerald-900">{title}</h2>
+        <div className="flex items-center gap-2">
+          {rightEl}
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SoftCard({ children }) {
+  return (
+    <section
+      className="rounded-2xl p-6 shadow-sm"
+      style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
+    >
+      {children}
+    </section>
   );
 }
 
@@ -83,7 +121,9 @@ function CompactProfileCard({ me, onEdit }) {
           alt=""
           className="w-14 h-14 rounded-full object-cover shadow"
           style={{ border: '3px solid rgba(22,163,74,0.35)' }}
-          onError={(e) => { e.currentTarget.src = fallback; }}
+          onError={(e) => {
+            e.currentTarget.src = fallback;
+          }}
         />
         <div className="flex-1">
           <div className="flex items-center justify-between mb-3">
@@ -96,11 +136,26 @@ function CompactProfileCard({ me, onEdit }) {
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <InfoRow label="Nom">{me?.lastName}</InfoRow>
-            <InfoRow label="Prénom">{me?.firstName}</InfoRow>
-            <InfoRow label="Email">{me?.email}</InfoRow>
-            <InfoRow label="Téléphone">{me?.phone}</InfoRow>
-            <InfoRow label="Adresse">{me?.address}</InfoRow>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Nom</span>
+              <span className="font-medium text-gray-900">{me?.lastName || '—'}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Prénom</span>
+              <span className="font-medium text-gray-900">{me?.firstName || '—'}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Email</span>
+              <span className="font-medium text-gray-900">{me?.email || '—'}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Téléphone</span>
+              <span className="font-medium text-gray-900">{me?.phone || '—'}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm sm:col-span-2">
+              <span className="text-gray-600">Adresse</span>
+              <span className="font-medium text-gray-900">{me?.address || '—'}</span>
+            </div>
             <div className="sm:col-span-2">
               <div className="text-sm text-gray-600 mb-0.5">Bio</div>
               <div className="text-sm text-gray-900">{me?.bio || '—'}</div>
@@ -112,13 +167,84 @@ function CompactProfileCard({ me, onEdit }) {
   );
 }
 
+function Skeleton() {
+  return (
+    <div className="animate-pulse space-y-4">
+      <div className="h-24 bg-gray-100 rounded-2xl" />
+      <div className="h-40 bg-gray-100 rounded-2xl" />
+      <div className="h-40 bg-gray-100 rounded-2xl" />
+    </div>
+  );
+}
+
+/* ---------------- helpers to qualify profiles ---------------- */
+
+/**
+ * Normalize gardener/owner references and decide if they contain meaningful data.
+ * - For GARDENER: any of the listed fields can qualify the profile as “existing”.
+ * - For OWNER: we **exclude** first/lastName from the signal because backends often
+ *             prefill those from the base user; we require at least one owner-specific field.
+ */
+function normalizeProfile(p, kind) {
+  if (!p || typeof p !== 'object') return null;
+
+  if (kind === 'gardener') {
+    const gardenerKeys = [
+      'intro',
+      'location',
+      'yearsExperience',
+      'skills',
+      'rating',
+      'avatarUrl',
+      'photo_profil',
+      'avatar',
+    ];
+    const meaningful =
+      gardenerKeys.some((k) => {
+        const v = p[k];
+        if (Array.isArray(v)) return v.length > 0;
+        return v !== undefined && v !== null && String(v).trim() !== '';
+      }) ||
+      // sometimes only names are set but that’s still OK for gardener bootstrap
+      !!((p.firstName && p.firstName.trim()) || (p.lastName && p.lastName.trim()));
+
+    return meaningful ? p : null;
+  }
+
+  // OWNER
+  const ownerKeys = [
+    'district',
+    'availability',
+    'area',
+    'kind',
+    'intro',
+    'description',
+    'rating',
+    'avatarUrl',
+    'photo_profil',
+    'avatar',
+  ];
+  const meaningful = ownerKeys.some((k) => {
+    const v = p[k];
+    if (Array.isArray(v)) return v.length > 0;
+    return v !== undefined && v !== null && String(v).trim() !== '';
+  });
+
+  // NOTE: firstName/lastName intentionally ignored for owners.
+  return meaningful ? p : null;
+}
+
 /* ---------------- page ---------------- */
 export default function Dashboard() {
   const [me, setMe] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  // embedded edit-profile form
+  // first-time user form
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [savingUser, setSavingUser] = useState(false);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -128,70 +254,108 @@ export default function Dashboard() {
     bio: '',
     avatarUrl: '',
   });
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [msg, setMsg] = useState('');
-
-  // controls whether the profile form is visible
-  const [profileDone, setProfileDone] = useState(false);
 
   const roleSectionRef = useRef(null);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+  /** Normalize API me => always have me.gardener / me.owner (or null) */
+  function normalizeUser(u) {
+    if (!u) return null;
+
+    const gardenerRaw = u.gardener ?? u.jardinier ?? null;
+    const ownerRaw = u.owner ?? u.proprietaire ?? null;
+
+    return {
+      ...u,
+      gardener: normalizeProfile(gardenerRaw, 'gardener'),
+      owner: normalizeProfile(ownerRaw, 'owner'),
+    };
+  }
+
+  const loadMe = useCallback(async () => {
+    const r = await apiFetch('/api/me');
+    const uRaw = r?.user || r;
+    const u = normalizeUser(uRaw);
+    setMe(u || null);
+    setRole(u?.role || sessionStorage.getItem('role') || localStorage.getItem('role') || null);
+
+    setForm({
+      firstName: u?.firstName || '',
+      lastName: u?.lastName || '',
+      email: u?.email || '',
+      phone: u?.phone || '',
+      address: u?.address || '',
+      bio: u?.bio || '',
+      avatarUrl: u?.avatarUrl || u?.photo_profil || u?.avatar || '',
+    });
+
+    const justReg = typeof window !== 'undefined' ? localStorage.getItem('justRegistered') : null;
+    const hasAny =
+      !!(u?.firstName || u?.lastName || u?.phone || u?.address || u?.bio || u?.avatarUrl);
+    setShowUserForm(justReg === '1' && !hasAny);
+  }, []);
 
   useEffect(() => {
     (async () => {
-      if (!token) {
-        window.location.href = '/login';
-        return;
-      }
+      setLoading(true);
       try {
-        setLoading(true);
-        const r = await apiFetch('/api/me');
-        const u = r?.user || {};
-        setMe(u);
-        setRole(u.role || null);
-        setForm({
-          firstName: u.firstName || '',
-          lastName: u.lastName || '',
-          email: u.email || '',
-          phone: u.phone || '',
-          address: u.address || '',
-          bio: u.bio || '',
-          avatarUrl: u.avatarUrl || u.photo_profil || u.avatar || '',
-        });
-
-        // if user already has a minimal profile, show compact card immediately
-        const alreadyHasBase = !!(u?.firstName || u?.lastName || u?.phone || u?.address || u?.bio);
-        setProfileDone(alreadyHasBase);
+        await loadMe();
       } finally {
         setLoading(false);
       }
     })();
-  }, [token]);
 
-  async function setActiveRole(r) {
+    const onVisibility = async () => {
+      if (document.visibilityState === 'visible') {
+        const g = localStorage.getItem('gardenerUpdated');
+        const o = localStorage.getItem('ownerUpdated');
+        if (g || o) {
+          await loadMe();
+          if (g) localStorage.removeItem('gardenerUpdated');
+          if (o) localStorage.removeItem('ownerUpdated');
+        }
+      }
+    };
+
+    const onStorage = async (e) => {
+      if (!e) return;
+      if (e.key === 'gardenerUpdated' || e.key === 'ownerUpdated') {
+        await loadMe();
+      }
+      if (e.key === 'role') {
+        setRole(e.newValue || null);
+      }
+    };
+
+    window.addEventListener('focus', onVisibility);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      window.removeEventListener('focus', onVisibility);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [loadMe]);
+
+  /* -------- role switching -------- */
+  async function setActiveRole(next) {
     try {
-      await apiFetch('/api/me/role', { method: 'PUT', body: { role: r } });
-      setRole(r);
-    } catch (e) {
-      console.error('set role failed', e);
+      await apiFetch('/api/me/role', { method: 'PUT', body: { role: next } });
+      setRole(next);
+      broadcastRoleChange(next);
+      setMsg(`Mode: ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier'}`);
+    } catch {
       setMsg("Impossible de changer d’interface.");
     }
   }
 
-  /* -------- embedded edit-profile actions -------- */
-  const avatarSrc = useMemo(() => resolveMedia(form.avatarUrl), [form.avatarUrl]);
-  const avatarFallback = useMemo(
-    () => greenAvatar(form.firstName, form.lastName),
-    [form.firstName, form.lastName]
-  );
-
-  const onChange = (e) => {
+  /* -------- user form -------- */
+  const onUserChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
   };
 
-  async function handleSaveProfile(e) {
+  async function saveUser(e) {
     e.preventDefault();
     setMsg('');
 
@@ -201,7 +365,7 @@ export default function Dashboard() {
     }
 
     try {
-      setSaving(true);
+      setSavingUser(true);
       await apiFetch('/api/me/profile', {
         method: 'POST',
         body: {
@@ -214,266 +378,321 @@ export default function Dashboard() {
         },
       });
 
-      // reflect locally, show compact card
-      const updated = { ...(me || {}), ...form };
-      setMe(updated);
-      setMsg('Profil enregistré ✅');
-      setProfileDone(true);
+      localStorage.removeItem('justRegistered');
 
-      // scroll to role section for continuity
+      await loadMe();
+      setShowUserForm(false);
+
       setTimeout(() => {
         roleSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 50);
-    } catch (e) {
-      console.error('save profile failed', e);
-      setMsg("Échec de l’enregistrement du profil.");
     } finally {
-      setSaving(false);
+      setSavingUser(false);
     }
   }
 
-  async function postForm(urlPath, fd) {
-    const res = await fetch(`${API_BASE}${urlPath}`, { method: 'POST', body: fd, credentials: 'include' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json().catch(() => ({}));
-    const url = pickFirstUrl(json);
-    if (!url) throw new Error('No URL from upload');
-    return url;
-  }
-
-  async function handleAvatarFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  /* -------- publish toggles -------- */
+  async function togglePublish(kind, next) {
     try {
-      setUploading(true);
-      const fd = new FormData();
-      fd.append(UPLOAD_FIELD, file);
-      let url = await postForm(UPLOAD_ENDPOINT, fd);
-      if (url && !/^https?:|^data:|^\//.test(url)) url = `/uploads/${url}`;
-      setForm((p) => ({ ...p, avatarUrl: url }));
-      setMsg('Avatar mis à jour.');
-    } catch (err) {
-      // fallbacks
-      try {
-        const fallbackFd = new FormData();
-        fallbackFd.append('avatar', file);
-        const FALLBACKS = [
-          '/api/me/avatar',
-          '/api/upload/avatar',
-          '/api/avatar',
-          '/api/users/me/avatar',
-          '/upload/avatar',
-        ];
-        let url = '';
-        for (const p of FALLBACKS) {
-          try { url = await postForm(p, fallbackFd); break; } catch {}
-        }
-        if (!url) throw err;
-        if (url && !/^https?:|^data:|^\//.test(url)) url = `/uploads/${url}`;
-        setForm((p) => ({ ...p, avatarUrl: url }));
-        setMsg('Avatar mis à jour.');
-      } catch (finalErr) {
-        console.error('avatar upload failed', finalErr);
-        setMsg("Échec de l’upload de l’avatar.");
+      setBusy(true);
+      if (kind === 'gardener') {
+        await apiFetch('/api/me/gardener/publish', { method: 'POST', body: { published: !!next } });
+      } else {
+        await apiFetch('/api/me/owner/publish', { method: 'POST', body: { published: !!next } });
       }
+      await loadMe();
     } finally {
-      setUploading(false);
-      e.target.value = '';
+      setBusy(false);
     }
   }
 
-  function removeAvatar() {
-    setForm((p) => ({ ...p, avatarUrl: '' }));
-  }
+  /* -------- avatars -------- */
+  const userFallback = useMemo(() => greenAvatar(me?.firstName, me?.lastName), [me?.firstName, me?.lastName]);
+  const gardenerAvatar = useMemo(
+    () => resolveMedia(me?.gardener?.avatarUrl || me?.gardener?.photo_profil || me?.gardener?.avatar),
+    [me?.gardener]
+  );
+  const gardenerFallback = useMemo(
+    () => greenAvatar(me?.gardener?.firstName, me?.gardener?.lastName),
+    [me?.gardener?.firstName, me?.gardener?.lastName]
+  );
+  const ownerAvatar = useMemo(
+    () => resolveMedia(me?.owner?.avatarUrl || me?.owner?.photo_profil || me?.owner?.avatar),
+    [me?.owner]
+  );
+  const ownerFallback = useMemo(
+    () => greenAvatar(me?.owner?.firstName, me?.owner?.lastName),
+    [me?.owner?.firstName, me?.owner?.lastName]
+  );
 
   /* ---------------- render ---------------- */
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-bold text-green-800 mb-2">Mon tableau de bord</h1>
-      <p className="mb-6">Bonjour {me?.email}</p>
-
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-2">Mon tableau de bord</h1>
       {msg && (
         <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {msg}
         </div>
       )}
 
-      {/* 1) Show either compact profile (done) OR edit form */}
-      {profileDone ? (
-        <CompactProfileCard me={me} onEdit={() => setProfileDone(false)} />
-      ) : (
-        <section
-          className="rounded-2xl p-6 border shadow-sm mb-8"
-          style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
-        >
-          <h2 className="text-lg font-semibold text-emerald-900 mb-4">
-            {me?.firstName || me?.lastName ? 'Compléter mon profil' : 'Créer mon profil'}
-          </h2>
+      {loading && <Skeleton />}
 
-          <div className="flex items-start gap-5 mb-5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={avatarSrc || avatarFallback}
-              alt="Avatar"
-              className="w-20 h-20 rounded-full object-cover shadow"
-              style={{ border: '4px solid rgba(22,163,74,0.35)' }}
-              onError={(e) => { e.currentTarget.src = avatarFallback; }}
-            />
-            <div className="flex-1 space-y-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="inline-flex items-center px-4 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition cursor-pointer">
-                  {uploading ? 'Upload…' : 'Télécharger un avatar'}
-                  <input type="file" accept="image/*" onChange={handleAvatarFile} className="hidden" />
-                </label>
-                {avatarSrc && (
-                  <a
-                    href={avatarSrc}
-                    download
-                    className="px-4 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
-                  >
-                    Télécharger l’avatar
-                  </a>
-                )}
-                <button
-                  type="button"
-                  onClick={removeAvatar}
-                  className="px-4 py-2 rounded-full bg-white/80 border border-red-300 text-red-700 hover:bg-red-50 transition"
-                >
-                  Retirer
-                </button>
-              </div>
+      {!loading && me && (
+        <>
+          {/* Mode selector */}
+          <div className="text-center my-6" ref={roleSectionRef}>
+            <h3 className="text-emerald-900 font-semibold mb-3">Choisis ton mode</h3>
+            <div className="inline-flex items-center bg-emerald-600/10 border border-emerald-600/20 rounded-full p-1">
+              <button
+                onClick={() => setActiveRole('OWNER')}
+                className={`px-4 py-2 rounded-full text-sm transition ${
+                  role === 'OWNER' ? 'bg-pink-500 text-white' : 'hover:bg-white/60'
+                }`}
+              >
+                Propriétaire
+              </button>
+              <button
+                onClick={() => setActiveRole('GARDENER')}
+                className={`px-4 py-2 rounded-full text-sm transition ${
+                  role === 'GARDENER' ? 'bg-pink-500 text-white' : 'hover:bg-white/60'
+                }`}
+              >
+                Jardinier
+              </button>
             </div>
           </div>
 
-          <form onSubmit={handleSaveProfile} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Prénom</label>
-              <input
-                name="firstName"
-                value={form.firstName}
-                onChange={onChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nom</label>
-              <input
-                name="lastName"
-                value={form.lastName}
-                onChange={onChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-                required
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                name="email"
-                value={form.email}
-                disabled
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-200 bg-gray-50 text-gray-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Téléphone</label>
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={onChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Adresse</label>
-              <input
-                name="address"
-                value={form.address}
-                onChange={onChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Bio</label>
-              <textarea
-                name="bio"
-                value={form.bio}
-                onChange={onChange}
-                rows={4}
-                className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Avatar URL</label>
-              <input
-                name="avatarUrl"
-                value={form.avatarUrl}
-                onChange={onChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-                placeholder="https://… ou /uploads/mon-avatar.jpg"
-              />
-            </div>
+          {/* User profile (first-time form else compact card) */}
+          {showUserForm ? (
+            <section
+              className="rounded-2xl p-6 border shadow-sm mb-8"
+              style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
+            >
+              <h2 className="text-lg font-semibold text-emerald-900 mb-4">Créer mon profil</h2>
 
-            <div className="sm:col-span-2 flex items-center gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
-              >
-                {saving ? 'Enregistrement…' : 'Enregistrer mon profil'}
-              </button>
-            </div>
-          </form>
-        </section>
+              <form onSubmit={saveUser} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Prénom</label>
+                  <input
+                    name="firstName"
+                    value={form.firstName}
+                    onChange={onUserChange}
+                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Nom</label>
+                  <input
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={onUserChange}
+                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+                    required
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <input
+                    name="email"
+                    value={form.email}
+                    disabled
+                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-200 bg-gray-50 text-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Téléphone</label>
+                  <input
+                    name="phone"
+                    value={form.phone}
+                    onChange={onUserChange}
+                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Adresse</label>
+                  <input
+                    name="address"
+                    value={form.address}
+                    onChange={onUserChange}
+                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">Bio</label>
+                  <textarea
+                    name="bio"
+                    value={form.bio}
+                    onChange={onUserChange}
+                    rows={4}
+                    className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">Avatar URL</label>
+                  <input
+                    name="avatarUrl"
+                    value={form.avatarUrl}
+                    onChange={onUserChange}
+                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+                    placeholder="https://… ou /uploads/mon-avatar.jpg"
+                  />
+                </div>
+
+                <div className="sm:col-span-2 flex items-center gap-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={savingUser}
+                    className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
+                  >
+                    {savingUser ? 'Enregistrement…' : 'Enregistrer mon profil'}
+                  </button>
+                </div>
+              </form>
+            </section>
+          ) : (
+            <CompactProfileCard me={me} onEdit={() => setShowUserForm(true)} />
+          )}
+
+          {/* Gardener */}
+          <SoftCard>
+            <SectionHeader
+              title="Profil du jardinier"
+              avatarSrc={gardenerAvatar}
+              fallback={gardenerFallback}
+              rightEl={
+                me?.gardener ? (
+                  me.gardener.published ? <Badge color="green">Publié</Badge> : <Badge color="gray">Non publié</Badge>
+                ) : null
+              }
+            >
+              {me?.gardener && (
+                <Link
+                  href="/edit-gardener"
+                  className="px-3 py-1.5 rounded-full text-sm bg-white/80 border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
+                  style={{ color: BRAND_GREEN }}
+                >
+                  Modifier
+                </Link>
+              )}
+            </SectionHeader>
+
+            {!me?.gardener ? (
+              <div className="flex items-center justify-between bg-white border rounded-lg p-4">
+                <p className="text-sm text-gray-700">Pas de profil de jardinier encore.</p>
+                <Link
+                  href="/edit-gardener"
+                  className="px-4 py-2 rounded-full bg-white/80 border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
+                  style={{ color: BRAND_GREEN }}
+                >
+                  Créer ton profil jardinier
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
+                  <Field label="Nom complet">
+                    {me.gardener.firstName} {me.gardener.lastName}
+                  </Field>
+                  <Field label="Adresse">{me.gardener.location || '—'}</Field>
+                  <Field label="Compétences" full>{(me.gardener.skills || []).join(', ') || '—'}</Field>
+                  <Field label="Expérience (années)">{me.gardener.yearsExperience ?? '—'}</Field>
+                  <Field label="Note">{me.gardener.rating ?? '—'}</Field>
+                  <Field label="Introduction" full>{me.gardener.intro || '—'}</Field>
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  <Link
+                    href="/edit-gardener"
+                    className="px-4 py-2 rounded-full bg-white/80 border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
+                    style={{ color: BRAND_GREEN }}
+                  >
+                    Modifier
+                  </Link>
+
+                  <button
+                    disabled={busy}
+                    onClick={() => togglePublish('gardener', !me.gardener.published)}
+                    className="px-4 py-2 rounded-full text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60 transition"
+                  >
+                    {me.gardener.published ? 'Retirer' : 'Publier'}
+                  </button>
+                </div>
+              </>
+            )}
+          </SoftCard>
+
+          {/* Owner */}
+          <SoftCard>
+            <SectionHeader
+              title="Profil Propriétaire"
+              avatarSrc={ownerAvatar}
+              fallback={ownerFallback}
+              rightEl={
+                me?.owner ? (
+                  me.owner.published ? <Badge color="green">Publié</Badge> : <Badge color="gray">Non publié</Badge>
+                ) : null
+              }
+            >
+              {me?.owner && (
+                <Link
+                  href="/edit-owner"
+                  className="px-3 py-1.5 rounded-full text-sm bg-white/80 border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
+                  style={{ color: BRAND_GREEN }}
+                >
+                  Modifier
+                </Link>
+              )}
+            </SectionHeader>
+
+            {!me?.owner ? (
+              <div className="flex items-center justify-between bg-white border rounded-lg p-4">
+                <p className="text-sm text-gray-700">Pas de profil de propriétaire encore.</p>
+                <Link
+                  href="/edit-owner"
+                  className="px-4 py-2 rounded-full bg-white/80 border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
+                  style={{ color: BRAND_GREEN }}
+                >
+                  Créer ton profil propriétaire
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-700">
+                  <Field label="Nom complet">
+                    {me.owner.firstName} {me.owner.lastName}
+                  </Field>
+                  <Field label="Quartier">{me.owner.district || '—'}</Field>
+                  <Field label="Disponibilité">{me.owner.availability || '—'}</Field>
+                  <Field label="Surface">{me.owner.area ? `${me.owner.area} m²` : '—'}</Field>
+                  <Field label="Type de jardin">{me.owner.kind || '—'}</Field>
+                  <Field label="Introduction" full>{me.owner.intro || '—'}</Field>
+                  <Field label="Description" full>{me.owner.description || '—'}</Field>
+                  <Field label="Note">{me.owner.rating ?? '—'}</Field>
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  <Link
+                    href="/edit-owner"
+                    className="px-4 py-2 rounded-full bg-white/80 border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
+                    style={{ color: BRAND_GREEN }}
+                  >
+                    Modifier
+                  </Link>
+
+                  <button
+                    disabled={busy}
+                    onClick={() => togglePublish('owner', !me.owner.published)}
+                    className="px-4 py-2 rounded-full text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60 transition"
+                  >
+                    {me.owner.published ? 'Retirer' : 'Publier'}
+                  </button>
+                </div>
+              </>
+            )}
+          </SoftCard>
+        </>
       )}
-
-      {/* 2) Choisir interface */}
-      <div className="mb-6" ref={roleSectionRef}>
-        <h3 className="font-semibold text-emerald-900 mb-3">Choisir mon interface</h3>
-        <div className="flex gap-3">
-          <button
-            className={`px-4 py-2 rounded ${role === 'OWNER' ? 'bg-green-700 text-white' : 'bg-gray-200'}`}
-            onClick={() => setActiveRole('OWNER')}
-          >
-            J&apos;ai un jardin
-          </button>
-        </div>
-        <div className="flex gap-3 mt-2">
-          <button
-            className={`px-4 py-2 rounded ${role === 'GARDENER' ? 'bg-green-700 text-white' : 'bg-gray-200'}`}
-            onClick={() => setActiveRole('GARDENER')}
-          >
-            Je suis jardinier
-          </button>
-        </div>
-      </div>
-
-      {/* 3) Actions selon rôle (use Link for internal routes to fix ESLint) */}
-      {role === 'OWNER' && (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href="/add-garden" className="block p-4 rounded-lg border hover:bg-gray-50 transition">
-            Ajouter mon jardin
-          </Link>
-          <Link href="/" className="block p-4 rounded-lg border hover:bg-gray-50 transition">
-            Continuer sans ajouter mon jardin pour l&apos;instant :)
-          </Link>
-        </section>
-      )}
-
-      {role === 'GARDENER' && (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href="/add-gardener" className="block p-4 rounded-lg border hover:bg-gray-50 transition">
-            Ajouter mon profil jardinier
-          </Link>
-          <Link href="/" className="block p-4 rounded-lg border hover:bg-gray-50 transition">
-            Continuer sans ajouter mon profil jardinier
-          </Link>
-        </section>
-      )}
-
-      {!role && !loading && (
-        <p className="text-gray-600">Sélectionnez une interface pour afficher les actions.</p>
-      )}
-    </div>
+    </main>
   );
 }

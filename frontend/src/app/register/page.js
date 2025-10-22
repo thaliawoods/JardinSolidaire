@@ -1,15 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextUrl = searchParams.get('next') || '/dashboard';
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
@@ -18,10 +15,8 @@ export default function RegisterPage() {
   async function submit(e) {
     e.preventDefault();
     setErr('');
-
     try {
       setSubmitting(true);
-
       const res = await fetch(`${API_BASE}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,20 +24,19 @@ export default function RegisterPage() {
       });
 
       const data = await res.json().catch(() => ({}));
-
       if (!res.ok) {
         setErr(data?.error || `HTTP_${res.status}`);
+        setSubmitting(false);
         return;
       }
 
-      // store session
-      if (data?.token) localStorage.setItem('token', data.token);
-      if (data?.user)  localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
 
-      // land on dashboard (or ?next=… if provided)
-      router.replace(nextUrl);
-    } catch (e) {
-      setErr('server_error');
+      // ★ One-time flag so the dashboard shows the profile form
+      localStorage.setItem('justRegistered', '1');
+
+      router.push('/dashboard');
     } finally {
       setSubmitting(false);
     }
@@ -51,9 +45,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-8">
       <form onSubmit={submit} className="w-full max-w-sm space-y-3">
-        <h1 className="text-2xl font-bold text-green-800 text-center">
-          Create your account
-        </h1>
+        <h1 className="text-2xl font-bold text-green-800 text-center">Create your account</h1>
 
         <input
           type="email"
@@ -79,15 +71,11 @@ export default function RegisterPage() {
           <p className="text-sm text-red-600">
             {err === 'email_taken' ? 'This email is already registered.' :
              err === 'email_and_password_required' ? 'Email and password are required.' :
-             err === 'server_error' ? 'Server error.' :
-             err}
+             err === 'server_error' ? 'Server error.' : err}
           </p>
         )}
 
-        <button
-          className="w-full bg-[#e3107d] text-white rounded px-4 py-2 disabled:opacity-60"
-          disabled={submitting}
-        >
+        <button className="w-full bg-[#e3107d] text-white rounded px-4 py-2 disabled:opacity-60" disabled={submitting}>
           {submitting ? 'Creating…' : 'Create account'}
         </button>
       </form>
