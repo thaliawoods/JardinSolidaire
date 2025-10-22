@@ -7,6 +7,19 @@ import { faBars, faTimes, faSeedling } from "@fortawesome/free-solid-svg-icons";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
+/** Broadcast role to the whole app (same tab) */
+function broadcastRoleChange(role) {
+  try {
+    // Custom event
+    window.dispatchEvent(new CustomEvent("role:changed", { detail: role }));
+    // postMessage fallback
+    window.postMessage({ type: "role:changed", role }, "*");
+    // cache latest
+    sessionStorage.setItem("role", role);
+    localStorage.setItem("role", role);
+  } catch {}
+}
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [me, setMe] = useState(null);
@@ -14,7 +27,8 @@ export default function Navbar() {
   const [role, setRole] = useState(null);
 
   const user = me?.user ?? null;
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const roleLabel =
     role === "OWNER" ? "Propriétaire" : role === "GARDENER" ? "Jardinier" : null;
@@ -38,7 +52,8 @@ export default function Navbar() {
         if (!alive) return;
         if (res.ok && data?.user) {
           setMe(data);
-          setRole(data.user.role || null);
+          // prefer server role, fallback to cached
+          setRole(data.user.role || localStorage.getItem("role") || null);
         } else {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
@@ -59,6 +74,34 @@ export default function Navbar() {
       alive = false;
     };
   }, [token]);
+
+  /* Listen for role changes fired by Dashboard (and other places) */
+  useEffect(() => {
+    // seed from cache on mount if server didn't give one yet
+    const cached = sessionStorage.getItem("role") || localStorage.getItem("role");
+    if (cached && !role) setRole(cached);
+
+    function onCustom(e) {
+      const next = e?.detail || null;
+      if (next) {
+        setRole(next);
+        refreshMe(); // keep CTAs aligned with server state
+      }
+    }
+    function onMessage(e) {
+      if (e?.data?.type === "role:changed") {
+        setRole(e.data.role);
+        refreshMe();
+      }
+    }
+    window.addEventListener("role:changed", onCustom);
+    window.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("role:changed", onCustom);
+      window.removeEventListener("message", onMessage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function refreshMe() {
     if (!token) return;
@@ -81,11 +124,11 @@ export default function Navbar() {
         body: JSON.stringify({ role: nextRole }),
       });
       if (!res.ok) return;
-      const updated = await res.json();
-      setRole(updated.role || null);
+      const updated = await res.json().catch(() => ({}));
+      const newRole = updated.role || nextRole || null;
+      setRole(newRole);
+      broadcastRoleChange(newRole); // tell the rest of the app
       await refreshMe();
-      // Optional: redirect to dashboard after switching mode
-      // window.location.href = "/dashboard";
     } catch (e) {
       console.error("switchRole failed", e);
     }
@@ -114,7 +157,7 @@ export default function Navbar() {
         <button
           onClick={() => switchRole("OWNER")}
           className={`px-3 py-1 rounded-full text-sm transition ${
-            role === "OWNER" ? "bg-white text-green-700" : "text-white hover:bg-white/10"
+            role === "OWNER" ? "bg-pink-500 text-white" : "text-white hover:bg-white/10"
           }`}
           title="Interface Propriétaire"
         >
@@ -123,7 +166,7 @@ export default function Navbar() {
         <button
           onClick={() => switchRole("GARDENER")}
           className={`px-3 py-1 rounded-full text-sm transition ${
-            role === "GARDENER" ? "bg-white text-green-700" : "text-white hover:bg-white/10"
+            role === "GARDENER" ? "bg-pink-500 text-white" : "text-white hover:bg-white/10"
           }`}
           title="Interface Jardinier"
         >
@@ -132,41 +175,6 @@ export default function Navbar() {
       </div>
     ) : null;
 
-  const DesktopCTAs = () => {
-    if (loadingMe || !user) return null;
-
-    if (role === "OWNER") {
-      return (
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/add-garden">
-            <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-semibold">
-              Ajouter mon jardin
-            </button>
-          </Link>
-          <span className="hidden md:inline-block text-sm bg-white/20 px-3 py-1 rounded-full">
-            Connecté&nbsp;: {user.firstName || user.email}
-          </span>
-        </div>
-      );
-    }
-
-    if (role === "GARDENER") {
-      return (
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/add-gardener">
-            <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-semibold">
-              Ajouter mon profil jardinier
-            </button>
-          </Link>
-          <span className="hidden md:inline-block text-sm bg-white/20 px-3 py-1 rounded-full">
-            Connecté&nbsp;: {user.firstName || user.email}
-          </span>
-        </div>
-      );
-    }
-
-    return null;
-  };
 
   /* ---------- render ---------- */
   return (
@@ -199,9 +207,6 @@ export default function Navbar() {
               </Link>
             </div>
           )}
-
-          {/* Role-specific primary action (desktop) */}
-          <DesktopCTAs />
 
           {/* Burger */}
           <button
@@ -248,6 +253,11 @@ export default function Navbar() {
                     Tableau de bord
                   </Link>
                 </li>
+                                <li>
+                  <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
+                    Mes jardins
+                  </Link>
+                </li>
                 <li>
                   <Link href="/bookings" onClick={() => setMenuOpen(false)}>
                     Réservations
@@ -255,7 +265,7 @@ export default function Navbar() {
                 </li>
                 <li>
                   <Link href="/messages" onClick={() => setMenuOpen(false)}>
-                    Messages
+                    Messagerie
                   </Link>
                 </li>
                 <li>
