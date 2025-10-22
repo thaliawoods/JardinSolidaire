@@ -4,9 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Slider from 'react-slick';
 import { getFavGardens, addFavGarden, removeFavGarden } from '@/lib/favorites';
+import { getAnyToken } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
+/* ---------- helpers ---------- */
 function normalizeGardens(data) {
   if (!Array.isArray(data)) return [];
   return data.map((g) => ({
@@ -18,26 +20,41 @@ function normalizeGardens(data) {
     photos: Array.isArray(g.photos) ? g.photos : [],
   }));
 }
-
 const uiToApiKind = {
   vegetable: 'potager',
   greenhouse: 'serre',
   flowers: 'fleurs',
   mowing: 'tondre',
 };
+/* -------------------------------- */
 
 export default function GardensList() {
   const [favorites, setFavorites] = useState([]);
-  const [search, setSearch] = useState('');
-  const [kind, setKind] = useState('');
-  const [gardens, setGardens] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState('');
+  const [search, setSearch]       = useState('');
+  const [kind, setKind]           = useState('');
+  const [gardens, setGardens]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [err, setErr]             = useState('');
+  const [isAuthed, setIsAuthed]   = useState(false); // NEW
 
+  // auth watcher
   useEffect(() => {
-    setFavorites(getFavGardens().map((g) => String(g.id)));
+    const sync = () => setIsAuthed(!!getAnyToken());
+    sync();
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
   }, []);
 
+  // load favorites only when logged in
+  useEffect(() => {
+    if (isAuthed) {
+      setFavorites(getFavGardens().map((g) => String(g.id)));
+    } else {
+      setFavorites([]);
+    }
+  }, [isAuthed]);
+
+  // data load
   useEffect(() => {
     const ac = new AbortController();
     let alive = true;
@@ -79,6 +96,7 @@ export default function GardensList() {
   }, [search, kind]);
 
   const toggleFavorite = (g) => {
+    if (!isAuthed) return; // guard
     const id = String(g.id);
     setFavorites((prev) => {
       const isFav = prev.includes(id);
@@ -92,10 +110,7 @@ export default function GardensList() {
     });
   };
 
-  const reset = () => {
-    setSearch('');
-    setKind('');
-  };
+  const reset = () => { setSearch(''); setKind(''); };
 
   const filtered = useMemo(() => {
     if (!search) return gardens;
@@ -110,13 +125,16 @@ export default function GardensList() {
       <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl md:text-4xl font-bold text-green-700">Nos Jardins</h1>
 
-        <Link
-          href="/favorites"
-          className="px-4 py-2 rounded-full bg-green-600 text-white hover:bg-green-700 transition"
-          title="Voir mes favoris"
-        >
-          Favoris ({favorites.length})
-        </Link>
+        {/* favorites link hidden if not connected */}
+        {isAuthed && (
+          <Link
+            href="/favorites"
+            className="px-4 py-2 rounded-full bg-green-600 text-white hover:bg-green-700 transition"
+            title="Voir mes favoris"
+          >
+            Favoris ({favorites.length})
+          </Link>
+        )}
       </div>
 
       <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
@@ -189,21 +207,24 @@ export default function GardensList() {
                 <div className="flex justify-between items-start mb-1">
                   <h2 className="font-bold text-base text-green-900">{g.title}</h2>
 
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toggleFavorite(g);
-                    }}
-                    className="text-xl transition-transform hover:scale-110"
-                    aria-label={favorites.includes(String(g.id)) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                    title={favorites.includes(String(g.id)) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                  >
-                    {favorites.includes(String(g.id)) ? (
-                      <span className="text-pink-500">♥</span>
-                    ) : (
-                      <span className="text-gray-300 group-hover:text-gray-400">♡</span>
-                    )}
-                  </button>
+                  {/* heart hidden if not connected */}
+                  {isAuthed && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleFavorite(g);
+                      }}
+                      className="text-xl transition-transform hover:scale-110"
+                      aria-label={favorites.includes(String(g.id)) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      title={favorites.includes(String(g.id)) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                    >
+                      {favorites.includes(String(g.id)) ? (
+                        <span className="text-pink-500">♥</span>
+                      ) : (
+                        <span className="text-gray-300 group-hover:text-gray-400">♡</span>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 <p className="text-xs leading-tight line-clamp-2">{g.description}</p>

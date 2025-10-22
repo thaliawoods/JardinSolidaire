@@ -1,10 +1,18 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { Suspense, useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBooking, canBook } from '@/lib/bookings';
 
-export default function NewBookingPage() {
+export default function Page() {
+  return (
+    <Suspense fallback={<main className="max-w-3xl mx-auto p-6">chargement…</main>}>
+      <NewBookingInner />
+    </Suspense>
+  );
+}
+
+function NewBookingInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const prefilledGardenId = useMemo(() => sp.get('gardenId') || '', [sp]);
@@ -23,6 +31,13 @@ export default function NewBookingPage() {
     const token = localStorage.getItem('token');
     if (!token) router.push('/login');
   }, [router]);
+
+  // keep gardenId in sync if URL param changes (optional but nice)
+  useEffect(() => {
+    if (prefilledGardenId && prefilledGardenId !== gardenId) {
+      setGardenId(prefilledGardenId);
+    }
+  }, [prefilledGardenId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function runCheck(s = startsAt, e = endsAt, g = gardenId) {
     setCan(null);
@@ -159,3 +174,4 @@ export default function NewBookingPage() {
     </main>
   );
 }
+

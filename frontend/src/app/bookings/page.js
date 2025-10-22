@@ -1,12 +1,20 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getMyBookings } from '@/lib/bookings';
 import BookingStatusBadge from '@/components/booking/BookingStatusBadge';
 
-export default function BookingsListPage() {
+export default function Page() {
+  return (
+    <Suspense fallback={<main className="max-w-5xl mx-auto p-6">chargement des réservations…</main>}>
+      <BookingsListInner />
+    </Suspense>
+  );
+}
+
+function BookingsListInner() {
   const [items, setItems] = useState([]);
   const [err, setErr] = useState('');
   const sp = useSearchParams();
