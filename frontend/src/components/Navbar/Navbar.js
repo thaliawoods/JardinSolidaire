@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faTimes, faSeedling } from "@fortawesome/free-solid-svg-icons";
@@ -14,17 +14,12 @@ export default function Navbar() {
   const [role, setRole] = useState(null);
 
   const user = me?.user ?? null;
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  const hasOwner =
-    !!user?.proprietaire && (user.proprietaire.published ?? true);
-  const hasGardener =
-    !!user?.jardinier && (user.jardinier.published ?? true);
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const roleLabel =
     role === "OWNER" ? "Propriétaire" : role === "GARDENER" ? "Jardinier" : null;
 
+  /* ---------- session hydration ---------- */
   useEffect(() => {
     let alive = true;
     async function hydrate() {
@@ -39,7 +34,7 @@ export default function Navbar() {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         if (!alive) return;
         if (res.ok && data?.user) {
           setMe(data);
@@ -89,6 +84,8 @@ export default function Navbar() {
       const updated = await res.json();
       setRole(updated.role || null);
       await refreshMe();
+      // Optional: redirect to dashboard after switching mode
+      // window.location.href = "/dashboard";
     } catch (e) {
       console.error("switchRole failed", e);
     }
@@ -103,14 +100,36 @@ export default function Navbar() {
     window.location.href = "/";
   }
 
+  /* ---------- small UI helpers ---------- */
   const RoleBadge = () =>
     user && roleLabel ? (
-      <span
-        className="ml-3 text-xs px-2 py-1 rounded-full bg-white/20"
-        aria-live="polite"
-      >
+      <span className="ml-3 text-xs px-2 py-1 rounded-full bg-white/20" aria-live="polite">
         Mode&nbsp;: <strong>{roleLabel}</strong>
       </span>
+    ) : null;
+
+  const RoleSwitcher = () =>
+    user ? (
+      <div className="hidden md:flex items-center bg-white/20 rounded-full p-1 mr-3">
+        <button
+          onClick={() => switchRole("OWNER")}
+          className={`px-3 py-1 rounded-full text-sm transition ${
+            role === "OWNER" ? "bg-white text-green-700" : "text-white hover:bg-white/10"
+          }`}
+          title="Interface Propriétaire"
+        >
+          Propriétaire
+        </button>
+        <button
+          onClick={() => switchRole("GARDENER")}
+          className={`px-3 py-1 rounded-full text-sm transition ${
+            role === "GARDENER" ? "bg-white text-green-700" : "text-white hover:bg-white/10"
+          }`}
+          title="Interface Jardinier"
+        >
+          Jardinier
+        </button>
+      </div>
     ) : null;
 
   const DesktopCTAs = () => {
@@ -124,13 +143,6 @@ export default function Navbar() {
               Ajouter mon jardin
             </button>
           </Link>
-          <button
-            onClick={() => switchRole("GARDENER")}
-            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg"
-            title="Passer en mode Jardinier"
-          >
-            Je veux jardiner
-          </button>
           <span className="hidden md:inline-block text-sm bg-white/20 px-3 py-1 rounded-full">
             Connecté&nbsp;: {user.firstName || user.email}
           </span>
@@ -146,13 +158,6 @@ export default function Navbar() {
               Ajouter mon profil jardinier
             </button>
           </Link>
-          <button
-            onClick={() => switchRole("OWNER")}
-            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg"
-            title="Passer en mode Propriétaire"
-          >
-            Ajouter mon jardin
-          </button>
           <span className="hidden md:inline-block text-sm bg-white/20 px-3 py-1 rounded-full">
             Connecté&nbsp;: {user.firstName || user.email}
           </span>
@@ -163,8 +168,7 @@ export default function Navbar() {
     return null;
   };
 
-  const boldIf = (cond) => (cond ? "font-semibold" : "");
-
+  /* ---------- render ---------- */
   return (
     <nav className="w-full bg-green-600 text-white fixed top-0 left-0 z-50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -173,11 +177,14 @@ export default function Navbar() {
             <FontAwesomeIcon icon={faSeedling} size="lg" className="mr-2" />
             <span className="text-xl font-bold">JardinSolidaire</span>
           </Link>
-          {/* Current mode badge */}
           <RoleBadge />
         </div>
 
         <div className="flex items-center">
+          {/* Desktop mode switcher */}
+          <RoleSwitcher />
+
+          {/* Auth CTAs (desktop) */}
           {!loadingMe && !user && (
             <div className="hidden md:flex items-center space-x-3">
               <Link href="/login">
@@ -193,8 +200,10 @@ export default function Navbar() {
             </div>
           )}
 
+          {/* Role-specific primary action (desktop) */}
           <DesktopCTAs />
 
+          {/* Burger */}
           <button
             onClick={() => setMenuOpen((v) => !v)}
             className="cursor-pointer ml-3 md:ml-2"
@@ -209,6 +218,7 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* Mobile menu (NO role toggles here) */}
       {menuOpen && (
         <div className="bg-green-600 w-full absolute top-16 left-0 border-t border-white/20">
           <ul className="flex flex-col space-y-2 p-4 text-white">
@@ -227,108 +237,29 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                {/* Show current mode at the very top in the burger too */}
                 {roleLabel && (
                   <li className="text-xs opacity-90 mb-1">
                     Mode actuel&nbsp;: <strong>{roleLabel}</strong>
                   </li>
                 )}
 
-                {/* Role toggles */}
-                <li className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      switchRole("OWNER");
-                      setMenuOpen(false);
-                    }}
-                    className={`px-3 py-1 rounded ${
-                      role === "OWNER"
-                        ? "bg-white text-green-700"
-                        : "bg-white/20"
-                    }`}
-                    title="Interface Propriétaire"
-                  >
-                    Propriétaire
-                  </button>
-                  <button
-                    onClick={() => {
-                      switchRole("GARDENER");
-                      setMenuOpen(false);
-                    }}
-                    className={`px-3 py-1 rounded ${
-                      role === "GARDENER"
-                        ? "bg-white text-green-700"
-                        : "bg-white/20"
-                    }`}
-                    title="Interface Jardinier"
-                  >
-                    Jardinier
-                  </button>
-                </li>
-
-                {/* Primary actions (bold the one for current role) */}
                 <li>
-                  <Link
-                    href="/add-garden"
-                    onClick={() => setMenuOpen(false)}
-                    className={boldIf(role === "OWNER")}
-                  >
-                    Ajouter mon jardin
+                  <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
+                    Tableau de bord
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/add-gardener"
-                    onClick={() => setMenuOpen(false)}
-                    className={boldIf(role === "GARDENER")}
-                  >
-                    Je veux jardiner
-                  </Link>
-                </li>
-
-                {/* Rest */}
-                <li>
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
-                    Mon tableau de bord
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/profile"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
-                    Profile
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/bookings"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
+                  <Link href="/bookings" onClick={() => setMenuOpen(false)}>
                     Réservations
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/messages"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
+                  <Link href="/messages" onClick={() => setMenuOpen(false)}>
                     Messages
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/favorites"
-                    onClick={() => setMenuOpen(false)}
-                    className="block"
-                  >
+                  <Link href="/favorites" onClick={() => setMenuOpen(false)}>
                     Favoris
                   </Link>
                 </li>

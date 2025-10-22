@@ -123,7 +123,7 @@ export default function GardensList() {
   return (
     <div className="min-h-screen px-6 py-10 bg-white">
       <div className="flex items-center justify-between gap-4 mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-green-700">Nos Jardins</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-green-700">Les Jardins</h1>
 
         {/* favorites link hidden if not connected */}
         {isAuthed && (
@@ -143,7 +143,7 @@ export default function GardensList() {
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
           <input
             type="text"
-            placeholder="Search a garden…"
+            placeholder="Rechercher un jardin…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
@@ -169,7 +169,7 @@ export default function GardensList() {
           onClick={reset}
           className="px-6 py-2.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition w-full lg:w-auto"
         >
-          Reset
+          Réinitialiser
         </button>
       </div>
 

@@ -126,7 +126,7 @@ shadow-sm transition
           </Link>
         </div>
 
-        <h1 className="sr-only">Gardener profile</h1>
+        <h1 className="sr-only">Profil du jardinier</h1>
 
         {loading && (
           <div className="animate-pulse space-y-4">
@@ -172,12 +172,12 @@ shadow-sm transition
               </section>
 
               <section className="lg:col-span-2">
-                <Card title="Gardener info">
+                <Card title="Informations sur le jardinier">
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-                    <Field label="Name" value={`${gardener.firstName} ${gardener.lastName}`.trim() || '—'} />
-                    <Field label="Location" value={gardener.location} />
+                    <Field label="Nom" value={`${gardener.firstName} ${gardener.lastName}`.trim() || '—'} />
+                    <Field label="Localisation" value={gardener.location} />
                     <Field
-                      label="Skills"
+                      label="Compétences"
                       value={
                         gardener.skills?.length
                           ? (Array.isArray(gardener.skills) ? gardener.skills.join(', ') : String(gardener.skills))
@@ -185,7 +185,7 @@ shadow-sm transition
                       }
                     />
                     <Field
-                      label="Years of experience"
+                      label="Années d'expérience"
                       value={gardener.yearsExperience != null ? String(gardener.yearsExperience) : '—'}
                     />
                   </div>
@@ -200,10 +200,10 @@ shadow-sm transition
             </section>
 
             <section className="mt-6">
-              <Card title="Comments">
+              <Card title="Commentaires">
                 <ul className="mt-3 space-y-3">
                   {(gardener.comments || []).length === 0 && (
-                    <li className="text-gray-600 text-sm">No comments yet.</li>
+                    <li className="text-gray-600 text-sm">Aucun commentaire pour le moment.</li>
                   )}
                   {(gardener.comments || []).map((c) => (
                     <li key={c.id} className="border rounded-lg p-3">

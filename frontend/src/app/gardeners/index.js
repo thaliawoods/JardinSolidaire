@@ -161,7 +161,7 @@ export default function GardenersList() {
     <main className="min-h-screen bg-white px-6 py-10">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-4">
-          <h1 className="text-3xl font-bold text-green-800">Jardiniers</h1>
+          <h1 className="text-3xl font-bold text-green-800">Les Jardiniers</h1>
 
           {/* favorites link hidden if not connected */}
           {isAuthed && (
@@ -219,7 +219,7 @@ export default function GardenersList() {
             onClick={resetFilters}
             className="h-10 px-5 rounded-full text-white w-full lg:w-auto transition bg-pink-500 hover:bg-pink-600"
           >
-            Reset
+            Réinitialiser
           </button>
         </div>
 

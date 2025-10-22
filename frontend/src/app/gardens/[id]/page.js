@@ -152,9 +152,9 @@ export default function GardenDetailPage({ params }) {
             {error || "Unknown error"}
           </div>
           <p className="text-gray-600">
-            Back to{" "}
+            Retour aux{" "}
             <Link href="/gardens" className="underline text-green-700">
-              gardens
+              jardins
             </Link>
             .
           </p>
@@ -210,20 +210,20 @@ shadow-sm transition
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <section className="lg:col-span-2">
-            <Card title="Garden information">
+            <Card title="Informations sur le jardin">
               <div className="mt-3 space-y-1.5 text-sm text-gray-700">
                 <p>{garden.description}</p>
                 <p>
-                  <strong>Address:</strong> {garden.address || "—"}
+                  <strong>Addresse:</strong> {garden.address || "—"}
                 </p>
                 <p>
-                  <strong>Kind:</strong> {garden.kind || "—"}
+                  <strong>Type:</strong> {garden.kind || "—"}
                 </p>
                 <p>
-                  <strong>Needs:</strong> {garden.needs || "—"}
+                  <strong>Besoins:</strong> {garden.needs || "—"}
                 </p>
                 <p>
-                  <strong>Average rating:</strong> {garden.averageRating ?? "—"}
+                  <strong>Note moyenne:</strong> {garden.averageRating ?? "—"}
                   ★
                 </p>
               </div>
@@ -231,9 +231,9 @@ shadow-sm transition
           </section>
 
           <aside>
-            <Card title="Owner">
+            <Card title="Propriétaire du jardin">
               {!owner ? (
-                <p className="text-sm text-gray-600">No owner linked.</p>
+                <p className="text-sm text-gray-600">Pas de propriétaire lié.</p>
               ) : (
                 <div className="mt-3 grid grid-cols-1 gap-3 text-sm text-gray-700">
                   <div className="flex items-center gap-3">
@@ -275,7 +275,7 @@ shadow-sm transition
 
         {owner?.intro && (
           <section className="mt-6">
-            <Card title="Owner introduction">
+            <Card title="Introduction du propriétaire">
               <p className="mt-3 text-gray-700 whitespace-pre-wrap">
                 {owner.intro}
               </p>
