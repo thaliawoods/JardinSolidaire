@@ -9,9 +9,9 @@ export default function BookingButton({ gardenId, className = '' }) {
     <button
       onClick={() => router.push(`/bookings/new?gardenId=${encodeURIComponent(gardenId)}`)}
       className={`rounded-full px-4 py-2 shadow hover:opacity-90 transition bg-pink-500 text-white ${className}`}
-      aria-label="Réserver une intervention"
+      aria-label="Réserver ce jardin"
     >
-      Réserver une intervention
+      Réserver ce jardin
     </button>
   );
 }
