@@ -1,165 +1,92 @@
+// backend/routes/messages.js
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+const jwt = require('jsonwebtoken');
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-function auth(req, res, next) {
+/* ---------- auth ---------- */
+function requireAuth(req, res, next) {
   try {
-    const header = String(req.headers.authorization || '');
-    const BEARER = 'bearer ';
-    if (!header.toLowerCase().startsWith(BEARER)) {
-      return res.status(401).json({ error: 'missing_authorization_header' });
-    }
-    const token = header.slice(BEARER.length).trim();
-    const secret = process.env.JWT_SECRET;
-    if (!secret) return res.status(500).json({ error: 'server_misconfigured', detail: 'JWT_SECRET missing' });
-
-    const payload = jwt.verify(token, secret);
-    const uid = Number(payload.userId ?? payload.id); // brief legacy allowance
-    if (!Number.isFinite(uid) || uid <= 0) return res.status(401).json({ error: 'invalid_token_payload' });
-
-    req.userId = uid;
+    const h = req.headers.authorization || '';
+    const token = h.toLowerCase().startsWith('bearer ') ? h.slice(7) : null;
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
+    const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
+    const id = Number(payload.userId || payload.id || payload.sub);
+    if (!id) return res.status(401).json({ error: 'unauthorized' });
+    req.user = { id };
     next();
   } catch {
-    return res.status(401).json({ error: 'invalid_token' });
+    return res.status(401).json({ error: 'unauthorized' });
   }
 }
 
-router.get('/_ping', (_req, res) => res.json({ ok: true }));
-
-router.get('/threads', auth, async (req, res) => {
+/* ---------- GET /api/messages?unread=1 ---------- */
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const me = BigInt(req.userId);
+    const unreadOnly = String(req.query.unread || '') === '1';
 
-    const msgs = await prisma.message.findMany({
-      where: { OR: [{ senderUserId: me }, { targetUserId: me }] },
+    const where = { targetUserId: BigInt(req.user.id) };
+    if (unreadOnly) where.read = false;
+
+    const list = await prisma.message.findMany({
+      where,
       orderBy: { sentAt: 'desc' },
-      take: 200,
-      select: {
-        id: true,
-        senderUserId: true,
-        targetUserId: true,
-        content: true,
-        sentAt: true,
-        read: true,
+      include: {
+        senderUser: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },
       },
     });
 
-    const seen = new Set();
-    const peersInOrder = [];
-    for (const m of msgs) {
-      const sender = Number(m.senderUserId);
-      const recipient = Number(m.targetUserId);
-      const peerId = sender === req.userId ? recipient : sender;
-      if (!seen.has(peerId)) {
-        seen.add(peerId);
-        peersInOrder.push({ peerId, lastMessage: m });
-      }
-    }
-
-    const peerIds = peersInOrder.map((p) => BigInt(p.peerId));
-    const peerUsers = peerIds.length
-      ? await prisma.user.findMany({
-          where: { id: { in: peerIds } },
-          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
-        })
-      : [];
-
-    const userById = new Map(peerUsers.map((u) => [Number(u.id), u]));
-
-    const threads = peersInOrder.map(({ peerId, lastMessage }) => {
-      const u = userById.get(peerId);
-      return {
-        peerId,
-        peer: u
-          ? {
-              id: Number(u.id),
-              firstName: u.firstName ?? '',
-              lastName: u.lastName ?? '',
-              avatarUrl: u.avatarUrl ?? null,
-            }
-          : { id: peerId, firstName: 'User', lastName: String(peerId), avatarUrl: null },
-        lastMessage: {
-          id: Number(lastMessage.id),
-          content: lastMessage.content,
-          sentAt: lastMessage.sentAt,
-          outgoing: Number(lastMessage.senderUserId) === req.userId,
-          read: !!lastMessage.read,
-        },
-      };
-    });
-
-    res.json({ threads });
-  } catch (e) {
-    console.error('GET /messages/threads failed:', e?.stack || e);
-    res.status(500).json({ error: 'server_error' });
-  }
-});
-
-router.get('/with/:peerId', auth, async (req, res) => {
-  try {
-    const me = BigInt(req.userId);
-    const peer = BigInt(Number(req.params.peerId));
-
-    const results = await prisma.message.findMany({
-      where: {
-        OR: [
-          { senderUserId: me, targetUserId: peer },
-          { senderUserId: peer, targetUserId: me },
-        ],
-      },
-      orderBy: { sentAt: 'asc' },
-      take: 100,
-      select: {
-        id: true,
-        senderUserId: true,
-        targetUserId: true,
-        content: true,
-        sentAt: true,
-        read: true,
-      },
-    });
-
-    const messages = results.map((m) => ({
+    const out = list.map((m) => ({
       id: Number(m.id),
-      content: m.content,
-      sentAt: m.sentAt,
-      outgoing: Number(m.senderUserId) === req.userId,
+      from: m.senderUser
+        ? {
+            id: Number(m.senderUser.id),
+            firstName: m.senderUser.firstName || null,
+            lastName: m.senderUser.lastName || null,
+            email: m.senderUser.email || null,
+            avatarUrl: m.senderUser.avatarUrl || null,
+          }
+        : null,
+      content: m.content || '',
       read: !!m.read,
+      sentAt: m.sentAt || null,
     }));
 
-    res.json({ messages });
+    res.json({ messages: out });
   } catch (e) {
-    console.error('GET /messages/with/:peerId failed:', e?.stack || e);
+    console.error('GET /api/messages failed:', e?.stack || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
 
-router.post('/send', auth, async (req, res) => {
+/* ---------- POST /api/messages/mark-read ---------- */
+/* Body: { ids?: number[], all?: boolean } */
+router.post('/mark-read', requireAuth, async (req, res) => {
   try {
-    const { to, content } = req.body || {};
-    const toNum = Number(to);
-    if (!Number.isFinite(toNum) || !content || typeof content !== 'string') {
-      return res.status(400).json({ error: 'to_and_content_required' });
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((x) => Number(x)).filter(Number.isFinite) : [];
+    const all = !!req.body?.all;
+
+    if (!all && ids.length === 0) {
+      return res.status(400).json({ error: 'invalid_payload' });
     }
 
-    const created = await prisma.message.create({
-      data: {
-        senderUserId: BigInt(req.userId),
-        targetUserId: BigInt(toNum),
-        content,
-        read: false,
-      },
-      select: { id: true, sentAt: true },
-    });
+    if (all) {
+      await prisma.message.updateMany({
+        where: { targetUserId: BigInt(req.user.id), read: false },
+        data: { read: true },
+      });
+    } else {
+      await prisma.message.updateMany({
+        where: { id: { in: ids.map((x) => BigInt(x)) }, targetUserId: BigInt(req.user.id) },
+        data: { read: true },
+      });
+    }
 
-    res.status(201).json({
-      sent: { id: Number(created.id), sentAt: created.sentAt },
-    });
+    res.json({ ok: true });
   } catch (e) {
-    console.error('POST /messages/send failed:', e?.stack || e);
+    console.error('POST /api/messages/mark-read failed:', e?.stack || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
