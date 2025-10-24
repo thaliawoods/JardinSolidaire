@@ -1,13 +1,15 @@
+// frontend/src/components/Map/GardensMap.js
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import L from 'leaflet';
 
-// IMPORTANT: we do NOT import 'leaflet/dist/leaflet.css' here.
-// The CSS is injected in app/layout.js via a <link> tag.
+// NOTE: Do NOT import 'leaflet/dist/leaflet.css' here.
+// Add this once in app/layout.js:
+// <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-// Fix Leaflet default marker URLs for Next.js (they live in /public/leaflet/)
+// Default marker assets are served from /public/leaflet/*
 const DefaultIcon = L.icon({
   iconUrl: typeof window !== 'undefined' ? '/leaflet/marker-icon.png' : '',
   iconRetinaUrl: typeof window !== 'undefined' ? '/leaflet/marker-icon-2x.png' : '',
@@ -19,7 +21,7 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// react-leaflet needs to be dynamically imported (no SSR)
+// react-leaflet must be SSR-disabled
 const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
 const TileLayer    = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
 const Marker       = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr: false });
@@ -29,15 +31,15 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 /**
  * Props:
- * - height: CSS height (e.g. '300px' or '60vh')
- * - fullPage: boolean → when true, fills viewport under navbar
+ * - height: CSS height (e.g. '360px' or '60vh')
+ * - fullPage: boolean → when true, fills the viewport below the navbar
  */
 export default function GardensMap({ height = '360px', fullPage = false }) {
   const [gardens, setGardens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userPos, setUserPos] = useState(null);
 
-  // Fetch gardens (expects { id, title, address, lat, lng })
+  // Load gardens with coordinates from the API
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -45,7 +47,13 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
         const res = await fetch(`${API_BASE}/api/gardens`, { cache: 'no-store' });
         const data = await res.json().catch(() => []);
         if (!alive) return;
-        const list = Array.isArray(data?.gardens) ? data.gardens : Array.isArray(data) ? data : [];
+
+        const list = Array.isArray(data?.gardens)
+          ? data.gardens
+          : Array.isArray(data)
+          ? data
+          : [];
+
         setGardens(list.filter(g => Number.isFinite(g.lat) && Number.isFinite(g.lng)));
       } catch {
         if (alive) setGardens([]);
@@ -56,7 +64,7 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
     return () => { alive = false; };
   }, []);
 
-  // Browser geolocation (optional)
+  // Optional browser geolocation
   useEffect(() => {
     if (typeof window === 'undefined' || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(

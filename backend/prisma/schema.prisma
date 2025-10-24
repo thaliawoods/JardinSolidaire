@@ -76,10 +76,13 @@ model Garden {
   kind          String?   @map("type")
   needs         String?   @map("besoins")
   photos        Json?     @map("photos") @db.Json
-  // Draft by default: no auto default timestamp
   publishedAt   DateTime? @map("date_publication") @db.Timestamptz(6)
   status        String?   @map("statut")
   averageRating Float?    @map("note_moyenne")
+
+  // NEW: coordinates for the map
+  lat           Float?    @map("lat")
+  lng           Float?    @map("lng")
 
   reviews      Review[]
   availability AvailabilitySlot[]
@@ -103,7 +106,6 @@ model Message {
   sentAt       DateTime? @default(now()) @map("date_envoi") @db.Timestamptz(6)
   read         Boolean?  @default(false) @map("lu")
 
-  // keep relation names to match existing ones
   targetUser User? @relation("messagerie_id_destinataireToutilisateur", fields: [targetUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   senderUser User? @relation("messagerie_id_envoyeurToutilisateur", fields: [senderUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -152,13 +154,12 @@ model User {
 
   reviews     Review[]
   hoursTotals HoursTotal[]
-  gardens     Garden[] // many gardens per owner
+  gardens     Garden[]
   received    Message[]    @relation("messagerie_id_destinataireToutilisateur")
   sent        Message[]    @relation("messagerie_id_envoyeurToutilisateur")
   bookings    Booking[]
   userSkills  UserSkill[]
 
-  // Reverse profile tables
   gardener Gardener?
   owner    Owner?
 
@@ -250,13 +251,11 @@ model Gardener {
   rating          Float?   @map("rating")
   published       Boolean  @default(false) @map("published")
 
-  // comments on the gardener profile
   comments GardenerComment[]
 
   createdAt DateTime @default(now()) @map("createdAt")
   updatedAt DateTime @updatedAt @map("updatedAt")
 
-  // 👇 back-relation to the personal availability slots (relation is named)
   personalAvailability GardenerAvailabilitySlot[] @relation("GardenerAvailabilities")
 
   @@map("Jardinier")
@@ -282,7 +281,6 @@ model GardenerAvailabilitySlot {
   endTime    DateTime @db.Time(6)
   status     String // "free" | "unavailable"
 
-  // Relation to Gardener (named to match back-ref)
   gardener Gardener @relation("GardenerAvailabilities", fields: [gardenerId], references: [id], onDelete: Cascade)
 
   @@index([gardenerId, date, startTime, endTime])
