@@ -225,6 +225,15 @@ export default function Navbar() {
           {/* Desktop mode switcher */}
           <RoleSwitcher />
 
+          {/* Quick link to map (desktop) */}
+          <Link
+            href="/map"
+            className="hidden md:inline-block ml-3 rounded-full px-3 py-1.5 bg-white/20 hover:bg-white/10"
+            title="Carte des jardins"
+          >
+            Carte
+          </Link>
+
           {/* Desktop Messages link with badge */}
           {user && (
             <Link
@@ -258,7 +267,7 @@ export default function Navbar() {
               </Link>
               <Link href="/register">
                 <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full">
-                  S’inscrire
+                S’inscrire
                 </button>
               </Link>
             </div>
@@ -316,6 +325,11 @@ export default function Navbar() {
                 <li>
                   <Link href="/my-gardens" onClick={() => setMenuOpen(false)}>
                     Mes jardins
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/map" onClick={() => setMenuOpen(false)}>
+                    Carte
                   </Link>
                 </li>
                 <li className="relative">

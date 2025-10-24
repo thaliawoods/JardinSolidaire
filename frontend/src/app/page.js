@@ -2,6 +2,7 @@ import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
 import HomeImage from "@/components/HomeImage/HomeImage";
 import HomeText from "@/components/HomeText/HomeText";
+import HomeMapSection from "@/components/HomeMapSection/page";
 
 export default function Home() {
   return (
