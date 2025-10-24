@@ -1,94 +1,98 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { fetchMessages, markRead } from '@/lib/messages';
 import Link from 'next/link';
-
-function MessageCard({ m, onToggle }) {
-  return (
-    <li className="border rounded-xl p-4 bg-white flex justify-between gap-3">
-      <div>
-        <div className="text-sm text-gray-500">
-          {new Date(m.sentAt).toLocaleString()} • {m.read ? 'lu' : 'non lu'}
-        </div>
-        <div className="font-medium">{m.content}</div>
-        {m.from && (
-          <div className="text-sm text-gray-600">
-            De&nbsp;: {m.from.firstName} {m.from.lastName} {m.from.email ? `(${m.from.email})` : ''}
-          </div>
-        )}
-      </div>
-      {!m.read && (
-        <button
-          className="px-3 py-1.5 rounded-full border hover:bg-gray-50 text-sm"
-          onClick={() => onToggle(m.id)}
-        >
-          Marquer lu
-        </button>
-      )}
-    </li>
-  );
-}
+import { listConversations, listInbox, markAllRead } from '@/lib/messages';
 
 export default function MessagesPage() {
-  const [items, setItems] = useState([]);
+  const [convos, setConvos] = useState([]);
+  const [inbox, setInbox] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
-  async function load() {
-    try {
-      setLoading(true);
-      setErr('');
-      const data = await fetchMessages();
-      setItems(Array.isArray(data?.messages) ? data.messages : []);
-    } catch (e) {
-      setErr(e.message || 'failed');
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
-
-  async function markOne(id) {
-    try {
-      await markRead({ ids: [id] });
-      await load();
-    } catch (e) {
-      alert(e.message || 'failed');
-    }
-  }
-  async function markAll() {
-    try {
-      await markRead({ all: true });
-      await load();
-    } catch (e) {
-      alert(e.message || 'failed');
-    }
-  }
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setErr('');
+        const [c, i] = await Promise.all([listConversations(), listInbox({ unreadOnly: true })]);
+        setConvos(c?.conversations || []);
+        setInbox(i?.messages || []);
+      } catch (e) {
+        setErr(e.message || 'failed');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   return (
-    <main className="max-w-5xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Messagerie</h1>
-        <div className="flex gap-2">
-          <Link href="/owner/inbox" className="rounded-full px-4 py-2 border">Demandes</Link>
-          <button onClick={markAll} className="rounded-full px-4 py-2 border hover:bg-gray-50">Tout marquer lu</button>
+    <main className="max-w-4xl mx-auto p-6 space-y-6">
+      <h1 className="text-2xl font-semibold">Messagerie</h1>
+
+      {err && <div className="rounded-md bg-red-50 border border-red-200 p-3 text-red-700">{err}</div>}
+      {loading && <div>Chargement…</div>}
+
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Non lus</h2>
+          <button
+            onClick={async () => {
+              await markAllRead();
+              const i = await listInbox({ unreadOnly: true });
+              setInbox(i?.messages || []);
+            }}
+            className="px-3 py-1.5 rounded-full border text-sm"
+          >
+            Tout marquer comme lu
+          </button>
         </div>
-      </div>
+        <ul className="space-y-2">
+          {inbox.map((m) => (
+            <li key={m.id} className="rounded border p-3 bg-yellow-50">
+              <div className="text-sm text-gray-600">
+                De&nbsp;
+                <Link className="underline" href={`/messages/${m.from?.id}`}>
+                  {m.from?.firstName} {m.from?.lastName}
+                </Link>{' '}
+                — {new Date(m.sentAt).toLocaleString()}
+              </div>
+              <div>{m.content}</div>
+            </li>
+          ))}
+          {!inbox.length && <li className="text-sm text-gray-500">Aucun message non lu.</li>}
+        </ul>
+      </section>
 
-      {loading && <div className="rounded-xl border p-6 bg-white text-gray-500">Chargement…</div>}
-      {err && <div className="rounded-xl border p-6 bg-rose-50 text-rose-700">{err}</div>}
-
-      <ul className="space-y-3">
-        {items.map((m) => (
-          <MessageCard key={m.id} m={m} onToggle={markOne} />
-        ))}
-        {!loading && !items.length && !err && (
-          <li className="text-gray-500">Aucun message.</li>
-        )}
-      </ul>
+      <section className="space-y-2">
+        <h2 className="text-lg font-semibold">Conversations</h2>
+        <ul className="space-y-2">
+          {convos.map((c) => (
+            <li key={c.user.id} className="rounded border p-3 flex items-center justify-between">
+              <div>
+                <div className="font-medium">
+                  {c.user.firstName} {c.user.lastName}
+                </div>
+                <div className="text-sm text-gray-600 line-clamp-1">
+                  {c.lastMessage?.from?.id === c.user.id ? `${c.user.firstName}: ` : 'Vous: '}
+                  {c.lastMessage?.content}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {c.unread > 0 && (
+                  <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-pink-100 text-pink-800 border border-pink-200">
+                    {c.unread} non lus
+                  </span>
+                )}
+                <Link href={`/messages/${c.user.id}`} className="px-3 py-1.5 rounded-full border">
+                  Ouvrir
+                </Link>
+              </div>
+            </li>
+          ))}
+          {!convos.length && <li className="text-sm text-gray-500">Aucune conversation.</li>}
+        </ul>
+      </section>
     </main>
   );
 }
