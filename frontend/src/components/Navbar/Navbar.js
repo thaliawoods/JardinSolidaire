@@ -4,17 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faTimes, faSeedling } from "@fortawesome/free-solid-svg-icons";
+import { unreadCount } from "@/lib/messages";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 /** Broadcast role to the whole app (same tab) */
 function broadcastRoleChange(role) {
   try {
-    // Custom event
     window.dispatchEvent(new CustomEvent("role:changed", { detail: role }));
-    // postMessage fallback
     window.postMessage({ type: "role:changed", role }, "*");
-    // cache latest
     sessionStorage.setItem("role", role);
     localStorage.setItem("role", role);
   } catch {}
@@ -25,6 +23,7 @@ export default function Navbar() {
   const [me, setMe] = useState(null);
   const [loadingMe, setLoadingMe] = useState(true);
   const [role, setRole] = useState(null);
+  const [unread, setUnread] = useState(0);
 
   const user = me?.user ?? null;
   const token =
@@ -45,6 +44,7 @@ export default function Navbar() {
         setLoadingMe(false);
         setMe(null);
         setRole(null);
+        setUnread(0);
         return;
       }
       try {
@@ -56,18 +56,19 @@ export default function Navbar() {
         if (!alive) return;
         if (res.ok && data?.user) {
           setMe(data);
-          // prefer server role, fallback to cached
           setRole(data.user.role || localStorage.getItem("role") || null);
         } else {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           setMe(null);
           setRole(null);
+          setUnread(0);
         }
       } catch {
         if (alive) {
           setMe(null);
           setRole(null);
+          setUnread(0);
         }
       } finally {
         if (alive) setLoadingMe(false);
@@ -81,7 +82,6 @@ export default function Navbar() {
 
   /* Listen for role changes fired by Dashboard (and other places) */
   useEffect(() => {
-    // seed from cache on mount if server didn't give one yet
     const cached =
       sessionStorage.getItem("role") || localStorage.getItem("role");
     if (cached && !role) setRole(cached);
@@ -90,7 +90,7 @@ export default function Navbar() {
       const next = e?.detail || null;
       if (next) {
         setRole(next);
-        refreshMe(); // keep CTAs aligned with server state
+        refreshMe();
       }
     }
     function onMessage(e) {
@@ -132,7 +132,7 @@ export default function Navbar() {
       const updated = await res.json().catch(() => ({}));
       const newRole = updated.role || nextRole || null;
       setRole(newRole);
-      broadcastRoleChange(newRole); // tell the rest of the app
+      broadcastRoleChange(newRole);
       await refreshMe();
     } catch (e) {
       console.error("switchRole failed", e);
@@ -144,9 +144,31 @@ export default function Navbar() {
     localStorage.removeItem("user");
     setMe(null);
     setRole(null);
+    setUnread(0);
     setMenuOpen(false);
     window.location.href = "/";
   }
+
+  /* ---------- unread messages ---------- */
+  useEffect(() => {
+    let alive = true;
+    async function loadUnread() {
+      try {
+        if (!user) { if (alive) setUnread(0); return; }
+        const r = await unreadCount();
+        if (alive) setUnread(Number(r?.count || 0));
+      } catch {
+        if (alive) setUnread(0);
+      }
+    }
+    loadUnread();
+
+    function onStorage(e) {
+      if (e.key === 'token') loadUnread();
+    }
+    window.addEventListener('storage', onStorage);
+    return () => { alive = false; window.removeEventListener('storage', onStorage); };
+  }, [user, role, token]);
 
   /* ---------- small UI helpers ---------- */
   const RoleBadge = () =>
@@ -203,6 +225,29 @@ export default function Navbar() {
           {/* Desktop mode switcher */}
           <RoleSwitcher />
 
+          {/* Desktop Messages link with badge */}
+          {user && (
+            <Link
+              href="/messages"
+              className="hidden md:inline-block ml-3 relative rounded-full px-3 py-1.5 bg-white/20 hover:bg-white/10"
+              title="Messagerie"
+            >
+              Messages
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 text-[10px] leading-none px-1.5 py-1 rounded-full bg-pink-500 text-white">
+                  {unread}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {/* Owner quick link to inbox (optional) */}
+          {user && role === 'OWNER' && (
+            <Link href="/owner/inbox" className="hidden md:inline-block ml-3 rounded-full px-3 py-1.5 bg-white/20 hover:bg-white/10">
+              Demandes
+            </Link>
+          )}
+
           {/* Auth CTAs (desktop) */}
           {!loadingMe && !user && (
             <div className="hidden md:flex items-center space-x-3">
@@ -234,7 +279,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu (NO role toggles here) */}
+      {/* Mobile menu */}
       {menuOpen && (
         <div className="bg-green-600 w-full absolute top-16 left-0 border-t border-white/20">
           <ul className="flex flex-col space-y-2 p-4 text-white">
@@ -273,21 +318,23 @@ export default function Navbar() {
                     Mes jardins
                   </Link>
                 </li>
-                <li>
-                  <Link href="/bookings" onClick={() => setMenuOpen(false)}>
-                    Réservations
-                  </Link>
-                </li>
-                <li>
+                <li className="relative">
                   <Link href="/messages" onClick={() => setMenuOpen(false)}>
                     Messagerie
                   </Link>
+                  {unread > 0 && (
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white align-middle">
+                      {unread}
+                    </span>
+                  )}
                 </li>
-                <li>
-                  <Link href="/favorites" onClick={() => setMenuOpen(false)}>
-                    Favoris
-                  </Link>
-                </li>
+                {role === 'OWNER' && (
+                  <li>
+                    <Link href="/owner/inbox" onClick={() => setMenuOpen(false)}>
+                      Demandes
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <button
                     onClick={handleLogout}

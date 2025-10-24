@@ -12,7 +12,7 @@ const router = express.Router();
 function requireAuth(req, res, next) {
   try {
     const h = req.headers.authorization || '';
-    const token = h.startsWith('Bearer ') ? h.slice(7) : null;
+    const token = h.toLowerCase().startsWith('bearer ') ? h.slice(7) : null;
     if (!token) return res.status(401).json({ error: 'unauthorized' });
     const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
     const id = Number(payload.userId || payload.id || payload.sub);
@@ -32,7 +32,6 @@ function buildRangeFromSlot(slot) {
   if (!slot?.date || !slot?.startTime || !slot?.endTime) {
     return { startsAt: null, endsAt: null };
   }
-  // slot.date is a DATE (no time). startTime/endTime are TIME. We reconstruct a full Date.
   const start = new Date(slot.date);
   const st = new Date(slot.startTime);
   start.setHours(st.getHours(), st.getMinutes(), st.getSeconds(), st.getMilliseconds());
@@ -49,7 +48,6 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return !(bEnd <= aStart || bStart >= aEnd);
 }
 
-// get all pending/confirmed bookings for a garden on the same calendar day as 'day'
 async function listDayBookings(gardenId, day) {
   const dateOnly = new Date(day.toDateString()); // local-day semantics
   return prisma.booking.findMany({
@@ -62,7 +60,6 @@ async function listDayBookings(gardenId, day) {
   });
 }
 
-// JS-based conflict check (robust across drivers/time types)
 async function hasConflictJS({ gardenId, startsAt, endsAt, ignoreBookingId = null }) {
   if (!(startsAt instanceof Date) || isNaN(startsAt)) return null;
   if (!(endsAt instanceof Date) || isNaN(endsAt)) return null;
@@ -78,7 +75,6 @@ async function hasConflictJS({ gardenId, startsAt, endsAt, ignoreBookingId = nul
   return null;
 }
 
-// Make API-safe JSON (no BigInt) for a booking with slot included
 function shapeBooking(b) {
   const { startsAt, endsAt } = buildRangeFromSlot(b.slot);
   return {
@@ -93,9 +89,85 @@ function shapeBooking(b) {
   };
 }
 
+function shapeOwnerInboxRow(b) {
+  const base = shapeBooking(b);
+  return {
+    ...base,
+    garden: b.garden
+      ? {
+          id: Number(b.garden.id),
+          title: b.garden.title ?? '',
+          address: b.garden.address ?? '',
+        }
+      : null,
+    requester: b.user
+      ? {
+          id: Number(b.user.id),
+          firstName: b.user.firstName ?? '',
+          lastName: b.user.lastName ?? '',
+          email: b.user.email ?? null,
+          avatarUrl: b.user.avatarUrl ?? null,
+        }
+      : null,
+  };
+}
+
 /* ---------------------------------------
-   Routes
+   Notifications (simple in-app messages)
 ----------------------------------------*/
+async function sendMessage({ fromUserId, toUserId, content }) {
+  try {
+    await prisma.message.create({
+      data: {
+        senderUserId: fromUserId != null ? BigInt(fromUserId) : null,
+        targetUserId: toUserId != null ? BigInt(toUserId) : null,
+        content: String(content || '').slice(0, 2000),
+      },
+    });
+  } catch (e) {
+    console.error('sendMessage failed:', e?.message || e);
+  }
+}
+
+/* ---------------------------------------
+   ROUTES
+----------------------------------------*/
+
+// Owner inbox — bookings on gardens owned by current user
+// GET /api/bookings/inbox?status=pending|confirmed|cancelled|completed
+router.get('/inbox', requireAuth, async (req, res) => {
+  try {
+    const ownerUserId = BigInt(req.user.id);
+    const status = String(req.query.status || '').trim().toLowerCase();
+    const where = {
+      garden: { ownerUserId: ownerUserId },
+    };
+    if (status) {
+      // safety: only allow known statuses
+      const allowed = ['pending', 'confirmed', 'cancelled', 'completed'];
+      if (!allowed.includes(status)) {
+        return res.status(400).json({ error: 'invalid_status' });
+      }
+      where.status = status;
+    }
+
+    const rows = await prisma.booking.findMany({
+      where,
+      orderBy: { bookedAt: 'desc' },
+      include: {
+        slot: true,
+        garden: { select: { id: true, title: true, address: true, ownerUserId: true } },
+        user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },
+      },
+    });
+
+    const shaped = rows.map(shapeOwnerInboxRow);
+    res.json(shaped);
+  } catch (e) {
+    console.error('GET /bookings/inbox failed:', e?.stack || e);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
 
 // GET /api/bookings/can-book?slotId=... OR ?gardenId=...&startsAt=...&endsAt=...
 router.get('/can-book', requireAuth, async (req, res) => {
@@ -147,7 +219,7 @@ router.post('/', requireAuth, async (req, res) => {
   try {
     const { slotId, gardenId, startsAt, endsAt, notes } = req.body || {};
 
-    // Mode 1: book an existing slot
+    // Mode 1: book existing slot
     if (slotId) {
       const slot = await prisma.availabilitySlot.findUnique({
         where: { id: BigInt(slotId) },
@@ -160,10 +232,9 @@ router.post('/', requireAuth, async (req, res) => {
       const conflict = await hasConflictJS({ gardenId: slot.gardenId, startsAt: s, endsAt: e });
       if (conflict) return res.status(409).json({ error: 'time_conflict' });
 
-      // Make slot booked + create booking atomically
       const created = await prisma.$transaction(async (tx) => {
         await tx.availabilitySlot.update({ where: { id: slot.id }, data: { status: 'booked' } });
-        return tx.booking.create({
+        const booking = await tx.booking.create({
           data: {
             userId: BigInt(req.user.id),
             gardenId: slot.gardenId,
@@ -171,31 +242,36 @@ router.post('/', requireAuth, async (req, res) => {
             status: 'pending',
             notes: notes || null,
           },
-          include: { slot: true },
+          include: { slot: true, garden: { select: { id: true, title: true, ownerUserId: true } } },
         });
+
+        // Notify owner
+        if (booking.garden?.ownerUserId) {
+          const { startsAt: s2, endsAt: e2 } = buildRangeFromSlot(booking.slot);
+          const content = `Nouvelle demande de réservation pour "${booking.garden.title || 'Jardin'}" le ${s2?.toLocaleString()} → ${e2?.toLocaleString()}.`;
+          await sendMessage({ fromUserId: req.user.id, toUserId: Number(booking.garden.ownerUserId), content });
+        }
+
+        return booking;
       });
 
       return res.json(shapeBooking(created));
     }
 
-    // Mode 2: free-dates flow → create a slot then book it
+    // Mode 2: free-dates -> create slot then book
     if (!gardenId || !startsAt || !endsAt) {
       return res.status(400).json({ error: 'invalid_payload' });
     }
 
     const s = new Date(startsAt);
     const e = new Date(endsAt);
-
-    if (isNaN(s.getTime()) || isNaN(e.getTime())) {
-      return res.status(400).json({ error: 'invalid_dates' });
-    }
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return res.status(400).json({ error: 'invalid_dates' });
     if (!(s < e)) return res.status(400).json({ error: 'start_must_be_before_end' });
     if (e < new Date()) return res.status(400).json({ error: 'slot_in_past' });
 
     const conflict = await hasConflictJS({ gardenId: Number(gardenId), startsAt: s, endsAt: e });
     if (conflict) return res.status(409).json({ error: 'time_conflict' });
 
-    // date column should be just the day (strip time)
     const dateOnly = new Date(s.toDateString());
 
     const created = await prisma.$transaction(async (tx) => {
@@ -203,13 +279,13 @@ router.post('/', requireAuth, async (req, res) => {
         data: {
           gardenId: BigInt(gardenId),
           date: dateOnly,
-          startTime: s, // Prisma stores only the time part into TIME columns
+          startTime: s,
           endTime: e,
           status: 'booked',
         },
       });
 
-      return tx.booking.create({
+      const booking = await tx.booking.create({
         data: {
           userId: BigInt(req.user.id),
           gardenId: BigInt(gardenId),
@@ -217,8 +293,17 @@ router.post('/', requireAuth, async (req, res) => {
           status: 'pending',
           notes: notes || null,
         },
-        include: { slot: true },
+        include: { slot: true, garden: { select: { id: true, title: true, ownerUserId: true } } },
       });
+
+      // Notify owner
+      if (booking.garden?.ownerUserId) {
+        const { startsAt: s2, endsAt: e2 } = buildRangeFromSlot(booking.slot);
+        const content = `Nouvelle demande de réservation pour "${booking.garden.title || 'Jardin'}" le ${s2?.toLocaleString()} → ${e2?.toLocaleString()}.`;
+        await sendMessage({ fromUserId: req.user.id, toUserId: Number(booking.garden.ownerUserId), content });
+      }
+
+      return booking;
     });
 
     res.json(shapeBooking(created));
@@ -236,7 +321,6 @@ router.get('/me', requireAuth, async (req, res) => {
       orderBy: { bookedAt: 'desc' },
       include: { slot: true },
     });
-
     res.json(list.map(shapeBooking));
   } catch (e) {
     console.error('list bookings error:', e?.message || e);
@@ -251,7 +335,6 @@ router.get('/:id', requireAuth, async (req, res) => {
     const r = await prisma.booking.findUnique({ where: { id }, include: { slot: true } });
     if (!r) return res.status(404).json({ error: 'not_found' });
     if (r.userId !== BigInt(req.user.id)) return res.status(403).json({ error: 'forbidden' });
-
     res.json(shapeBooking(r));
   } catch (e) {
     console.error('get booking error:', e?.message || e);
@@ -259,7 +342,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
-// PATCH /api/bookings/:id  (update notes/status)
+// PATCH /api/bookings/:id  (update notes/status by requester)
 router.patch('/:id', requireAuth, async (req, res) => {
   try {
     const id = BigInt(req.params.id);
@@ -288,7 +371,6 @@ router.patch('/:id', requireAuth, async (req, res) => {
         include: { slot: true },
       });
 
-      // Free the slot if booking is no longer active
       if (b.slotId && (b.status === 'cancelled' || b.status === 'completed')) {
         await tx.availabilitySlot.update({
           where: { id: b.slotId },
@@ -299,29 +381,113 @@ router.patch('/:id', requireAuth, async (req, res) => {
       return b;
     });
 
-    // Same shape as before
-    const start = new Date(updated.slot.date);
-    const st = new Date(updated.slot.startTime);
-    start.setHours(st.getHours(), st.getMinutes(), st.getSeconds(), st.getMilliseconds());
-    const end = new Date(updated.slot.date);
-    const et = new Date(updated.slot.endTime);
-    end.setHours(et.getHours(), et.getMinutes(), et.getSeconds(), et.getMilliseconds());
-
-    res.json({
-      id: Number(updated.id),
-      gardenId: updated.gardenId != null ? Number(updated.gardenId) : null,
-      slotId: updated.slotId != null ? Number(updated.slotId) : null,
-      title: null,
-      notes: updated.notes ?? null,
-      status: updated.status || 'pending',
-      startsAt: start,
-      endsAt: end,
-    });
+    res.json(shapeBooking(updated));
   } catch (e) {
     console.error('patch booking error:', e?.message || e);
     res.status(500).json({ error: 'server_error' });
   }
 });
 
+/* ---------------------------------------
+   OWNER actions on a booking (confirm/cancel)
+----------------------------------------*/
+
+// Confirm booking (owner of the garden only)
+router.post('/:id/confirm', requireAuth, async (req, res) => {
+  try {
+    const id = BigInt(req.params.id);
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        slot: true,
+        garden: { select: { id: true, title: true, address: true, ownerUserId: true } },
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+    if (!booking) return res.status(404).json({ error: 'not_found' });
+
+    const ownerId = booking.garden?.ownerUserId;
+    if (!ownerId || String(ownerId) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'forbidden_not_owner' });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const b = await tx.booking.update({
+        where: { id },
+        data: { status: 'confirmed' },
+        include: { slot: true, garden: { select: { id: true, title: true, address: true, ownerUserId: true } }, user: true },
+      });
+
+      if (b.slotId) {
+        await tx.availabilitySlot.update({ where: { id: b.slotId }, data: { status: 'booked' } });
+      }
+
+      // notify gardener
+      const { startsAt, endsAt } = buildRangeFromSlot(b.slot);
+      const content =
+        `Votre réservation sur "${b.garden?.title || 'Jardin'}" a été confirmée ` +
+        `(${startsAt?.toLocaleString()} → ${endsAt?.toLocaleString()}).`;
+      await sendMessage({ fromUserId: Number(ownerId), toUserId: Number(b.userId), content });
+
+      return b;
+    });
+
+    const shaped = shapeOwnerInboxRow(updated);
+    res.json(shaped);
+  } catch (e) {
+    console.error('confirm booking error:', e?.message || e);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// Cancel booking (owner of the garden only)
+router.post('/:id/cancel', requireAuth, async (req, res) => {
+  try {
+    const id = BigInt(req.params.id);
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        slot: true,
+        garden: { select: { id: true, title: true, address: true, ownerUserId: true } },
+        user: true,
+      },
+    });
+    if (!booking) return res.status(404).json({ error: 'not_found' });
+
+    const ownerId = booking.garden?.ownerUserId;
+    if (!ownerId || String(ownerId) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'forbidden_not_owner' });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const b = await tx.booking.update({
+        where: { id },
+        data: { status: 'cancelled' },
+        include: { slot: true, garden: true, user: true },
+      });
+
+      if (b.slotId) {
+        await tx.availabilitySlot.update({ where: { id: b.slotId }, data: { status: 'free' } });
+      }
+
+      // notify gardener
+      const { startsAt, endsAt } = buildRangeFromSlot(b.slot);
+      const content =
+        `Votre réservation sur "${b.garden?.title || 'Jardin'}" a été annulée ` +
+        `(${startsAt?.toLocaleString()} → ${endsAt?.toLocaleString()}).`;
+      await sendMessage({ fromUserId: Number(ownerId), toUserId: Number(b.userId), content });
+
+      return b;
+    });
+
+    const shaped = shapeOwnerInboxRow(updated);
+    res.json(shaped);
+  } catch (e) {
+    console.error('cancel booking error:', e?.message || e);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
 
 module.exports = router;
