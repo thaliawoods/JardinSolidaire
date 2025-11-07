@@ -1,9 +1,8 @@
-/* prisma/seed_all.js */
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-/* ---------------- helpers ---------------- */
+/* ---------------- config ---------------- */
 const OWNER_COUNT = 18;
 const GARDENER_COUNT = 18;
 
@@ -16,9 +15,40 @@ const lastNames = [
   'Petit','Leroy','Garcia','Nguyen','Robin','Fabre','Marchand','Gauthier','Renard','Chevalier',
 ];
 
+/* Only pretty green garden / potager photos (stable Unsplash IDs) */
+const GARDEN_PHOTOS = [
+  // garden paths / beds / potager / greenhouse / herbs — all very green
+  "https://www.nidouillet.com/wp-content/uploads/2018/01/paysagiste-3.jpg",
+  "https://www.guide-des-landes.com/_bibli/annonces/4775/hd/jardin-des-barthes.jpg",
+  "https://www.nidouillet.com/wp-content/uploads/2018/01/paysagiste-2.jpg",
+  "https://decorandocasas.com.br/wp-content/uploads/2014/07/jardins-residenciais-para-frente-de-casa-6.jpg",
+  "https://www.guide-des-landes.com/_bibli/annonces/4775/hd/jardin-des-barthes.jpg",
+  "https://www.lesplusbeauxjardinsdefrance.com/wp-content/uploads/2021/03/plus-beaux-jardins-france-parc-floral-apremont-allier-pont-rouge.jpg",
+  "https://www.aidlib.fr/wp-content/uploads/2015/03/creation-jardin-94-plantation-fleurs-massif-val-de-marne-aidlib.jpg",
+  "https://i-dj.unimedias.fr/2023/09/12/djwebitaliejardinpinsent-65001c9e73653.jpg",
+  "https://cdn.radiofrance.fr/s3/cruiser-production/2019/06/91d9fbfe-1e85-4e59-9608-b4ef850d4eb7/1200x680_jardins_remarquables_gettyimages-164963728.jpg",
+  "https://cdn-s-www.dna.fr/images/A814BD28-06F8-4D22-BCBC-E7ADD15658FF/NW_raw/ouvert-chaque-annee-entre-la-fin-du-mois-de-mars-et-le-mois-de-mai-le-parc-du-keukenhof-situe-au-sud-ouest-d-amsterdam-aux-pays-bas-compte-pres-de-sept-millions-de-tulipes-jacinthes-et-jonquilles-qui-fleurissent-en-meme-temps-pour-former-d-immenses-vagues-de-couleurs-photo-unsplash-axp-photoraghy-1680602263.jpg",
+  "https://static.pratique.fr/images/unsized/be/beautiful-garden.jpg",
+  "https://www.lesplusbeauxjardinsdefrance.com/wp-content/uploads/2021/03/plus-beaux-jardins-france-cinq-sens-yvoire-tissage.jpg",
+  "https://www.jardinvertige.fr/public/img/medium/dsc_0865.jpg",
+  "https://www.viviendasaludable.es/wp-content/uploads/2019/02/organizar-el-jardin-1.jpg",
+  "https://www.lesplusbeauxjardinsdefrance.com/wp-content/uploads/2021/03/plus-beaux-jardins-france-potager-saint-jean-beauregard.jpg",
+  "https://www.demotivateur.fr/images-buzz/100152/albionmanor.jpg",
+  "https://bricoleurpro.ouest-france.fr/images/dossiers/2023-01/mini/jardin-naturel-065057-650-325.jpg",
+  "https://www.sncf-connect.com/assets/media/2021-05/paris-jardin-des-plantes.jpg",
+  "https://www.jardinsroisoleil.com/wp-content/uploads/2020/09/jardin.jpg",
+  "https://www.lesplusbeauxjardinsdefrance.com/wp-content/uploads/2021/03/plus-beaux-jardins-france-parc-floral-apremont-allier-cascade.jpg",
+  "https://www.jardins.biz/wp-content/uploads/2019/01/jardin-de-fleurs-magnifique.jpg",
+  "https://img-4.linternaute.com/dtZgowkSqUpRZVRXNDhzNHU411s=/1240x/smart/image-cms/10343284.jpg",
+  "https://thegardenstrust.org/wp-content/uploads/2021/05/The-ornamental-garden-%C2%A9-Chateau-et-Jardins-de-Villandry.jpg",
+  "https://www.jardinage-conseils.fr/wp-content/uploads/2013/09/jardin1.jpg",
+];
+
 const paris = { lat: 48.8566, lng: 2.3522 };
+
+/* ---------------- helpers ---------------- */
 function jitter(c, max = 0.03) {
-  const r = () => (Math.random() * 2 - 1) * max; // ±max
+  const r = () => (Math.random() * 2 - 1) * max;
   return { lat: +(c.lat + r()).toFixed(6), lng: +(c.lng + r()).toFixed(6) };
 }
 function rand(min, max) { return Math.random() * (max - min) + min; }
@@ -29,13 +59,21 @@ function pickMany(arr, n) {
   while (a.length && out.length < n) out.push(a.splice(Math.floor(Math.random() * a.length),1)[0]);
   return out;
 }
-function picsum(seed, w=1200, h=800) { return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`; }
+
 function avatar(seed) { return `https://i.pravatar.cc/256?img=${(seed % 70) + 1}`; }
+
+/* pick 3 distinct green garden photos */
+function gardenPhotoTriplet(seedIndex) {
+  const N = GARDEN_PHOTOS.length;
+  const a = seedIndex % N;
+  const b = (a + 5) % N;      // spaced to reduce duplicates
+  const c = (a + 11) % N;
+  return [GARDEN_PHOTOS[a], GARDEN_PHOTOS[b], GARDEN_PHOTOS[c]];
+}
 
 const gardenKinds = ['potager','urbain','serre','fleurs','verger'];
 const gardenNeeds = ['arrosage','désherbage','plantation','taille','tonte','paillage','semis'];
 const districts = ['Montmartre','Belleville','République','Bastille','Canal Saint-Martin','Nation','Auteuil','Latin','Batignolles','Buttes-Chaumont'];
-
 const skillsPool = ['arrosage','désherbage','plantation','taille','tonte','compost','semis','permaculture','paillage','greffe'];
 
 /* -------------- main -------------- */
@@ -50,7 +88,6 @@ async function main() {
   await prisma.owner.deleteMany();
   await prisma.userSkill.deleteMany();
   await prisma.skill.deleteMany();
-  // If you truly want a pristine DB: also wipe users
   await prisma.user.deleteMany();
 
   console.log('📚 Seeding skills…');
@@ -62,7 +99,7 @@ async function main() {
   const ownerUsers = [];
   const gardenerUsers = [];
 
-  // 18 owners
+  // owners
   for (let i = 0; i < OWNER_COUNT; i++) {
     const fn = firstNames[i % firstNames.length];
     const ln = lastNames[i % lastNames.length];
@@ -72,7 +109,7 @@ async function main() {
           firstName: fn,
           lastName: ln,
           email: `owner${i+1}@example.com`,
-          passwordHash: 'bcrypt$demo', // replace if your login requires a real hash
+          passwordHash: 'bcrypt$demo',
           role: 'proprietaire',
           avatarUrl: avatar(i),
           bio: `Propriétaire de jardin à ${pick(districts)}.`,
@@ -84,7 +121,7 @@ async function main() {
     );
   }
 
-  // 18 gardeners
+  // gardeners
   for (let i = 0; i < GARDENER_COUNT; i++) {
     const fn = firstNames[(i+5) % firstNames.length];
     const ln = lastNames[(i+7) % lastNames.length];
@@ -104,7 +141,6 @@ async function main() {
     });
     gardenerUsers.push(u);
 
-    // attach 3 random skills to user
     for (const s of pickMany(skills, 3)) {
       await prisma.userSkill.create({ data: { userId: u.id, skillId: s.id } });
     }
@@ -142,14 +178,16 @@ async function main() {
     );
   }
 
-  console.log('🌿 Seeding gardens…');
+  console.log('🌿 Seeding gardens (green only)…');
   for (let i = 0; i < owners.length; i++) {
     const u = ownerUsers[i];
     const coords = jitter(paris);
+    const photos = gardenPhotoTriplet(i);
+
     await prisma.garden.create({
       data: {
-        ownerUserId: u.id,               // ⚠️ Garden links to User (owner), not Owner
-        title: `${pick(['Jardin','Potager','Verger','Coin vert'])} de ${u.firstName}`,
+        ownerUserId: u.id, // Garden links to User (owner)
+        title: `${pick(['Potager','Jardin','Verger'])} de ${u.firstName}`,
         description: pick([
           'Soleil le matin, ombre l’après-midi. Idéal tomates & herbes.',
           'Terrain plat avec récupérateur d’eau.',
@@ -158,13 +196,9 @@ async function main() {
         ]),
         address: u.address || `${rint(1,120)} rue des Jardins, Paris`,
         area: rint(25, 120),
-        kind: pick(gardenKinds),
+        kind: pick(['potager','verger','urbain']),
         needs: pickMany(gardenNeeds, 2).join(', '),
-        photos: [
-          picsum(`garden-${i}-a`),
-          picsum(`garden-${i}-b`),
-          picsum(`garden-${i}-c`),
-        ],
+        photos, // ✅ only curated green garden/potager images
         lat: coords.lat,
         lng: coords.lng,
         publishedAt: new Date(),
