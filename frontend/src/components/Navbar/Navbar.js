@@ -7,97 +7,69 @@ import { faBars, faTimes, faSeedling } from "@fortawesome/free-solid-svg-icons";
 import { unreadCount } from "@/lib/messages";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+const BRAND_GREEN = "#16a34a";
 
 /** Broadcast role to the whole app (same tab) */
 function broadcastRoleChange(role) {
   try {
     window.dispatchEvent(new CustomEvent("role:changed", { detail: role }));
     window.postMessage({ type: "role:changed", role }, "*");
-    sessionStorage.setItem("role", role);
-    localStorage.setItem("role", role);
+    sessionStorage.setItem("role", role || "");
+    localStorage.setItem("role", role || "");
   } catch {}
 }
 
 export default function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [me, setMe] = useState(null);
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const [me, setMe]               = useState(null);
   const [loadingMe, setLoadingMe] = useState(true);
-  const [role, setRole] = useState(null);
-  const [unread, setUnread] = useState(0);
+  const [role, setRole]           = useState(null);
+  const [unread, setUnread]       = useState(0);
 
-  const user = me?.user ?? null;
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const user  = me?.user ?? null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const roleLabel =
-    role === "OWNER"
-      ? "Propriétaire"
-      : role === "GARDENER"
-      ? "Jardinier"
-      : null;
+  const roleLabel = role === "OWNER" ? "Propriétaire" : role === "GARDENER" ? "Jardinier" : null;
 
   /* ---------- session hydration ---------- */
   useEffect(() => {
     let alive = true;
     async function hydrate() {
       if (!token) {
-        setLoadingMe(false);
-        setMe(null);
-        setRole(null);
-        setUnread(0);
-        return;
+        setLoadingMe(false); setMe(null); setRole(null); setUnread(0); return;
       }
       try {
-        const res = await fetch(`${API_BASE}/api/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
+        const res  = await fetch(`${API_BASE}/api/me`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
         const data = await res.json().catch(() => null);
         if (!alive) return;
         if (res.ok && data?.user) {
           setMe(data);
           setRole(data.user.role || localStorage.getItem("role") || null);
         } else {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          setMe(null);
-          setRole(null);
-          setUnread(0);
+          localStorage.removeItem("token"); localStorage.removeItem("user");
+          setMe(null); setRole(null); setUnread(0);
         }
       } catch {
-        if (alive) {
-          setMe(null);
-          setRole(null);
-          setUnread(0);
-        }
+        if (alive) { setMe(null); setRole(null); setUnread(0); }
       } finally {
         if (alive) setLoadingMe(false);
       }
     }
     hydrate();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [token]);
 
-  /* Listen for role changes fired by Dashboard (and other places) */
+  /* Listen for role changes */
   useEffect(() => {
-    const cached =
-      sessionStorage.getItem("role") || localStorage.getItem("role");
+    const cached = sessionStorage.getItem("role") || localStorage.getItem("role");
     if (cached && !role) setRole(cached);
 
     function onCustom(e) {
       const next = e?.detail || null;
-      if (next) {
-        setRole(next);
-        refreshMe();
-      }
+      if (next) { setRole(next); refreshMe(); }
     }
     function onMessage(e) {
-      if (e?.data?.type === "role:changed") {
-        setRole(e.data.role);
-        refreshMe();
-      }
+      if (e?.data?.type === "role:changed") { setRole(e.data.role); refreshMe(); }
     }
     window.addEventListener("role:changed", onCustom);
     window.addEventListener("message", onMessage);
@@ -110,10 +82,7 @@ export default function Navbar() {
 
   async function refreshMe() {
     if (!token) return;
-    const r2 = await fetch(`${API_BASE}/api/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
+    const r2 = await fetch(`${API_BASE}/api/me`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
     if (r2.ok) setMe(await r2.json());
   }
 
@@ -122,10 +91,7 @@ export default function Navbar() {
       if (!token) return;
       const res = await fetch(`${API_BASE}/api/me/role`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ role: nextRole }),
       });
       if (!res.ok) return;
@@ -140,12 +106,8 @@ export default function Navbar() {
   }
 
   function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setMe(null);
-    setRole(null);
-    setUnread(0);
-    setMenuOpen(false);
+    localStorage.removeItem("token"); localStorage.removeItem("user");
+    setMe(null); setRole(null); setUnread(0); setMenuOpen(false);
     window.location.href = "/";
   }
 
@@ -157,39 +119,22 @@ export default function Navbar() {
         if (!user) { if (alive) setUnread(0); return; }
         const r = await unreadCount();
         if (alive) setUnread(Number(r?.count || 0));
-      } catch {
-        if (alive) setUnread(0);
-      }
+      } catch { if (alive) setUnread(0); }
     }
     loadUnread();
-
-    function onStorage(e) {
-      if (e.key === 'token') loadUnread();
-    }
-    window.addEventListener('storage', onStorage);
-    return () => { alive = false; window.removeEventListener('storage', onStorage); };
+    function onStorage(e) { if (e.key === "token") loadUnread(); }
+    window.addEventListener("storage", onStorage);
+    return () => { alive = false; window.removeEventListener("storage", onStorage); };
   }, [user, role, token]);
 
   /* ---------- small UI helpers ---------- */
-  const RoleBadge = () =>
-    user && roleLabel ? (
-      <span
-        className="ml-3 text-xs px-2 py-1 rounded-full bg-white/20"
-        aria-live="polite"
-      >
-        Mode&nbsp;: <strong>{roleLabel}</strong>
-      </span>
-    ) : null;
-
   const RoleSwitcher = () =>
     user ? (
-      <div className="hidden md:flex items-center bg-white/20 rounded-full p-1 mr-3">
+      <div className="hidden md:flex items-center bg-white/20 rounded-full p-1">
         <button
           onClick={() => switchRole("OWNER")}
           className={`px-3 py-1 rounded-full text-sm transition ${
-            role === "OWNER"
-              ? "bg-pink-500 text-white"
-              : "text-white hover:bg-white/10"
+            role === "OWNER" ? "bg-pink-500 text-white" : "text-white hover:bg-white/10"
           }`}
           title="Interface Propriétaire"
         >
@@ -198,9 +143,7 @@ export default function Navbar() {
         <button
           onClick={() => switchRole("GARDENER")}
           className={`px-3 py-1 rounded-full text-sm transition ${
-            role === "GARDENER"
-              ? "bg-pink-500 text-white"
-              : "text-white hover:bg-white/10"
+            role === "GARDENER" ? "bg-pink-500 text-white" : "text-white hover:bg-white/10"
           }`}
           title="Interface Jardinier"
         >
@@ -213,16 +156,37 @@ export default function Navbar() {
   return (
     <nav className="w-full bg-green-600 text-white fixed top-0 left-0 z-50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center">
+        {/* LEFT: logo + quick links */}
+        <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center">
             <FontAwesomeIcon icon={faSeedling} size="lg" className="mr-2" />
             <span className="text-xl font-bold">JardinSolidaire</span>
           </Link>
-          <RoleBadge />
+
+          {/* Quick links (only when logged in) */}
+          {user && (
+            <div className="hidden md:flex items-center gap-2 ml-2">
+              <Link
+                href="/gardens"
+                className="px-4 py-2 rounded-full bg-white/80 border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
+                style={{ color: BRAND_GREEN }}
+              >
+                Les jardins
+              </Link>
+              <Link
+                href="/gardeners"
+                className="px-4 py-2 rounded-full bg-white/80 border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
+                style={{ color: BRAND_GREEN }}
+              >
+                Les jardiniers
+              </Link>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center">
-          {/* Desktop mode switcher */}
+        {/* RIGHT: role switcher + auth buttons + burger */}
+        <div className="flex items-center gap-2">
+          {/* Desktop mode switcher on the right */}
           <RoleSwitcher />
 
           {/* Auth CTAs (desktop) */}
@@ -244,109 +208,58 @@ export default function Navbar() {
           {/* Burger */}
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="cursor-pointer ml-3 md:ml-2"
+            className="cursor-pointer ml-1"
             aria-label="Menu"
           >
-            {menuOpen ? (
-              <FontAwesomeIcon icon={faTimes} size="lg" />
-            ) : (
-              <FontAwesomeIcon icon={faBars} size="lg" />
-            )}
+            {menuOpen ? <FontAwesomeIcon icon={faTimes} size="lg" /> : <FontAwesomeIcon icon={faBars} size="lg" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu (includes quick links) */}
       {menuOpen && (
         <div className="bg-green-600 w-full absolute top-16 left-0 border-t border-white/20">
           <ul className="flex flex-col space-y-2 p-4 text-white">
             {!user ? (
               <>
-                <li>
-                  <Link href="/login" onClick={() => setMenuOpen(false)}>
-                    Se connecter
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/register" onClick={() => setMenuOpen(false)}>
-                    S’inscrire
-                  </Link>
-                </li>
+                <li><Link href="/login" onClick={() => setMenuOpen(false)}>Se connecter</Link></li>
+                <li><Link href="/register" onClick={() => setMenuOpen(false)}>S’inscrire</Link></li>
               </>
             ) : (
               <>
-                {roleLabel && (
-                  <li className="text-xs opacity-90 mb-1">
-                    Mode actuel&nbsp;: <strong>{roleLabel}</strong>
-                  </li>
-                )}
+                <li><Link href="/dashboard" onClick={() => setMenuOpen(false)}>Mon profil</Link></li>
 
-                <li>
-                  <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-                    Mon profil
-                  </Link>
-                </li>
-
-                {/* OWNER links */}
                 {role === "OWNER" && (
                   <>
-                    <li>
-                      <Link href="/my-gardens" onClick={() => setMenuOpen(false)}>
-                        Mes jardins
-                      </Link>
-                    </li>
+                    <li><Link href="/my-gardens" onClick={() => setMenuOpen(false)}>Mes jardins</Link></li>
                     <li className="relative">
-                      <Link href="/messages" onClick={() => setMenuOpen(false)}>
-                        Messagerie
-                      </Link>
+                      <Link href="/messages" onClick={() => setMenuOpen(false)}>Messagerie</Link>
                       {unread > 0 && (
                         <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white align-middle">
                           {unread}
                         </span>
                       )}
                     </li>
-                    <li>
-                      <Link href="/owner/inbox" onClick={() => setMenuOpen(false)}>
-                        Demandes
-                      </Link>
-                    </li>
+                    <li><Link href="/owner/inbox" onClick={() => setMenuOpen(false)}>Demandes</Link></li>
                   </>
                 )}
 
-                {/* GARDENER links */}
                 {role === "GARDENER" && (
                   <>
                     <li className="relative">
-                      <Link href="/messages" onClick={() => setMenuOpen(false)}>
-                        Messagerie
-                      </Link>
+                      <Link href="/messages" onClick={() => setMenuOpen(false)}>Messagerie</Link>
                       {unread > 0 && (
                         <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white align-middle">
                           {unread}
                         </span>
                       )}
                     </li>
-                    <li>
-                      <Link href="/bookings" onClick={() => setMenuOpen(false)}>
-                        Mes réservations
-                      </Link>
-                    </li>
+                    <li><Link href="/bookings" onClick={() => setMenuOpen(false)}>Mes réservations</Link></li>
                   </>
                 )}
 
-                <li>
-                  <Link href="/favorites" onClick={() => setMenuOpen(false)}>
-                    Mes Favoris
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    onClick={handleLogout}
-                    className="block text-left w-full"
-                  >
-                    Déconnexion
-                  </button>
-                </li>
+                <li><Link href="/favorites" onClick={() => setMenuOpen(false)}>Mes Favoris</Link></li>
+                <li><button onClick={handleLogout} className="block text-left w-full">Déconnexion</button></li>
               </>
             )}
           </ul>

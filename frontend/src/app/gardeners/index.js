@@ -9,6 +9,24 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 const BRAND_GREEN = '#16a34a';
 
+/* ----- small utils ----- */
+function isAbort(err) {
+  return (
+    err?.name === 'AbortError' ||
+    err?.code === 20 ||
+    /aborted|abort/i.test(err?.message || '')
+  );
+}
+
+function useDebounced(value, ms = 300) {
+  const [v, setV] = React.useState(value);
+  React.useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+
 /* ----- helpers ----- */
 function resolveMedia(u) {
   if (!u) return null;
@@ -49,7 +67,14 @@ function normalizeGardeners(raw) {
     const firstName = item.firstName ?? item.prenom ?? '';
     const lastName  = item.lastName  ?? item.nom    ?? '';
     const avatarRaw =
-      item.avatarUrl ?? item.photo_profil ?? item.avatar ?? item.user?.avatarUrl ?? item.user?.photo_profil ?? item.user?.avatar ?? null;
+      item.avatarUrl ??
+      item.photo_profil ??
+      item.avatar ??
+      item.user?.avatarUrl ??
+      item.user?.photo_profil ??
+      item.user?.avatar ??
+      null;
+
     return {
       id: String(item.id ?? item.id_utilisateur ?? item.userId ?? ''),
       firstName,
@@ -89,6 +114,12 @@ async function fetchGardeners(params) {
       const json = await res.json();
       return normalizeGardeners(json);
     } catch (e) {
+      if (isAbort(e) || signal?.aborted) {
+        const err = new Error('aborted');
+        err.name = 'AbortError';
+        lastErr = err;
+        break; // user changed filters/navigation; stop trying others
+      }
       lastErr = e;
     }
   }
@@ -101,18 +132,17 @@ export default function GardenersList() {
   const [minRating, setMinRating] = useState('');
   const [kind, setKind]           = useState('');
   const [search, setSearch]       = useState('');
+  const searchDebounced           = useDebounced(search, 300);
   const [loading, setLoading]     = useState(true);
   const [err, setErr]             = useState('');
   const [isAuthed, setIsAuthed]   = useState(false);
 
-  // NEW: avatar cache-buster + listener
+  // avatar cache-buster + listener (updates when you change avatar from dashboard)
   const [avatarV, setAvatarV] = useState(0);
   useEffect(() => {
     const onStorage = (e) => {
       if (e?.key === 'userUpdated') {
         setAvatarV(Date.now());
-        // Optional: re-fetch to pick any new avatars from API:
-        // load();
       }
     };
     window.addEventListener('storage', onStorage);
@@ -135,16 +165,18 @@ export default function GardenersList() {
   }, [isAuthed]);
 
   async function load(signal) {
-    setLoading(true); setErr('');
+    setLoading(true);
+    setErr('');
     try {
-      const list = await fetchGardeners({ search, minRating, kind, signal });
+      const list = await fetchGardeners({ search: searchDebounced, minRating, kind, signal });
       setGardeners(list);
     } catch (e) {
+      if (isAbort(e)) {
+        // silent: request was canceled on purpose (typing/filter change)
+        return;
+      }
       console.error('[gardeners] load failed:', e);
-      setErr(
-        "Impossible de charger les jardiniers. " +
-        (e?.message ? `\n${e.message}` : '')
-      );
+      setErr('Impossible de charger les jardiniers.' + (e?.message ? `\n${e.message}` : ''));
       setGardeners([]);
     } finally {
       setLoading(false);
@@ -155,7 +187,7 @@ export default function GardenersList() {
     const ac = new AbortController();
     load(ac.signal);
     return () => ac.abort();
-  }, [search, minRating, kind]);
+  }, [searchDebounced, minRating, kind]);
 
   const filtered = useMemo(() => {
     return gardeners.filter((g) => {
@@ -216,8 +248,11 @@ export default function GardenersList() {
               aria-label="Rechercher un·e jardinier·e"
             />
           </div>
-          <select value={minRating} onChange={(e) => setMinRating(e.target.value)}
-                  className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w/full lg:w-[20%] text-sm text-gray-700">
+          <select
+            value={minRating}
+            onChange={(e) => setMinRating(e.target.value)}
+            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
+          >
             <option value="">Note minimale</option>
             <option value="5">5★</option>
             <option value="4.5">4.5★</option>
@@ -225,15 +260,21 @@ export default function GardenersList() {
             <option value="3.5">3.5★</option>
             <option value="3">3★</option>
           </select>
-          <select value={kind} onChange={(e) => setKind(e.target.value)}
-                  className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w/full lg:w-[20%] text-sm text-gray-700">
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
+          >
             <option value="">Tous les profils</option>
             <option value="arrosage">Arrosage</option>
             <option value="tonte">Tonte</option>
             <option value="plantation">Plantation</option>
             <option value="taille">Taille</option>
           </select>
-          <button onClick={resetFilters} className="h-10 px-5 rounded-full text-white w-full lg:w-auto transition bg-pink-500 hover:bg-pink-600">
+          <button
+            onClick={resetFilters}
+            className="h-10 px-5 rounded-full text-white w-full lg:w-auto transition bg-pink-500 hover:bg-pink-600"
+          >
             Réinitialiser
           </button>
         </div>
@@ -250,7 +291,10 @@ export default function GardenersList() {
             {err}
             <div className="mt-3">
               <button
-                onClick={() => load()}
+                onClick={() => {
+                  const ac = new AbortController();
+                  load(ac.signal);
+                }}
                 className="px-4 py-2 rounded-full text-white bg-pink-500 hover:bg-pink-600"
               >
                 Réessayer
@@ -275,8 +319,10 @@ export default function GardenersList() {
                   className="flex rounded-2xl p-4 hover:shadow transition"
                   style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
                 >
-                  <div className="w-32 h-32 rounded-2xl shadow relative overflow-hidden shrink-0"
-                       style={{ border: '4px solid rgba(22,163,74,0.35)' }}>
+                  <div
+                    className="w-32 h-32 rounded-2xl shadow relative overflow-hidden shrink-0"
+                    style={{ border: '4px solid rgba(22,163,74,0.35)' }}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
