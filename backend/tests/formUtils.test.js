@@ -1,4 +1,3 @@
-// backend/tests/hashPassword.test.js
 const bcrypt = require('bcrypt');
 const { hashPassword } = require('../utils');
 

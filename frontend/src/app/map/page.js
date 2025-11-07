@@ -1,4 +1,3 @@
-// frontend/src/app/map/page.js
 import GardensMap from '@/components/Map/GardensMap';
 
 export default function MapPage() {

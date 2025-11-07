@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar';
 import { getAnyToken } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const BRAND_GREEN = '#16a34a';
-const BRAND_PINK  = '#E3107D';
 const LOCAL_DIRS  = ['/assets/', '/images/', '/img/', '/icons/'];
 
-/* -------- helpers (same as list) -------- */
+/* -------- media helpers -------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -23,7 +22,6 @@ function resolveMedia(u) {
   if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
   return `${API_BASE}/uploads/${clean}`;
 }
-const resolveAvatar = resolveMedia;
 
 function initials(a = '', b = '') {
   const x = (a || '').trim()[0] || '';
@@ -40,93 +38,94 @@ function greenPlaceholder(first, last) {
 </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
-/* --------------------------------------- */
+
+/* pick best avatar source consistently (profile → user) */
+function pickAvatar(raw) {
+  return (
+    raw?.avatarUrl ??
+    raw?.photo_profil ??
+    raw?.avatar ??
+    raw?.user?.avatarUrl ??
+    raw?.user?.photo_profil ??
+    raw?.user?.avatar ??
+    null
+  );
+}
 
 export default function GardenerPage({ params }) {
   const { id } = params || {};
   const [gardener, setGardener] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+  const [avatarV, setAvatarV]   = useState(0); // cache-buster for <img src>
+
+  // reload on cross-tab avatar updates
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'gardenerUpdated' || e.key === 'userUpdated') {
+        setAvatarV(Date.now());
+        load(); // refetch fresh data
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function load() {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await fetch(`${API_BASE}/api/gardeners/${id}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      setGardener({
+        firstName: data.firstName || data.prenom || '',
+        lastName:  data.lastName  || data.nom    || '',
+        avatarUrl: resolveMedia(pickAvatar(data)),
+        isOnline:  !!data.isOnline,
+        totalReviews: data.totalReviews ?? 0,
+        rating:    data.rating ?? null,
+        location:  data.location || data.localisation || '—',
+        skills:    Array.isArray(data.skills) ? data.skills : [],
+        yearsExperience: data.yearsExperience ?? data.experienceAnnees ?? null,
+        intro:     data.intro || data.presentation || data.description || '—',
+        comments:  data.comments || [],
+      });
+    } catch (_e) {
+      setError("Impossible de charger le profil jardinier.");
+      setGardener(null);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let alive = true;
-
-    async function load() {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await fetch(`${API_BASE}/api/gardeners/${id}`, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        if (alive) {
-          setGardener({
-            firstName: data.firstName || '',
-            lastName:  data.lastName  || '',
-            avatarUrl: resolveAvatar(data.avatarUrl || data.photo_profil || null),
-            isOnline:  !!data.isOnline,
-            totalReviews: data.totalReviews ?? 0,
-            rating:    data.rating ?? null,
-            location:  data.location || '—',
-            skills:    Array.isArray(data.skills) ? data.skills : [],
-            yearsExperience: data.yearsExperience ?? null,
-            intro:     data.intro || data.description || '—',
-            comments:  data.comments || [],
-          });
-        }
-      } catch (_e) {
-        if (alive) {
-          setError("Couldn't load the gardener. Showing an example.");
-          setGardener({
-            firstName: 'Example',
-            lastName:  'Gardener',
-            avatarUrl: null,
-            isOnline:  true,
-            totalReviews: 242,
-            rating:    4.9,
-            location:  '—',
-            skills:    ['mowing', 'weeding'],
-            yearsExperience: 2,
-            intro:     'Sample introduction text',
-            comments:  [],
-          });
-        }
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
     if (id) load();
-    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const avatarSrc = (() => {
+  const avatarSrc = useMemo(() => {
     if (!gardener) return null;
-    return gardener.avatarUrl || greenPlaceholder(gardener.firstName, gardener.lastName);
-  })();
+    const base = gardener.avatarUrl || greenPlaceholder(gardener.firstName, gardener.lastName);
+    return gardener.avatarUrl ? `${base}${base.includes('?') ? '&' : '?'}v=${avatarV}` : base;
+  }, [gardener, avatarV]);
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
-        {/* Retour button — same style as gardens */}
+        {/* Back */}
         <div className="mb-4">
           <Link
             href="/gardeners"
             aria-label="Retour aux jardiniers"
-            className="
-inline-flex items-center gap-2 rounded-full px-4 py-2
-bg-white/80 text-[#16a34a]
-border border-[rgba(22,163,74,0.28)]
-hover:bg-[rgba(22,163,74,0.06)]
-focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
-shadow-sm transition
-"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/80 text-[#16a34a] border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
           >
             <span aria-hidden>←</span> Retour aux jardiniers
           </Link>
         </div>
-
-        <h1 className="sr-only">Profil du jardinier</h1>
 
         {loading && (
           <div className="animate-pulse space-y-4">
@@ -199,34 +198,13 @@ shadow-sm transition
               </Card>
             </section>
 
-            <section className="mt-6">
-              <Card title="Commentaires">
-                <ul className="mt-3 space-y-3">
-                  {(gardener.comments || []).length === 0 && (
-                    <li className="text-gray-600 text-sm">Aucun commentaire pour le moment.</li>
-                  )}
-                  {(gardener.comments || []).map((c) => (
-                    <li key={c.id} className="border rounded-lg p-3">
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{c.text}</p>
-                      {c.author && <p className="mt-1 text-xs text-gray-500">by {c.author}</p>}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </section>
-
-            {/* Availability calendar for this gardener */}
             <section className="mt-8">
               <h2 className="sr-only">Disponibilités du jardinier</h2>
               <div
                 className="rounded-2xl p-6 mb-3"
                 style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
               />
-              <AvailabilityCalendar
-                mode="gardener"
-                ownerId={id}
-                token={getAnyToken()}
-              />
+              <AvailabilityCalendar mode="gardener" ownerId={id} token={getAnyToken()} />
             </section>
           </>
         )}
@@ -239,10 +217,7 @@ function Card({ title, children }) {
   return (
     <div
       className="rounded-2xl p-6"
-      style={{
-        backgroundColor: 'rgba(22,163,74,0.08)',
-        border: '1px solid rgba(22,163,74,0.15)',
-      }}
+      style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
     >
       <h2 className="text-lg font-semibold text-green-800">{title}</h2>
       {children}

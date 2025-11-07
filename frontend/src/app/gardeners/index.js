@@ -2,14 +2,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { getFavGardeners, addFavGardener, removeFavGardener } from '@/lib/favorites';
 import { getAnyToken } from '@/lib/api';
+import { getFavGardeners, addFavGardener, removeFavGardener } from '@/lib/favorites';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 const BRAND_GREEN = '#16a34a';
 
-/* ---------- helpers ---------- */
+/* ----- helpers ----- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -22,8 +22,6 @@ function resolveMedia(u) {
   if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
   return `${API_BASE}/uploads/${clean}`;
 }
-const resolveAvatar = resolveMedia;
-
 function initials(a = '', b = '') {
   const x = (a || '').trim()[0] || '';
   const y = (b || '').trim()[0] || '';
@@ -39,7 +37,6 @@ function greenPlaceholder(first, last) {
 </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
-
 function unwrapGardeners(raw) {
   if (Array.isArray(raw)) return raw;
   if (!raw || typeof raw !== 'object') return [];
@@ -51,12 +48,13 @@ function normalizeGardeners(raw) {
   return arr.map((item) => {
     const firstName = item.firstName ?? item.prenom ?? '';
     const lastName  = item.lastName  ?? item.nom    ?? '';
-    const avatarRaw = item.avatarUrl ?? item.photo_profil ?? null;
+    const avatarRaw =
+      item.avatarUrl ?? item.photo_profil ?? item.avatar ?? item.user?.avatarUrl ?? item.user?.photo_profil ?? item.user?.avatar ?? null;
     return {
-      id: String(item.id ?? item.id_utilisateur ?? ''),
+      id: String(item.id ?? item.id_utilisateur ?? item.userId ?? ''),
       firstName,
       lastName,
-      avatarUrl: resolveAvatar(avatarRaw),
+      avatarUrl: resolveMedia(avatarRaw),
       intro: item.intro ?? item.presentation ?? item.biographie ?? '',
       phone: item.phone ?? item.telephone ?? '',
       address: item.address ?? item.localisation ?? item.adresse ?? '',
@@ -64,27 +62,70 @@ function normalizeGardeners(raw) {
     };
   });
 }
-/* -------------------------------- */
+
+/* ----- robust fetch over multiple endpoints ----- */
+async function fetchGardeners(params) {
+  const { search, minRating, kind, signal } = params || {};
+  const candidates = [
+    `${API_BASE}/api/gardeners`,
+    `${API_BASE}/api/jardiniers`,
+    `${API_BASE}/gardeners`,
+    `${API_BASE}/jardiniers`,
+  ];
+
+  let lastErr;
+  for (const base of candidates) {
+    try {
+      const url = new URL(base);
+      if (search) url.searchParams.set('search', search);
+      if (minRating) url.searchParams.set('minRating', minRating);
+      if (kind) url.searchParams.set('kind', kind);
+
+      const res = await fetch(url.toString(), { cache: 'no-store', signal });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status} on ${url} — ${txt.slice(0, 200)}`);
+      }
+      const json = await res.json();
+      return normalizeGardeners(json);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('All endpoints failed');
+}
 
 export default function GardenersList() {
-  const [gardeners, setGardeners]   = useState([]);
-  const [favorites, setFavorites]   = useState([]);
-  const [minRating, setMinRating]   = useState('');
-  const [kind, setKind]             = useState('');
-  const [search, setSearch]         = useState('');
-  const [loading, setLoading]       = useState(true);
-  const [err, setErr]               = useState('');
-  const [isAuthed, setIsAuthed]     = useState(false); // NEW
+  const [gardeners, setGardeners] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [minRating, setMinRating] = useState('');
+  const [kind, setKind]           = useState('');
+  const [search, setSearch]       = useState('');
+  const [loading, setLoading]     = useState(true);
+  const [err, setErr]             = useState('');
+  const [isAuthed, setIsAuthed]   = useState(false);
 
-  // auth watcher (login/logout)
+  // NEW: avatar cache-buster + listener
+  const [avatarV, setAvatarV] = useState(0);
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e?.key === 'userUpdated') {
+        setAvatarV(Date.now());
+        // Optional: re-fetch to pick any new avatars from API:
+        // load();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  // auth watcher
   useEffect(() => {
     const sync = () => setIsAuthed(!!getAnyToken());
     sync();
     window.addEventListener('storage', sync);
     return () => window.removeEventListener('storage', sync);
   }, []);
-
-  // only keep local favorites if logged in
   useEffect(() => {
     if (isAuthed) {
       setFavorites(getFavGardeners().map((g) => String(g.id)));
@@ -93,34 +134,27 @@ export default function GardenersList() {
     }
   }, [isAuthed]);
 
-  // load data
+  async function load(signal) {
+    setLoading(true); setErr('');
+    try {
+      const list = await fetchGardeners({ search, minRating, kind, signal });
+      setGardeners(list);
+    } catch (e) {
+      console.error('[gardeners] load failed:', e);
+      setErr(
+        "Impossible de charger les jardiniers. " +
+        (e?.message ? `\n${e.message}` : '')
+      );
+      setGardeners([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     const ac = new AbortController();
-    let alive = true;
-    (async () => {
-      try {
-        setLoading(true); setErr('');
-        const en = new URL(`${API_BASE}/api/gardeners`);
-        if (search) en.searchParams.set('search', search);
-        if (minRating) en.searchParams.set('minRating', minRating);
-        if (kind) en.searchParams.set('kind', kind);
-        let res = await fetch(en.toString(), { cache: 'no-store', signal: ac.signal });
-        if (!res.ok) {
-          const fr = new URL(`${API_BASE}/api/jardiniers`);
-          if (search) fr.searchParams.set('search', search);
-          if (minRating) fr.searchParams.set('minRating', minRating);
-          if (kind) fr.searchParams.set('kind', kind);
-          res = await fetch(fr.toString(), { cache: 'no-store', signal: ac.signal });
-        }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (!alive) return;
-        setGardeners(normalizeGardeners(data));
-      } catch (_e) {
-        if (alive) { setErr('Impossible de charger les jardiniers.'); setGardeners([]); }
-      } finally { if (alive) setLoading(false); }
-    })();
-    return () => { alive = false; ac.abort(); };
+    load(ac.signal);
+    return () => ac.abort();
   }, [search, minRating, kind]);
 
   const filtered = useMemo(() => {
@@ -134,7 +168,7 @@ export default function GardenersList() {
   }, [gardeners, search, minRating]);
 
   const toggleFavorite = (g) => {
-    if (!isAuthed) return; // guard
+    if (!isAuthed) return;
     const id = String(g.id);
     setFavorites((prev) => {
       const isFav = prev.includes(id);
@@ -162,19 +196,14 @@ export default function GardenersList() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-4">
           <h1 className="text-3xl font-bold text-green-800">Les Jardiniers</h1>
-
-          {/* favorites link hidden if not connected */}
           {isAuthed && (
-            <Link
-              href="/favorites"
-              className="px-4 py-2 rounded-full text-white"
-              style={{ backgroundColor: BRAND_GREEN }}
-            >
+            <Link href="/favorites" className="px-4 py-2 rounded-full text-white" style={{ backgroundColor: BRAND_GREEN }}>
               Favoris ({favorites.length})
             </Link>
           )}
         </div>
 
+        {/* filtres */}
         <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
           <div className="relative w-full lg:w-[30%]">
             <span className="absolute left-3 top-2.5 text-gray-400" aria-hidden>🔍</span>
@@ -187,13 +216,8 @@ export default function GardenersList() {
               aria-label="Rechercher un·e jardinier·e"
             />
           </div>
-
-          <select
-            value={minRating}
-            onChange={(e) => setMinRating(e.target.value)}
-            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
-            aria-label="Note minimale"
-          >
+          <select value={minRating} onChange={(e) => setMinRating(e.target.value)}
+                  className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w/full lg:w-[20%] text-sm text-gray-700">
             <option value="">Note minimale</option>
             <option value="5">5★</option>
             <option value="4.5">4.5★</option>
@@ -201,24 +225,15 @@ export default function GardenersList() {
             <option value="3.5">3.5★</option>
             <option value="3">3★</option>
           </select>
-
-          <select
-            value={kind}
-            onChange={(e) => setKind(e.target.value)}
-            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
-            aria-label="Type de profil"
-          >
+          <select value={kind} onChange={(e) => setKind(e.target.value)}
+                  className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w/full lg:w-[20%] text-sm text-gray-700">
             <option value="">Tous les profils</option>
             <option value="arrosage">Arrosage</option>
             <option value="tonte">Tonte</option>
             <option value="plantation">Plantation</option>
             <option value="taille">Taille</option>
           </select>
-
-          <button
-            onClick={resetFilters}
-            className="h-10 px-5 rounded-full text-white w-full lg:w-auto transition bg-pink-500 hover:bg-pink-600"
-          >
+          <button onClick={resetFilters} className="h-10 px-5 rounded-full text-white w-full lg:w-auto transition bg-pink-500 hover:bg-pink-600">
             Réinitialiser
           </button>
         </div>
@@ -229,11 +244,21 @@ export default function GardenersList() {
             <div className="h-28 bg-gray-100 rounded-2xl animate-pulse" />
           </div>
         )}
+
         {!!err && !loading && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 mb-6">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 mb-6 whitespace-pre-wrap">
             {err}
+            <div className="mt-3">
+              <button
+                onClick={() => load()}
+                className="px-4 py-2 rounded-full text-white bg-pink-500 hover:bg-pink-600"
+              >
+                Réessayer
+              </button>
+            </div>
           </div>
         )}
+
         {!loading && !err && filtered.length === 0 && (
           <p className="text-center text-gray-600">Aucun jardinier trouvé.</p>
         )}
@@ -241,21 +266,17 @@ export default function GardenersList() {
         <div className="space-y-6">
           {filtered.map((g) => {
             const fallback = greenPlaceholder(g.firstName, g.lastName);
-            const src = g.avatarUrl || fallback;
-            const favbed = favorites.includes(String(g.id));
+            const baseSrc  = g.avatarUrl || fallback;
+            const src      = g.avatarUrl ? `${baseSrc}${baseSrc.includes('?') ? '&' : '?'}v=${avatarV}` : baseSrc;
+            const favbed   = favorites.includes(String(g.id));
             return (
               <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
                 <article
                   className="flex rounded-2xl p-4 hover:shadow transition"
-                  style={{
-                    backgroundColor: 'rgba(22,163,74,0.08)',
-                    border: '1px solid rgba(22,163,74,0.15)',
-                  }}
+                  style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
                 >
-                  <div
-                    className="w-32 h-32 rounded-2xl shadow relative overflow-hidden shrink-0"
-                    style={{ border: '4px solid rgba(22,163,74,0.35)' }}
-                  >
+                  <div className="w-32 h-32 rounded-2xl shadow relative overflow-hidden shrink-0"
+                       style={{ border: '4px solid rgba(22,163,74,0.35)' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
@@ -263,8 +284,6 @@ export default function GardenersList() {
                       className="object-cover w-full h-full"
                       onError={(e) => { e.currentTarget.src = fallback; }}
                     />
-
-                    {/* heart hidden if not connected */}
                     {isAuthed && (
                       <button
                         type="button"
@@ -272,9 +291,7 @@ export default function GardenersList() {
                         className="absolute top-2 right-2 text-xl hover:scale-125 transition"
                         aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                       >
-                        {favbed
-                          ? <span className="text-pink-500">♥</span>
-                          : <span className="text-gray-400">♡</span>}
+                        {favbed ? <span className="text-pink-500">♥</span> : <span className="text-gray-400">♡</span>}
                       </button>
                     )}
                   </div>
