@@ -1,16 +1,30 @@
+// app/add-garden/page.js (or wherever your AddGardenPage lives)
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { uploadImage } from '@/lib/uploads';
 
-const BRAND = '#16a34a';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const BRAND    = '#16a34a';
+const MAX_MB   = 5;
+const MAX_FILES = 8;
+
+function resolveMedia(u) {
+  if (!u) return '';
+  const s = String(u).trim();
+  if (s.startsWith('http') || s.startsWith('data:')) return s;
+  if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
+  if (s.startsWith('/')) return s;
+  return `${API_BASE}/uploads/${s.replace(/^\.?\/*/, '')}`;
+}
 
 export default function AddGardenPage() {
   const router = useRouter();
 
-  // existing gardens (for a small info note; we DO NOT block the form anymore)
+  // existing gardens (info banner only)
   const [mine, setMine] = useState(null);
   const [loadingMine, setLoadingMine] = useState(true);
 
@@ -21,9 +35,12 @@ export default function AddGardenPage() {
     address: '',
     area: '',
     needs: '',
+    photos: [], // array of "/uploads/xxx.jpg"
   });
+
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg]   = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -49,6 +66,58 @@ export default function AddGardenPage() {
     setForm((p) => ({ ...p, [name]: value }));
   }
 
+  async function onAddFiles(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // guards
+    const left = Math.max(0, MAX_FILES - form.photos.length);
+    const batch = files.slice(0, left);
+    if (files.length > left) {
+      setMsg(`Tu peux ajouter au maximum ${MAX_FILES} photos (il te reste ${left}).`);
+    }
+
+    const filtered = batch.filter((f) => {
+      if (/\.heic$/i.test(f.name)) {
+        setMsg('HEIC non supporté ici : convertis en JPG/PNG/WebP avant upload.');
+        return false;
+      }
+      if (!/^image\//.test(f.type)) {
+        setMsg('Choisis uniquement des images (JPG/PNG/WebP).');
+        return false;
+      }
+      if (f.size > MAX_MB * 1024 * 1024) {
+        setMsg(`“${f.name}” est trop lourde (max ${MAX_MB} Mo).`);
+        return false;
+      }
+      return true;
+    });
+
+    if (!filtered.length) return;
+
+    setUploading(true);
+    try {
+      const uploaded = [];
+      for (const file of filtered) {
+        const { path } = await uploadImage(file); // => "/uploads/xxx.ext"
+        uploaded.push(path);
+      }
+      setForm((p) => ({ ...p, photos: [...p.photos, ...uploaded] }));
+      if (!msg) setMsg('Photo(s) ajoutée(s) ✔');
+    } catch (err) {
+      console.error(err);
+      setMsg("Échec d’upload d’une ou plusieurs images.");
+    } finally {
+      setUploading(false);
+      // reset input to allow re-selecting the same file
+      e.target.value = '';
+    }
+  }
+
+  function removePhoto(idx) {
+    setForm((p) => ({ ...p, photos: p.photos.filter((_, i) => i !== idx) }));
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setMsg('');
@@ -61,25 +130,25 @@ export default function AddGardenPage() {
     try {
       setBusy(true);
       const payload = {
-        title: form.title.trim(),
+        title:       form.title.trim(),
         description: form.description.trim() || undefined,
-        address: form.address.trim(),
-        needs: form.needs.trim() || undefined,
+        address:     form.address.trim(),
+        needs:       form.needs.trim() || undefined,
+        area:        form.area ? Number(form.area) : undefined,
+        photos:      form.photos, // array of "/uploads/.."
       };
-      const created = await apiFetch('/api/gardens', { method: 'POST', body: payload });
 
-      // tell other tabs to refresh lists
+      await apiFetch('/api/gardens', { method: 'POST', body: payload });
+
       try {
         localStorage.setItem('gardensChanged', '1');
-        setTimeout(() => localStorage.removeItem('gardensChanged'), 500);
+        setTimeout(() => localStorage.removeItem('gardensChanged'), 400);
       } catch {}
 
-      // go see it in "Brouillons"
       router.push('/my-gardens?tab=drafts');
     } catch (err) {
       if (err?.status === 409 && err?.details?.error === 'owner_already_has_garden') {
-        // legacy backend case; keep a friendly message
-        setMsg("Le serveur a refusé la création (409). Votre configuration actuelle limite à un seul jardin.");
+        setMsg("Le serveur a refusé la création (409). Votre configuration limite à un seul jardin.");
       } else if (err?.details?.error) {
         setMsg(`Erreur: ${err.details.error}`);
       } else {
@@ -94,7 +163,7 @@ export default function AddGardenPage() {
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-2">Ajouter mon jardin</h1>
 
-      {/* small info banner — we NEVER block the form */}
+      {/* info banner */}
       {!loadingMine && mine && (
         <div
           className="mb-6 rounded-lg border px-4 py-3 text-sm"
@@ -109,7 +178,7 @@ export default function AddGardenPage() {
       )}
 
       {msg && (
-        <div className="mb-6 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {msg}
         </div>
       )}
@@ -173,6 +242,45 @@ export default function AddGardenPage() {
               placeholder="Ex. arrosage, désherbage…"
             />
           </div>
+        </div>
+
+        {/* Photos */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Photos (max {MAX_FILES})</label>
+
+          <div className="mt-2 flex items-center gap-3">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={onAddFiles}
+              className="text-sm"
+            />
+            {uploading && <span className="text-xs text-gray-600">Téléversement…</span>}
+          </div>
+
+          {form.photos.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {form.photos.map((p, i) => (
+                <div key={`${p}-${i}`} className="relative group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolveMedia(p)}
+                    alt=""
+                    className="w-full h-32 object-cover rounded-lg border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    className="absolute top-1 right-1 px-2 py-1 text-xs rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100"
+                    title="Retirer"
+                  >
+                    Retirer
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3 pt-2">

@@ -1,14 +1,29 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Slider from 'react-slick';
 import { getFavGardens, addFavGarden, removeFavGarden } from '@/lib/favorites';
 import { getAnyToken } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
-/* ---------- helpers ---------- */
+/* ---------- media helper ---------- */
+function resolveMedia(u) {
+  if (!u) return null;
+  const s = String(u).trim();
+  if (s.startsWith('http') || s.startsWith('data:')) return s;
+  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;
+  if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
+  if (s.startsWith('/')) return s;
+  const clean = s.replace(/^\.?\/*/, '');
+  if (clean.startsWith('uploads/')) return `${API_BASE}/${clean}`;
+  if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
+  return `${API_BASE}/uploads/${clean}`;
+}
+
+/* ---------- normalizer ---------- */
 function normalizeGardens(data) {
   if (!Array.isArray(data)) return [];
   return data.map((g) => ({
@@ -17,16 +32,16 @@ function normalizeGardens(data) {
     description: g.description ?? '',
     address: g.address ?? g.adresse ?? '',
     kind: g.kind ?? g.type ?? '',
-    photos: Array.isArray(g.photos) ? g.photos : [],
+    photos: Array.isArray(g.photos) ? g.photos.map(resolveMedia) : [],
   }));
 }
+
 const uiToApiKind = {
   vegetable: 'potager',
   greenhouse: 'serre',
   flowers: 'fleurs',
   mowing: 'tondre',
 };
-/* -------------------------------- */
 
 export default function GardensList() {
   const [favorites, setFavorites] = useState([]);
@@ -35,7 +50,7 @@ export default function GardensList() {
   const [gardens, setGardens]     = useState([]);
   const [loading, setLoading]     = useState(true);
   const [err, setErr]             = useState('');
-  const [isAuthed, setIsAuthed]   = useState(false); // NEW
+  const [isAuthed, setIsAuthed]   = useState(false);
 
   // auth watcher
   useEffect(() => {
@@ -45,37 +60,30 @@ export default function GardensList() {
     return () => window.removeEventListener('storage', sync);
   }, []);
 
-  // load favorites only when logged in
+  // favorites only when logged in
   useEffect(() => {
-    if (isAuthed) {
-      setFavorites(getFavGardens().map((g) => String(g.id)));
-    } else {
-      setFavorites([]);
-    }
+    if (isAuthed) setFavorites(getFavGardens().map((g) => String(g.id)));
+    else setFavorites([]);
   }, [isAuthed]);
 
   // data load
   useEffect(() => {
     const ac = new AbortController();
     let alive = true;
-    async function load() {
+    (async () => {
       try {
-        setLoading(true);
-        setErr('');
-
+        setLoading(true); setErr('');
         const en = new URL(`${API_BASE}/api/gardens`);
         if (search) en.searchParams.set('search', search);
         if (kind)   en.searchParams.set('kind', uiToApiKind[kind] ?? kind);
 
         let res = await fetch(en.toString(), { cache: 'no-store', signal: ac.signal });
-
         if (!res.ok) {
           const fr = new URL(`${API_BASE}/api/jardins`);
           if (search) fr.searchParams.set('search', search);
           if (kind)   fr.searchParams.set('type', uiToApiKind[kind] ?? kind);
           res = await fetch(fr.toString(), { cache: 'no-store', signal: ac.signal });
         }
-
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const raw = await res.json();
@@ -83,20 +91,16 @@ export default function GardensList() {
         if (alive) setGardens(normalizeGardens(list || []));
       } catch (e) {
         console.error('Failed to load gardens', e);
-        if (alive) {
-          setErr("Couldn't load gardens.");
-          setGardens([]);
-        }
+        if (alive) { setErr("Couldn't load gardens."); setGardens([]); }
       } finally {
         if (alive) setLoading(false);
       }
-    }
-    load();
+    })();
     return () => { alive = false; ac.abort(); };
   }, [search, kind]);
 
   const toggleFavorite = (g) => {
-    if (!isAuthed) return; // guard
+    if (!isAuthed) return;
     const id = String(g.id);
     setFavorites((prev) => {
       const isFav = prev.includes(id);
@@ -177,63 +181,64 @@ export default function GardensList() {
       {!!err && <p className="text-center text-red-600 mb-4" role="alert">{err}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-        {filtered.map((g) => (
-          <Link key={g.id} href={`/gardens/${g.id}`} className="block group">
-            <div className="bg-green-100 rounded-2xl overflow-hidden shadow-md ring-1 ring-black/5 hover:shadow-lg transition">
-              <div className="h-48 overflow-hidden">
-                {g.photos.length > 0 ? (
-                  <Slider dots arrows={false} infinite speed={400} slidesToShow={1} slidesToScroll={1}>
-                    {g.photos.map((photo, index) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={index}
-                        src={photo}
-                        alt={`Photo ${index + 1} de ${g.title}`}
-                        className="h-48 w-full object-cover"
-                      />
-                    ))}
-                  </Slider>
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src="/assets/default.jpg"
-                    alt="Image par défaut"
-                    className="h-48 w-full object-cover"
-                  />
-                )}
-              </div>
-
-              <div className="px-4 py-3 text-sm text-gray-700">
-                <div className="flex justify-between items-start mb-1">
-                  <h2 className="font-bold text-base text-green-900">{g.title}</h2>
-
-                  {/* heart hidden if not connected */}
-                  {isAuthed && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleFavorite(g);
-                      }}
-                      className="text-xl transition-transform hover:scale-110"
-                      aria-label={favorites.includes(String(g.id)) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                      title={favorites.includes(String(g.id)) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                    >
-                      {favorites.includes(String(g.id)) ? (
-                        <span className="text-pink-500">♥</span>
-                      ) : (
-                        <span className="text-gray-300 group-hover:text-gray-400">♡</span>
-                      )}
-                    </button>
+        {filtered.map((g) => {
+          const favbed = favorites.includes(String(g.id));
+          return (
+            <Link key={g.id} href={`/gardens/${g.id}`} className="block group">
+              <div className="bg-green-100 rounded-2xl overflow-hidden shadow-md ring-1 ring-black/5 hover:shadow-lg transition">
+                <div className="h-48 overflow-hidden">
+                  {g.photos.length > 0 ? (
+                    <Slider dots arrows={false} infinite speed={400} slidesToShow={1} slidesToScroll={1}>
+                      {g.photos.map((photo, index) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={index}
+                          src={photo}
+                          alt={`Photo ${index + 1} de ${g.title}`}
+                          className="h-48 w-full object-cover"
+                        />
+                      ))}
+                    </Slider>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src="/assets/default.jpg"
+                      alt="Image par défaut"
+                      className="h-48 w-full object-cover"
+                    />
                   )}
                 </div>
 
-                <p className="text-xs leading-tight line-clamp-2">{g.description}</p>
-                <p className="text-xs leading-tight">{g.address}</p>
-                <p className="text-xs leading-tight">{g.kind}</p>
+                {/* ---- FOOTER (title/desc/address/kind + heart) ---- */}
+                <div className="px-4 py-3 text-sm text-gray-700">
+                  <div className="flex justify-between items-start mb-1">
+                    <h2 className="font-bold text-base text-green-900 line-clamp-1">{g.title}</h2>
+
+                    {/* heart hidden if not connected */}
+                    {isAuthed && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
+                        className="text-xl transition-transform hover:scale-110"
+                        aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                        title={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      >
+                        {favbed ? (
+                          <span className="text-pink-500">♥</span>
+                        ) : (
+                          <span className="text-gray-300 group-hover:text-gray-400">♡</span>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-xs leading-tight line-clamp-2">{g.description}</p>
+                  <p className="text-xs leading-tight">{g.address}</p>
+                  <p className="text-xs leading-tight">{g.kind}</p>
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
