@@ -1,4 +1,3 @@
-// frontend/src/lib/messages.js
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 function authHeaders() {

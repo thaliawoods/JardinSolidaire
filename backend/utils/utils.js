@@ -1,5 +1,3 @@
-// backend/utils.js
-
 // Simple sleep helper (for rate limiting backfills)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

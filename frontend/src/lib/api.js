@@ -1,4 +1,3 @@
-// src/lib/api.js
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 function ensureLeadingSlash(p = '') { return p.startsWith('/') ? p : `/${p}`; }

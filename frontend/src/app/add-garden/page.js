@@ -1,4 +1,3 @@
-// app/add-garden/page.js (or wherever your AddGardenPage lives)
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';

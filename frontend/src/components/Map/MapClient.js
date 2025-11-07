@@ -1,4 +1,3 @@
-// src/components/map/MapClient.js
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';

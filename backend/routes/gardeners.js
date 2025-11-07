@@ -6,6 +6,11 @@ const router = express.Router();
 
 router.get('/_ping', (_req, res) => res.json({ ok: true }));
 
+/**
+ * GET /api/gardeners
+ * Supports: ?q=, ?take=, ?skip=
+ * Now exposes avatarUrl with fallback to linked user.avatarUrl
+ */
 router.get('/', async (req, res) => {
   try {
     const take = Math.min(Math.max(parseInt(req.query.take ?? '20', 10), 1), 100);
@@ -27,6 +32,7 @@ router.get('/', async (req, res) => {
       orderBy: [{ id: 'asc' }],
       take,
       skip,
+      // ⬇️ keep a tight projection, but also select the related user's avatar
       select: {
         id: true,
         firstName: true,
@@ -34,11 +40,12 @@ router.get('/', async (req, res) => {
         avatarUrl: true,
         isOnline: true,
         location: true,
-        skills: true,           
+        skills: true,
         yearsExperience: true,
         totalReviews: true,
         rating: true,
         published: true,
+        user: { select: { avatarUrl: true } }, // ⭐ fallback source
       },
     });
 
@@ -47,7 +54,8 @@ router.get('/', async (req, res) => {
         id: String(g.id),
         firstName: g.firstName ?? '',
         lastName: g.lastName ?? '',
-        avatarUrl: g.avatarUrl ?? null,
+        // ⭐ prefer profile avatar, fallback to user's avatar
+        avatarUrl: g.avatarUrl ?? g.user?.avatarUrl ?? null,
         isOnline: !!g.isOnline,
         location: g.location ?? '',
         skills: g.skills ?? [],
@@ -63,6 +71,10 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/gardeners/:id
+ * Now also falls back to user.avatarUrl
+ */
 router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'invalid_id' });
@@ -70,13 +82,24 @@ router.get('/:id', async (req, res) => {
   try {
     const g = await prisma.gardener.findUnique({
       where: { id },
-      include: {
+      // use select so we can project user.avatarUrl and comment fields precisely
+      select: {
+        id: true,
+        user: { select: { id: true, email: true, avatarUrl: true } }, // ⭐ add avatarUrl
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        isOnline: true,
+        location: true,
+        skills: true,
+        yearsExperience: true,
+        intro: true,
+        totalReviews: true,
+        rating: true,
+        published: true,
         comments: {
           orderBy: { createdAt: 'desc' },
           select: { id: true, text: true, authorName: true, createdAt: true },
-        },
-        user: {
-          select: { id: true, email: true }, 
         },
       },
     });
@@ -88,7 +111,8 @@ router.get('/:id', async (req, res) => {
       userId: g.user?.id ? Number(g.user.id) : null,
       firstName: g.firstName ?? '',
       lastName: g.lastName ?? '',
-      avatarUrl: g.avatarUrl ?? null,
+      // ⭐ fallback to user's avatar when gardener.avatarUrl is null
+      avatarUrl: g.avatarUrl ?? g.user?.avatarUrl ?? null,
       isOnline: !!g.isOnline,
       location: g.location ?? '',
       skills: g.skills ?? [],
