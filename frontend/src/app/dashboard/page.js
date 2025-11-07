@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { uploadImage } from '@/lib/uploads';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const BRAND_GREEN = '#16a34a';
@@ -76,9 +77,7 @@ function SectionHeader({ title, avatarSrc, fallback, rightEl, children }) {
         alt=""
         className="w-16 h-16 rounded-full object-cover shadow"
         style={{ border: '4px solid rgba(22,163,74,0.35)' }}
-        onError={(e) => {
-          e.currentTarget.src = fallback;
-        }}
+        onError={(e) => { e.currentTarget.src = fallback; }}
       />
       <div className="flex-1 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-emerald-900">{title}</h2>
@@ -121,9 +120,7 @@ function CompactProfileCard({ me, onEdit }) {
           alt=""
           className="w-14 h-14 rounded-full object-cover shadow"
           style={{ border: '3px solid rgba(22,163,74,0.35)' }}
-          onError={(e) => {
-            e.currentTarget.src = fallback;
-          }}
+          onError={(e) => { e.currentTarget.src = fallback; }}
         />
         <div className="flex-1">
           <div className="flex items-center justify-between mb-3">
@@ -178,13 +175,6 @@ function Skeleton() {
 }
 
 /* ---------------- helpers to qualify profiles ---------------- */
-
-/**
- * Normalize gardener/owner references and decide if they contain meaningful data.
- * - For GARDENER: any of the listed fields can qualify the profile as “existing”.
- * - For OWNER: we **exclude** first/lastName from the signal because backends often
- *             prefill those from the base user; we require at least one owner-specific field.
- */
 function normalizeProfile(p, kind) {
   if (!p || typeof p !== 'object') return null;
 
@@ -205,13 +195,10 @@ function normalizeProfile(p, kind) {
         if (Array.isArray(v)) return v.length > 0;
         return v !== undefined && v !== null && String(v).trim() !== '';
       }) ||
-      // sometimes only names are set but that’s still OK for gardener bootstrap
       !!((p.firstName && p.firstName.trim()) || (p.lastName && p.lastName.trim()));
-
     return meaningful ? p : null;
   }
 
-  // OWNER
   const ownerKeys = [
     'district',
     'availability',
@@ -229,8 +216,6 @@ function normalizeProfile(p, kind) {
     if (Array.isArray(v)) return v.length > 0;
     return v !== undefined && v !== null && String(v).trim() !== '';
   });
-
-  // NOTE: firstName/lastName intentionally ignored for owners.
   return meaningful ? p : null;
 }
 
@@ -242,9 +227,10 @@ export default function Dashboard() {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // first-time user form
   const [showUserForm, setShowUserForm] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -257,13 +243,10 @@ export default function Dashboard() {
 
   const roleSectionRef = useRef(null);
 
-  /** Normalize API me => always have me.gardener / me.owner (or null) */
   function normalizeUser(u) {
     if (!u) return null;
-
     const gardenerRaw = u.gardener ?? u.jardinier ?? null;
     const ownerRaw = u.owner ?? u.proprietaire ?? null;
-
     return {
       ...u,
       gardener: normalizeProfile(gardenerRaw, 'gardener'),
@@ -289,8 +272,7 @@ export default function Dashboard() {
     });
 
     const justReg = typeof window !== 'undefined' ? localStorage.getItem('justRegistered') : null;
-    const hasAny =
-      !!(u?.firstName || u?.lastName || u?.phone || u?.address || u?.bio || u?.avatarUrl);
+    const hasAny = !!(u?.firstName || u?.lastName || u?.phone || u?.address || u?.bio || u?.avatarUrl);
     setShowUserForm(justReg === '1' && !hasAny);
   }, []);
 
@@ -354,6 +336,39 @@ export default function Dashboard() {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
   };
+
+async function onAvatarFile(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (/\.heic$/i.test(file.name)) {
+    setMsg("Ton fichier est au format HEIC (iPhone). Convertis-le en JPG/PNG/WebP avant l’upload.");
+    return;
+  }
+  setUploading(true);
+  try {
+    const { path } = await uploadImage(file);       // 1) upload to backend
+    setForm(p => ({ ...p, avatarUrl: path }));      // 2) preview instantly
+    await apiFetch('/api/me/profile', {             // 3) persist profile
+      method: 'POST',
+      body: {
+        firstName: (form.firstName || '').trim(),
+        lastName:  (form.lastName  || '').trim(),
+        phone:     (form.phone     || '').trim(),
+        address:   (form.address   || '').trim(),
+        bio:       (form.bio       || '').trim(),
+        avatarUrl: path,
+      },
+    });
+    await loadMe();                                 // 4) refresh dashboard data
+    setMsg('Avatar téléversé et mis à jour ✔');
+  } catch (e) {
+    console.error(e);
+    setMsg("Échec de l’upload. Utilise JPG/PNG/WebP et vérifie /api/uploads.");
+  } finally {
+    setUploading(false);
+  }
+}
+
 
   async function saveUser(e) {
     e.preventDefault();
@@ -445,17 +460,13 @@ export default function Dashboard() {
             <div className="inline-flex items-center bg-emerald-600/10 border border-emerald-600/20 rounded-full p-1">
               <button
                 onClick={() => setActiveRole('OWNER')}
-                className={`px-4 py-2 rounded-full text-sm transition ${
-                  role === 'OWNER' ? 'bg-pink-500 text-white' : 'hover:bg-white/60'
-                }`}
+                className={`px-4 py-2 rounded-full text-sm transition ${role === 'OWNER' ? 'bg-pink-500 text-white' : 'hover:bg-white/60'}`}
               >
                 Propriétaire
               </button>
               <button
                 onClick={() => setActiveRole('GARDENER')}
-                className={`px-4 py-2 rounded-full text-sm transition ${
-                  role === 'GARDENER' ? 'bg-pink-500 text-white' : 'hover:bg-white/60'
-                }`}
+                className={`px-4 py-2 rounded-full text-sm transition ${role === 'GARDENER' ? 'bg-pink-500 text-white' : 'hover:bg-white/60'}`}
               >
                 Jardinier
               </button>
@@ -528,15 +539,35 @@ export default function Dashboard() {
                     className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900"
                   />
                 </div>
+
+                {/* Avatar: preview + file upload + manual URL */}
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">Avatar URL</label>
+                  <label className="block text-sm font-medium text-gray-700">Avatar</label>
+
+                  <div className="flex items-center gap-3 mt-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={resolveMedia(form.avatarUrl) || greenAvatar(form.firstName, form.lastName)}
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover border"
+                      onError={(e) => { e.currentTarget.src = greenAvatar(form.firstName, form.lastName); }}
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={onAvatarFile}
+                      className="text-sm"
+                    />
+                  </div>
+
                   <input
                     name="avatarUrl"
                     value={form.avatarUrl}
                     onChange={onUserChange}
-                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
+                    className="mt-2 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
                     placeholder="https://… ou /uploads/mon-avatar.jpg"
                   />
+                  {uploading && <div className="text-xs text-gray-600 mt-1">Téléversement…</div>}
                 </div>
 
                 <div className="sm:col-span-2 flex items-center gap-3 pt-1">

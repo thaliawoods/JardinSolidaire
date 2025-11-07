@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -225,29 +225,6 @@ export default function Navbar() {
           {/* Desktop mode switcher */}
           <RoleSwitcher />
 
-          {/* Desktop Messages link with badge */}
-          {user && (
-            <Link
-              href="/messages"
-              className="hidden md:inline-block ml-3 relative rounded-full px-3 py-1.5 bg-white/20 hover:bg-white/10"
-              title="Messagerie"
-            >
-              Messages
-              {unread > 0 && (
-                <span className="absolute -top-1 -right-1 text-[10px] leading-none px-1.5 py-1 rounded-full bg-pink-500 text-white">
-                  {unread}
-                </span>
-              )}
-            </Link>
-          )}
-
-          {/* Owner quick link to inbox (optional) */}
-          {user && role === 'OWNER' && (
-            <Link href="/owner/inbox" className="hidden md:inline-block ml-3 rounded-full px-3 py-1.5 bg-white/20 hover:bg-white/10">
-              Demandes
-            </Link>
-          )}
-
           {/* Auth CTAs (desktop) */}
           {!loadingMe && !user && (
             <div className="hidden md:flex items-center space-x-3">
@@ -258,7 +235,7 @@ export default function Navbar() {
               </Link>
               <Link href="/register">
                 <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full">
-                S’inscrire
+                  S’inscrire
                 </button>
               </Link>
             </div>
@@ -303,38 +280,65 @@ export default function Navbar() {
                     Mode actuel&nbsp;: <strong>{roleLabel}</strong>
                   </li>
                 )}
-                <li>
-                  <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-                    Tableau de bord
-                  </Link>
-                </li>
+
                 <li>
                   <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
                     Mon profil
                   </Link>
                 </li>
-                <li>
-                  <Link href="/my-gardens" onClick={() => setMenuOpen(false)}>
-                    Mes jardins
-                  </Link>
-                </li>
-                <li className="relative">
-                  <Link href="/messages" onClick={() => setMenuOpen(false)}>
-                    Messagerie
-                  </Link>
-                  {unread > 0 && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white align-middle">
-                      {unread}
-                    </span>
-                  )}
-                </li>
-                {role === 'OWNER' && (
-                  <li>
-                    <Link href="/owner/inbox" onClick={() => setMenuOpen(false)}>
-                      Demandes
-                    </Link>
-                  </li>
+
+                {/* OWNER links */}
+                {role === "OWNER" && (
+                  <>
+                    <li>
+                      <Link href="/my-gardens" onClick={() => setMenuOpen(false)}>
+                        Mes jardins
+                      </Link>
+                    </li>
+                    <li className="relative">
+                      <Link href="/messages" onClick={() => setMenuOpen(false)}>
+                        Messagerie
+                      </Link>
+                      {unread > 0 && (
+                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white align-middle">
+                          {unread}
+                        </span>
+                      )}
+                    </li>
+                    <li>
+                      <Link href="/owner/inbox" onClick={() => setMenuOpen(false)}>
+                        Demandes
+                      </Link>
+                    </li>
+                  </>
                 )}
+
+                {/* GARDENER links */}
+                {role === "GARDENER" && (
+                  <>
+                    <li className="relative">
+                      <Link href="/messages" onClick={() => setMenuOpen(false)}>
+                        Messagerie
+                      </Link>
+                      {unread > 0 && (
+                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white align-middle">
+                          {unread}
+                        </span>
+                      )}
+                    </li>
+                    <li>
+                      <Link href="/bookings" onClick={() => setMenuOpen(false)}>
+                        Mes réservations
+                      </Link>
+                    </li>
+                  </>
+                )}
+
+                <li>
+                  <Link href="/favorites" onClick={() => setMenuOpen(false)}>
+                    Mes Favoris
+                  </Link>
+                </li>
                 <li>
                   <button
                     onClick={handleLogout}
