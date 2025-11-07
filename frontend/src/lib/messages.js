@@ -2,7 +2,10 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 function authHeaders() {
-  const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('jwt')) : null;
+  const token =
+    typeof window !== 'undefined'
+      ? (localStorage.getItem('token') || localStorage.getItem('jwt'))
+      : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -10,6 +13,22 @@ async function handle(res) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || 'request_failed');
   return data;
+}
+
+// ✅ NEW: exported so Navbar can import it without breaking the build
+export async function unreadCount() {
+  try {
+    if (typeof window === 'undefined') return 0; // during SSR/build
+    const res = await fetch(`${API_BASE}/api/messages/unread-count`, {
+      headers: { ...authHeaders() },
+      cache: 'no-store',
+    });
+    if (!res.ok) return 0;
+    const data = await res.json().catch(() => ({}));
+    return typeof data?.count === 'number' ? data.count : 0;
+  } catch {
+    return 0;
+  }
 }
 
 export async function sendMessage({ toUserId, content }) {
