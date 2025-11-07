@@ -1,4 +1,3 @@
-// backend/routes/bookings.js
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');

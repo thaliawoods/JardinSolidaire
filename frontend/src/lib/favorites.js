@@ -1,5 +1,3 @@
-// src/lib/favorites.js
-
 // Two independent keys so gardens/gardeners don’t collide
 export const FAV_GARDENS_KEY = 'favGardens';
 export const FAV_GARDENERS_KEY = 'favGardeners';

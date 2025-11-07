@@ -1,4 +1,3 @@
-// frontend/src/components/Map/GardensMap.js
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';

@@ -1,4 +1,3 @@
-// backend/routes/gardens.js
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
@@ -380,7 +379,7 @@ router.post('/_geocode-missing', async (_req, res) => {
     for (const g of missing) {
       const ret = await safeUpdateCoords(prisma, g.id, g.address);
       if (ret) updated += 1;
-      await sleep(300); // spread requests
+      await sleep(300);
     }
 
     res.json({ ok: true, updated, scanned: missing.length });

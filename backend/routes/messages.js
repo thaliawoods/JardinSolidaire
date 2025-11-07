@@ -1,4 +1,3 @@
-// backend/routes/messages.js
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');

@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { uploadImage } from '@/lib/uploads';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const API_BASE   = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const BRAND_GREEN = '#16a34a';
-const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
+const LOCAL_DIRS  = ['/assets/', '/images/', '/img/', '/icons/'];
 
 /* ---------------- utils ---------------- */
 function resolveMedia(u) {
@@ -179,16 +179,7 @@ function normalizeProfile(p, kind) {
   if (!p || typeof p !== 'object') return null;
 
   if (kind === 'gardener') {
-    const gardenerKeys = [
-      'intro',
-      'location',
-      'yearsExperience',
-      'skills',
-      'rating',
-      'avatarUrl',
-      'photo_profil',
-      'avatar',
-    ];
+    const gardenerKeys = ['intro','location','yearsExperience','skills','rating','avatarUrl','photo_profil','avatar'];
     const meaningful =
       gardenerKeys.some((k) => {
         const v = p[k];
@@ -199,18 +190,7 @@ function normalizeProfile(p, kind) {
     return meaningful ? p : null;
   }
 
-  const ownerKeys = [
-    'district',
-    'availability',
-    'area',
-    'kind',
-    'intro',
-    'description',
-    'rating',
-    'avatarUrl',
-    'photo_profil',
-    'avatar',
-  ];
+  const ownerKeys = ['district','availability','area','kind','intro','description','rating','avatarUrl','photo_profil','avatar'];
   const meaningful = ownerKeys.some((k) => {
     const v = p[k];
     if (Array.isArray(v)) return v.length > 0;
@@ -221,24 +201,18 @@ function normalizeProfile(p, kind) {
 
 /* ---------------- page ---------------- */
 export default function Dashboard() {
-  const [me, setMe] = useState(null);
-  const [role, setRole] = useState(null);
+  const [me, setMe]       = useState(null);
+  const [role, setRole]   = useState(null);
   const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [msg, setMsg]     = useState('');
+  const [busy, setBusy]   = useState(false);
 
   const [showUserForm, setShowUserForm] = useState(false);
-  const [savingUser, setSavingUser] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [savingUser, setSavingUser]     = useState(false);
+  const [uploading, setUploading]       = useState(false);
 
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    bio: '',
-    avatarUrl: '',
+    firstName: '', lastName: '', email: '', phone: '', address: '', bio: '', avatarUrl: '',
   });
 
   const roleSectionRef = useRef(null);
@@ -246,12 +220,8 @@ export default function Dashboard() {
   function normalizeUser(u) {
     if (!u) return null;
     const gardenerRaw = u.gardener ?? u.jardinier ?? null;
-    const ownerRaw = u.owner ?? u.proprietaire ?? null;
-    return {
-      ...u,
-      gardener: normalizeProfile(gardenerRaw, 'gardener'),
-      owner: normalizeProfile(ownerRaw, 'owner'),
-    };
+    const ownerRaw    = u.owner ?? u.proprietaire ?? null;
+    return { ...u, gardener: normalizeProfile(gardenerRaw, 'gardener'), owner: normalizeProfile(ownerRaw, 'owner') };
   }
 
   const loadMe = useCallback(async () => {
@@ -263,11 +233,11 @@ export default function Dashboard() {
 
     setForm({
       firstName: u?.firstName || '',
-      lastName: u?.lastName || '',
-      email: u?.email || '',
-      phone: u?.phone || '',
-      address: u?.address || '',
-      bio: u?.bio || '',
+      lastName:  u?.lastName || '',
+      email:     u?.email || '',
+      phone:     u?.phone || '',
+      address:   u?.address || '',
+      bio:       u?.bio || '',
       avatarUrl: u?.avatarUrl || u?.photo_profil || u?.avatar || '',
     });
 
@@ -279,33 +249,29 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      try {
-        await loadMe();
-      } finally {
-        setLoading(false);
-      }
+      try { await loadMe(); } finally { setLoading(false); }
     })();
 
     const onVisibility = async () => {
       if (document.visibilityState === 'visible') {
         const g = localStorage.getItem('gardenerUpdated');
         const o = localStorage.getItem('ownerUpdated');
-        if (g || o) {
+        const u = localStorage.getItem('userUpdated');
+        if (g || o || u) {
           await loadMe();
           if (g) localStorage.removeItem('gardenerUpdated');
           if (o) localStorage.removeItem('ownerUpdated');
+          if (u) localStorage.removeItem('userUpdated');
         }
       }
     };
 
     const onStorage = async (e) => {
       if (!e) return;
-      if (e.key === 'gardenerUpdated' || e.key === 'ownerUpdated') {
+      if (e.key === 'gardenerUpdated' || e.key === 'ownerUpdated' || e.key === 'userUpdated') {
         await loadMe();
       }
-      if (e.key === 'role') {
-        setRole(e.newValue || null);
-      }
+      if (e.key === 'role') setRole(e.newValue || null);
     };
 
     window.addEventListener('focus', onVisibility);
@@ -337,38 +303,106 @@ export default function Dashboard() {
     setForm((p) => ({ ...p, [name]: value }));
   };
 
-async function onAvatarFile(e) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  if (/\.heic$/i.test(file.name)) {
-    setMsg("Ton fichier est au format HEIC (iPhone). Convertis-le en JPG/PNG/WebP avant l’upload.");
-    return;
+  // broadcast helper
+  function broadcastUserUpdated() {
+    try {
+      localStorage.setItem('userUpdated', String(Date.now()));
+      // small cleanup—optional
+      setTimeout(() => localStorage.removeItem('userUpdated'), 500);
+    } catch {}
   }
-  setUploading(true);
-  try {
-    const { path } = await uploadImage(file);       // 1) upload to backend
-    setForm(p => ({ ...p, avatarUrl: path }));      // 2) preview instantly
-    await apiFetch('/api/me/profile', {             // 3) persist profile
-      method: 'POST',
-      body: {
-        firstName: (form.firstName || '').trim(),
-        lastName:  (form.lastName  || '').trim(),
-        phone:     (form.phone     || '').trim(),
-        address:   (form.address   || '').trim(),
-        bio:       (form.bio       || '').trim(),
-        avatarUrl: path,
-      },
-    });
-    await loadMe();                                 // 4) refresh dashboard data
-    setMsg('Avatar téléversé et mis à jour ✔');
-  } catch (e) {
-    console.error(e);
-    setMsg("Échec de l’upload. Utilise JPG/PNG/WebP et vérifie /api/uploads.");
-  } finally {
-    setUploading(false);
-  }
-}
 
+  // ⭐ mirror new avatar to gardener/owner if they exist
+  async function propagateAvatar(path) {
+    try {
+      const meNow = await apiFetch('/api/me'); // fresh
+      const user  = meNow?.user || meNow || {};
+      const tasks = [];
+
+      // update user (idempotent)
+      tasks.push(apiFetch('/api/me/profile', { method: 'POST', body: { avatarUrl: path } }));
+
+      // if gardener exists, patch its avatar
+      if (user?.gardener || user?.jardinier) {
+        tasks.push(apiFetch('/api/me/gardener', { method: 'POST', body: { avatarUrl: path } }));
+      }
+      // if owner exists, patch its avatar
+      if (user?.owner || user?.proprietaire) {
+        tasks.push(apiFetch('/api/me/owner', { method: 'POST', body: { avatarUrl: path } }));
+      }
+
+      await Promise.allSettled(tasks);
+
+      // notify other tabs/pages (garden cards, lists, headers…)
+      broadcastUserUpdated();
+      try {
+        localStorage.setItem('gardenerUpdated', String(Date.now()));
+        localStorage.setItem('ownerUpdated', String(Date.now()));
+        setTimeout(() => {
+          localStorage.removeItem('gardenerUpdated');
+          localStorage.removeItem('ownerUpdated');
+        }, 400);
+      } catch {}
+    } catch (e) {
+      console.warn('propagateAvatar failed:', e);
+    }
+  }
+
+  async function onAvatarFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (/\.heic$/i.test(file.name)) {
+      setMsg("Ton fichier est au format HEIC (iPhone). Convertis-le en JPG/PNG/WebP avant l’upload.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // 1) Upload to backend -> returns /uploads/...
+      const { path } = await uploadImage(file);
+
+      // 2) Optimistic preview
+      setForm(p => ({ ...p, avatarUrl: path }));
+
+      // 3) Persist on USER
+      await apiFetch('/api/me/profile', {
+        method: 'POST',
+        body: {
+          firstName: (form.firstName || '').trim(),
+          lastName:  (form.lastName  || '').trim(),
+          phone:     (form.phone     || '').trim(),
+          address:   (form.address   || '').trim(),
+          bio:       (form.bio       || '').trim(),
+          avatarUrl: path,
+        },
+      });
+
+      // 4) Mirror on GARDENER & OWNER if they exist
+      try {
+        if (me?.gardener) {
+          await apiFetch('/api/me/gardener/profile', { method: 'POST', body: { avatarUrl: path } });
+          localStorage.setItem('gardenerUpdated', Date.now().toString());
+        }
+        if (me?.owner) {
+          await apiFetch('/api/me/owner/profile', { method: 'POST', body: { avatarUrl: path } });
+          localStorage.setItem('ownerUpdated', Date.now().toString());
+        }
+      } catch { /* ignore if those routes don’t exist yet */ }
+
+      // 5) Refresh local data
+      await loadMe();
+
+      // 6) 🔔 tell other pages to refresh avatars now
+      broadcastUserUpdated();
+
+      setMsg('Avatar téléversé et synchronisé ✔');
+    } catch (e) {
+      console.error(e);
+      setMsg("Échec de l’upload. Utilise JPG/PNG/WebP et vérifie /api/uploads.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function saveUser(e) {
     e.preventDefault();
@@ -385,17 +419,24 @@ async function onAvatarFile(e) {
         method: 'POST',
         body: {
           firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          phone: form.phone.trim(),
-          address: form.address.trim(),
-          bio: form.bio.trim(),
+          lastName:  form.lastName.trim(),
+          phone:     form.phone.trim(),
+          address:   form.address.trim(),
+          bio:       form.bio.trim(),
           avatarUrl: form.avatarUrl.trim(),
         },
       });
 
       localStorage.removeItem('justRegistered');
 
+      // ⭐ also propagate when saving (in case user pasted a URL)
+      if (form.avatarUrl) await propagateAvatar(form.avatarUrl);
+
       await loadMe();
+
+      // 🔔 tell other pages (lists/detail) to refresh cache-busted avatars
+      broadcastUserUpdated();
+
       setShowUserForm(false);
 
       setTimeout(() => {
@@ -424,20 +465,20 @@ async function onAvatarFile(e) {
   /* -------- avatars -------- */
   const userFallback = useMemo(() => greenAvatar(me?.firstName, me?.lastName), [me?.firstName, me?.lastName]);
   const gardenerAvatar = useMemo(
-    () => resolveMedia(me?.gardener?.avatarUrl || me?.gardener?.photo_profil || me?.gardener?.avatar),
-    [me?.gardener]
+    () => resolveMedia(me?.gardener?.avatarUrl || me?.gardener?.photo_profil || me?.gardener?.avatar || me?.avatarUrl),
+    [me?.gardener, me?.avatarUrl]
   );
   const gardenerFallback = useMemo(
-    () => greenAvatar(me?.gardener?.firstName, me?.gardener?.lastName),
-    [me?.gardener?.firstName, me?.gardener?.lastName]
+    () => greenAvatar(me?.gardener?.firstName || me?.firstName, me?.gardener?.lastName || me?.lastName),
+    [me?.gardener?.firstName, me?.gardener?.lastName, me?.firstName, me?.lastName]
   );
   const ownerAvatar = useMemo(
-    () => resolveMedia(me?.owner?.avatarUrl || me?.owner?.photo_profil || me?.owner?.avatar),
-    [me?.owner]
+    () => resolveMedia(me?.owner?.avatarUrl || me?.owner?.photo_profil || me?.owner?.avatar || me?.avatarUrl),
+    [me?.owner, me?.avatarUrl]
   );
   const ownerFallback = useMemo(
-    () => greenAvatar(me?.owner?.firstName, me?.owner?.lastName),
-    [me?.owner?.firstName, me?.owner?.lastName]
+    () => greenAvatar(me?.owner?.firstName || me?.firstName, me?.owner?.lastName || me?.lastName),
+    [me?.owner?.firstName, me?.owner?.lastName, me?.firstName, me?.lastName]
   );
 
   /* ---------------- render ---------------- */
@@ -552,12 +593,7 @@ async function onAvatarFile(e) {
                       className="w-12 h-12 rounded-full object-cover border"
                       onError={(e) => { e.currentTarget.src = greenAvatar(form.firstName, form.lastName); }}
                     />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={onAvatarFile}
-                      className="text-sm"
-                    />
+                    <input type="file" accept="image/*" onChange={onAvatarFile} className="text-sm" />
                   </div>
 
                   <input
@@ -641,13 +677,13 @@ async function onAvatarFile(e) {
                     Modifier
                   </Link>
 
-                  <button
-                    disabled={busy}
-                    onClick={() => togglePublish('gardener', !me.gardener.published)}
-                    className="px-4 py-2 rounded-full text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60 transition"
-                  >
-                    {me.gardener.published ? 'Retirer' : 'Publier'}
-                  </button>
+                    <button
+                      disabled={busy}
+                      onClick={() => togglePublish('gardener', !me.gardener.published)}
+                      className="px-4 py-2 rounded-full text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-60 transition"
+                    >
+                      {me.gardener.published ? 'Retirer' : 'Publier'}
+                    </button>
                 </div>
               </>
             )}
