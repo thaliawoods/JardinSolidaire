@@ -2,18 +2,21 @@ name: Backend Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_ci
 
     services:
       postgres:
         image: postgres:16
-        ports: [ '5432:5432' ]
+        ports: ['5432:5432']
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -24,9 +27,6 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_ci
-
     steps:
       - uses: actions/checkout@v4
 
@@ -36,34 +36,27 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: "Install backend deps"
+      - name: Install backend deps
         working-directory: backend
         run: npm ci
 
-      - name: "Generate Prisma client"
+      - name: Generate Prisma client
         working-directory: backend
         run: npx prisma generate
 
-      - name: "Apply schema (deploy or push)"
+      - name: Apply schema (deploy or push)
         working-directory: backend
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           npx prisma migrate deploy || npx prisma db push
 
-      - name: "Seed DB"
+      - name: Seed DB
         working-directory: backend
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
         run: npm run seed || true
 
-      - name: "Sanity check: row counts"
-        working-directory: backend
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-        run: |
-          node -e "const {PrismaClient}=require('@prisma/client');(async()=>{const p=new PrismaClient();console.log({gardens:await p.garden.count(), gardeners:await p.gardener.count(), users:await p.user.count()});await p.$disconnect();})();"
-
-      - name: "Run backend tests"
+      - name: Run backend tests
         working-directory: backend
         run: npm test
