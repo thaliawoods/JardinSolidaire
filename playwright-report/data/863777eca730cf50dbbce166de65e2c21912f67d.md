@@ -1,0 +1,496 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "JardinSolidaire" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e6]
+        - generic [ref=e8]: JardinSolidaire
+      - button "Menu" [ref=e10] [cursor=pointer]:
+        - img [ref=e11]
+  - main [ref=e13]:
+    - generic [ref=e14]:
+      - heading "Les Jardins" [level=1] [ref=e16]
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Rechercher un jardin
+          - generic [ref=e20]: 🔍
+          - textbox "Rechercher un jardin 🔍" [ref=e21]:
+            - /placeholder: Rechercher un jardin…
+        - generic [ref=e22]:
+          - generic [ref=e23]: Type de jardin
+          - combobox "Type de jardin" [ref=e24]:
+            - option "Tout les types de jardin" [selected]
+            - option "Jardin potager"
+            - option "Serre"
+            - option "Fleurs"
+            - option "Tonte"
+        - button "Réinitialiser" [ref=e25]
+      - generic [ref=e26]:
+        - link "Photo 1 de Mon beau jardin • 1 • 2 Mon beau jardin Jardin magnifique 118 rue du docteur bauer" [ref=e27] [cursor=pointer]:
+          - /url: /gardens/74
+          - generic [ref=e28]:
+            - generic [ref=e30]:
+              - generic [ref=e32]:
+                - img [ref=e35]
+                - img "Photo 1 de Mon beau jardin" [ref=e38]
+                - img [ref=e41]
+                - img [ref=e44]
+                - img [ref=e47]
+              - list [ref=e48]:
+                - listitem [ref=e49]:
+                  - button "• 1" [ref=e50]
+                - listitem [ref=e51]:
+                  - button "• 2" [ref=e52]
+            - generic [ref=e53]:
+              - heading "Mon beau jardin" [level=2] [ref=e55]
+              - paragraph [ref=e56]: Jardin magnifique
+              - paragraph [ref=e57]: 118 rue du docteur bauer
+              - paragraph
+        - link "Photo 1 de Potager de Victor • 1 • 2 • 3 Potager de Victor Beaucoup de fleurs et d’aromatiques. 6 rue des Jardins, Paris urbain" [ref=e58] [cursor=pointer]:
+          - /url: /gardens/73
+          - generic [ref=e59]:
+            - generic [ref=e61]:
+              - generic [ref=e63]:
+                - img [ref=e66]
+                - img "Photo 1 de Potager de Victor" [ref=e69]
+                - img [ref=e72]
+                - img [ref=e75]
+                - img [ref=e78]
+                - img [ref=e81]
+                - img [ref=e84]
+              - list [ref=e85]:
+                - listitem [ref=e86]:
+                  - button "• 1" [ref=e87]
+                - listitem [ref=e88]:
+                  - button "• 2" [ref=e89]
+                - listitem [ref=e90]:
+                  - button "• 3" [ref=e91]
+            - generic [ref=e92]:
+              - heading "Potager de Victor" [level=2] [ref=e94]
+              - paragraph [ref=e95]: Beaucoup de fleurs et d’aromatiques.
+              - paragraph [ref=e96]: 6 rue des Jardins, Paris
+              - paragraph [ref=e97]: urbain
+        - link "Photo 1 de Verger de Emma • 1 • 2 • 3 Verger de Emma Terrain plat avec récupérateur d’eau. 28 rue des Jardins, Paris potager" [ref=e98] [cursor=pointer]:
+          - /url: /gardens/72
+          - generic [ref=e99]:
+            - generic [ref=e101]:
+              - generic [ref=e103]:
+                - img [ref=e106]
+                - img "Photo 1 de Verger de Emma" [ref=e109]
+                - img [ref=e112]
+                - img [ref=e115]
+                - img [ref=e118]
+                - img [ref=e121]
+                - img [ref=e124]
+              - list [ref=e125]:
+                - listitem [ref=e126]:
+                  - button "• 1" [ref=e127]
+                - listitem [ref=e128]:
+                  - button "• 2" [ref=e129]
+                - listitem [ref=e130]:
+                  - button "• 3" [ref=e131]
+            - generic [ref=e132]:
+              - heading "Verger de Emma" [level=2] [ref=e134]
+              - paragraph [ref=e135]: Terrain plat avec récupérateur d’eau.
+              - paragraph [ref=e136]: 28 rue des Jardins, Paris
+              - paragraph [ref=e137]: potager
+        - link "Photo 1 de Jardin de Yanis • 1 • 2 • 3 Jardin de Yanis Petit havre urbain, parfait pour semis. 115 rue des Jardins, Paris verger" [ref=e138] [cursor=pointer]:
+          - /url: /gardens/71
+          - generic [ref=e139]:
+            - generic [ref=e141]:
+              - generic [ref=e143]:
+                - img [ref=e146]
+                - img "Photo 1 de Jardin de Yanis" [ref=e149]
+                - img [ref=e152]
+                - img [ref=e155]
+                - img [ref=e158]
+                - img [ref=e161]
+                - img [ref=e164]
+              - list [ref=e165]:
+                - listitem [ref=e166]:
+                  - button "• 1" [ref=e167]
+                - listitem [ref=e168]:
+                  - button "• 2" [ref=e169]
+                - listitem [ref=e170]:
+                  - button "• 3" [ref=e171]
+            - generic [ref=e172]:
+              - heading "Jardin de Yanis" [level=2] [ref=e174]
+              - paragraph [ref=e175]: Petit havre urbain, parfait pour semis.
+              - paragraph [ref=e176]: 115 rue des Jardins, Paris
+              - paragraph [ref=e177]: verger
+        - link "Photo 1 de Verger de Zoé • 1 • 2 • 3 Verger de Zoé Petit havre urbain, parfait pour semis. 88 rue des Jardins, Paris potager" [ref=e178] [cursor=pointer]:
+          - /url: /gardens/70
+          - generic [ref=e179]:
+            - generic [ref=e181]:
+              - generic [ref=e183]:
+                - img [ref=e186]
+                - img "Photo 1 de Verger de Zoé" [ref=e189]
+                - img [ref=e192]
+                - img [ref=e195]
+                - img [ref=e198]
+                - img [ref=e201]
+                - img [ref=e204]
+              - list [ref=e205]:
+                - listitem [ref=e206]:
+                  - button "• 1" [ref=e207]
+                - listitem [ref=e208]:
+                  - button "• 2" [ref=e209]
+                - listitem [ref=e210]:
+                  - button "• 3" [ref=e211]
+            - generic [ref=e212]:
+              - heading "Verger de Zoé" [level=2] [ref=e214]
+              - paragraph [ref=e215]: Petit havre urbain, parfait pour semis.
+              - paragraph [ref=e216]: 88 rue des Jardins, Paris
+              - paragraph [ref=e217]: potager
+        - link "Photo 1 de Jardin de Nabil • 1 • 2 • 3 Jardin de Nabil Beaucoup de fleurs et d’aromatiques. 59 rue des Jardins, Paris verger" [ref=e218] [cursor=pointer]:
+          - /url: /gardens/69
+          - generic [ref=e219]:
+            - generic [ref=e221]:
+              - generic [ref=e223]:
+                - img [ref=e226]
+                - img "Photo 1 de Jardin de Nabil" [ref=e229]
+                - img [ref=e232]
+                - img [ref=e235]
+                - img [ref=e238]
+                - img [ref=e241]
+                - img [ref=e244]
+              - list [ref=e245]:
+                - listitem [ref=e246]:
+                  - button "• 1" [ref=e247]
+                - listitem [ref=e248]:
+                  - button "• 2" [ref=e249]
+                - listitem [ref=e250]:
+                  - button "• 3" [ref=e251]
+            - generic [ref=e252]:
+              - heading "Jardin de Nabil" [level=2] [ref=e254]
+              - paragraph [ref=e255]: Beaucoup de fleurs et d’aromatiques.
+              - paragraph [ref=e256]: 59 rue des Jardins, Paris
+              - paragraph [ref=e257]: verger
+        - link "Photo 1 de Jardin de Inès • 1 • 2 • 3 Jardin de Inès Petit havre urbain, parfait pour semis. 69 rue des Jardins, Paris potager" [ref=e258] [cursor=pointer]:
+          - /url: /gardens/68
+          - generic [ref=e259]:
+            - generic [ref=e261]:
+              - generic [ref=e263]:
+                - img [ref=e266]
+                - img "Photo 1 de Jardin de Inès" [ref=e269]
+                - img [ref=e272]
+                - img [ref=e275]
+                - img [ref=e278]
+                - img [ref=e281]
+                - img [ref=e284]
+              - list [ref=e285]:
+                - listitem [ref=e286]:
+                  - button "• 1" [ref=e287]
+                - listitem [ref=e288]:
+                  - button "• 2" [ref=e289]
+                - listitem [ref=e290]:
+                  - button "• 3" [ref=e291]
+            - generic [ref=e292]:
+              - heading "Jardin de Inès" [level=2] [ref=e294]
+              - paragraph [ref=e295]: Petit havre urbain, parfait pour semis.
+              - paragraph [ref=e296]: 69 rue des Jardins, Paris
+              - paragraph [ref=e297]: potager
+        - link "Photo 1 de Jardin de Mathis • 1 • 2 • 3 Jardin de Mathis Beaucoup de fleurs et d’aromatiques. 65 rue des Jardins, Paris verger" [ref=e298] [cursor=pointer]:
+          - /url: /gardens/67
+          - generic [ref=e299]:
+            - generic [ref=e301]:
+              - generic [ref=e303]:
+                - img [ref=e306]
+                - img "Photo 1 de Jardin de Mathis" [ref=e309]
+                - img [ref=e312]
+                - img [ref=e315]
+                - img [ref=e318]
+                - img [ref=e321]
+                - img [ref=e324]
+              - list [ref=e325]:
+                - listitem [ref=e326]:
+                  - button "• 1" [ref=e327]
+                - listitem [ref=e328]:
+                  - button "• 2" [ref=e329]
+                - listitem [ref=e330]:
+                  - button "• 3" [ref=e331]
+            - generic [ref=e332]:
+              - heading "Jardin de Mathis" [level=2] [ref=e334]
+              - paragraph [ref=e335]: Beaucoup de fleurs et d’aromatiques.
+              - paragraph [ref=e336]: 65 rue des Jardins, Paris
+              - paragraph [ref=e337]: verger
+        - link "Photo 1 de Verger de Léa • 1 • 2 • 3 Verger de Léa Soleil le matin, ombre l’après-midi. Idéal tomates & herbes. 91 rue des Jardins, Paris urbain" [ref=e338] [cursor=pointer]:
+          - /url: /gardens/66
+          - generic [ref=e339]:
+            - generic [ref=e341]:
+              - generic [ref=e343]:
+                - img [ref=e346]
+                - img "Photo 1 de Verger de Léa" [ref=e349]
+                - img [ref=e352]
+                - img [ref=e355]
+                - img [ref=e358]
+                - img [ref=e361]
+                - img [ref=e364]
+              - list [ref=e365]:
+                - listitem [ref=e366]:
+                  - button "• 1" [ref=e367]
+                - listitem [ref=e368]:
+                  - button "• 2" [ref=e369]
+                - listitem [ref=e370]:
+                  - button "• 3" [ref=e371]
+            - generic [ref=e372]:
+              - heading "Verger de Léa" [level=2] [ref=e374]
+              - paragraph [ref=e375]: Soleil le matin, ombre l’après-midi. Idéal tomates & herbes.
+              - paragraph [ref=e376]: 91 rue des Jardins, Paris
+              - paragraph [ref=e377]: urbain
+        - link "Photo 1 de Potager de Maya • 1 • 2 • 3 Potager de Maya Soleil le matin, ombre l’après-midi. Idéal tomates & herbes. 108 rue des Jardins, Paris urbain" [ref=e378] [cursor=pointer]:
+          - /url: /gardens/65
+          - generic [ref=e379]:
+            - generic [ref=e381]:
+              - generic [ref=e383]:
+                - img [ref=e386]
+                - img "Photo 1 de Potager de Maya" [ref=e389]
+                - img [ref=e392]
+                - img [ref=e395]
+                - img [ref=e398]
+                - img [ref=e401]
+                - img [ref=e404]
+              - list [ref=e405]:
+                - listitem [ref=e406]:
+                  - button "• 1" [ref=e407]
+                - listitem [ref=e408]:
+                  - button "• 2" [ref=e409]
+                - listitem [ref=e410]:
+                  - button "• 3" [ref=e411]
+            - generic [ref=e412]:
+              - heading "Potager de Maya" [level=2] [ref=e414]
+              - paragraph [ref=e415]: Soleil le matin, ombre l’après-midi. Idéal tomates & herbes.
+              - paragraph [ref=e416]: 108 rue des Jardins, Paris
+              - paragraph [ref=e417]: urbain
+        - link "Photo 1 de Verger de Omar • 1 • 2 • 3 Verger de Omar Beaucoup de fleurs et d’aromatiques. 94 rue des Jardins, Paris verger" [ref=e418] [cursor=pointer]:
+          - /url: /gardens/64
+          - generic [ref=e419]:
+            - generic [ref=e421]:
+              - generic [ref=e423]:
+                - img [ref=e426]
+                - img "Photo 1 de Verger de Omar" [ref=e429]
+                - img [ref=e432]
+                - img [ref=e435]
+                - img [ref=e438]
+                - img [ref=e441]
+                - img [ref=e444]
+              - list [ref=e445]:
+                - listitem [ref=e446]:
+                  - button "• 1" [ref=e447]
+                - listitem [ref=e448]:
+                  - button "• 2" [ref=e449]
+                - listitem [ref=e450]:
+                  - button "• 3" [ref=e451]
+            - generic [ref=e452]:
+              - heading "Verger de Omar" [level=2] [ref=e454]
+              - paragraph [ref=e455]: Beaucoup de fleurs et d’aromatiques.
+              - paragraph [ref=e456]: 94 rue des Jardins, Paris
+              - paragraph [ref=e457]: verger
+        - link "Photo 1 de Verger de Chloé • 1 • 2 • 3 Verger de Chloé Soleil le matin, ombre l’après-midi. Idéal tomates & herbes. 93 rue des Jardins, Paris verger" [ref=e458] [cursor=pointer]:
+          - /url: /gardens/63
+          - generic [ref=e459]:
+            - generic [ref=e461]:
+              - generic [ref=e463]:
+                - img [ref=e466]
+                - img "Photo 1 de Verger de Chloé" [ref=e469]
+                - img [ref=e472]
+                - img [ref=e475]
+                - img [ref=e478]
+                - img [ref=e481]
+                - img [ref=e484]
+              - list [ref=e485]:
+                - listitem [ref=e486]:
+                  - button "• 1" [ref=e487]
+                - listitem [ref=e488]:
+                  - button "• 2" [ref=e489]
+                - listitem [ref=e490]:
+                  - button "• 3" [ref=e491]
+            - generic [ref=e492]:
+              - heading "Verger de Chloé" [level=2] [ref=e494]
+              - paragraph [ref=e495]: Soleil le matin, ombre l’après-midi. Idéal tomates & herbes.
+              - paragraph [ref=e496]: 93 rue des Jardins, Paris
+              - paragraph [ref=e497]: verger
+        - link "Photo 1 de Verger de Jules • 1 • 2 • 3 Verger de Jules Beaucoup de fleurs et d’aromatiques. 76 rue des Jardins, Paris potager" [ref=e498] [cursor=pointer]:
+          - /url: /gardens/62
+          - generic [ref=e499]:
+            - generic [ref=e501]:
+              - generic [ref=e503]:
+                - img [ref=e506]
+                - img "Photo 1 de Verger de Jules" [ref=e509]
+                - img [ref=e512]
+                - img [ref=e515]
+                - img [ref=e518]
+                - img [ref=e521]
+                - img [ref=e524]
+              - list [ref=e525]:
+                - listitem [ref=e526]:
+                  - button "• 1" [ref=e527]
+                - listitem [ref=e528]:
+                  - button "• 2" [ref=e529]
+                - listitem [ref=e530]:
+                  - button "• 3" [ref=e531]
+            - generic [ref=e532]:
+              - heading "Verger de Jules" [level=2] [ref=e534]
+              - paragraph [ref=e535]: Beaucoup de fleurs et d’aromatiques.
+              - paragraph [ref=e536]: 76 rue des Jardins, Paris
+              - paragraph [ref=e537]: potager
+        - link "Photo 1 de Verger de Sofia • 1 • 2 • 3 Verger de Sofia Soleil le matin, ombre l’après-midi. Idéal tomates & herbes. 41 rue des Jardins, Paris verger" [ref=e538] [cursor=pointer]:
+          - /url: /gardens/61
+          - generic [ref=e539]:
+            - generic [ref=e541]:
+              - generic [ref=e543]:
+                - img [ref=e546]
+                - img "Photo 1 de Verger de Sofia" [ref=e549]
+                - img [ref=e552]
+                - img [ref=e555]
+                - img [ref=e558]
+                - img [ref=e561]
+                - img [ref=e564]
+              - list [ref=e565]:
+                - listitem [ref=e566]:
+                  - button "• 1" [ref=e567]
+                - listitem [ref=e568]:
+                  - button "• 2" [ref=e569]
+                - listitem [ref=e570]:
+                  - button "• 3" [ref=e571]
+            - generic [ref=e572]:
+              - heading "Verger de Sofia" [level=2] [ref=e574]
+              - paragraph [ref=e575]: Soleil le matin, ombre l’après-midi. Idéal tomates & herbes.
+              - paragraph [ref=e576]: 41 rue des Jardins, Paris
+              - paragraph [ref=e577]: verger
+        - link "Photo 1 de Jardin de Lina • 1 • 2 • 3 Jardin de Lina Terrain plat avec récupérateur d’eau. 84 rue des Jardins, Paris verger" [ref=e578] [cursor=pointer]:
+          - /url: /gardens/60
+          - generic [ref=e579]:
+            - generic [ref=e581]:
+              - generic [ref=e583]:
+                - img [ref=e586]
+                - img "Photo 1 de Jardin de Lina" [ref=e589]
+                - img [ref=e592]
+                - img [ref=e595]
+                - img [ref=e598]
+                - img [ref=e601]
+                - img [ref=e604]
+              - list [ref=e605]:
+                - listitem [ref=e606]:
+                  - button "• 1" [ref=e607]
+                - listitem [ref=e608]:
+                  - button "• 2" [ref=e609]
+                - listitem [ref=e610]:
+                  - button "• 3" [ref=e611]
+            - generic [ref=e612]:
+              - heading "Jardin de Lina" [level=2] [ref=e614]
+              - paragraph [ref=e615]: Terrain plat avec récupérateur d’eau.
+              - paragraph [ref=e616]: 84 rue des Jardins, Paris
+              - paragraph [ref=e617]: verger
+        - link "Photo 1 de Potager de Hugo • 1 • 2 • 3 Potager de Hugo Terrain plat avec récupérateur d’eau. 42 rue des Jardins, Paris potager" [ref=e618] [cursor=pointer]:
+          - /url: /gardens/59
+          - generic [ref=e619]:
+            - generic [ref=e621]:
+              - generic [ref=e623]:
+                - img [ref=e626]
+                - img "Photo 1 de Potager de Hugo" [ref=e629]
+                - img [ref=e632]
+                - img [ref=e635]
+                - img [ref=e638]
+                - img [ref=e641]
+                - img [ref=e644]
+              - list [ref=e645]:
+                - listitem [ref=e646]:
+                  - button "• 1" [ref=e647]
+                - listitem [ref=e648]:
+                  - button "• 2" [ref=e649]
+                - listitem [ref=e650]:
+                  - button "• 3" [ref=e651]
+            - generic [ref=e652]:
+              - heading "Potager de Hugo" [level=2] [ref=e654]
+              - paragraph [ref=e655]: Terrain plat avec récupérateur d’eau.
+              - paragraph [ref=e656]: 42 rue des Jardins, Paris
+              - paragraph [ref=e657]: potager
+        - link "Photo 1 de Verger de Camille • 1 • 2 • 3 Verger de Camille Beaucoup de fleurs et d’aromatiques. 62 rue des Jardins, Paris potager" [ref=e658] [cursor=pointer]:
+          - /url: /gardens/58
+          - generic [ref=e659]:
+            - generic [ref=e661]:
+              - generic [ref=e663]:
+                - img [ref=e666]
+                - img "Photo 1 de Verger de Camille" [ref=e669]
+                - img [ref=e672]
+                - img [ref=e675]
+                - img [ref=e678]
+                - img [ref=e681]
+                - img [ref=e684]
+              - list [ref=e685]:
+                - listitem [ref=e686]:
+                  - button "• 1" [ref=e687]
+                - listitem [ref=e688]:
+                  - button "• 2" [ref=e689]
+                - listitem [ref=e690]:
+                  - button "• 3" [ref=e691]
+            - generic [ref=e692]:
+              - heading "Verger de Camille" [level=2] [ref=e694]
+              - paragraph [ref=e695]: Beaucoup de fleurs et d’aromatiques.
+              - paragraph [ref=e696]: 62 rue des Jardins, Paris
+              - paragraph [ref=e697]: potager
+        - link "Photo 1 de Potager de Ali • 1 • 2 • 3 Potager de Ali Soleil le matin, ombre l’après-midi. Idéal tomates & herbes. 89 rue des Jardins, Paris potager" [ref=e698] [cursor=pointer]:
+          - /url: /gardens/57
+          - generic [ref=e699]:
+            - generic [ref=e701]:
+              - generic [ref=e703]:
+                - img [ref=e706]
+                - img "Photo 1 de Potager de Ali" [ref=e709]
+                - img [ref=e712]
+                - img [ref=e715]
+                - img [ref=e718]
+                - img [ref=e721]
+                - img [ref=e724]
+              - list [ref=e725]:
+                - listitem [ref=e726]:
+                  - button "• 1" [ref=e727]
+                - listitem [ref=e728]:
+                  - button "• 2" [ref=e729]
+                - listitem [ref=e730]:
+                  - button "• 3" [ref=e731]
+            - generic [ref=e732]:
+              - heading "Potager de Ali" [level=2] [ref=e734]
+              - paragraph [ref=e735]: Soleil le matin, ombre l’après-midi. Idéal tomates & herbes.
+              - paragraph [ref=e736]: 89 rue des Jardins, Paris
+              - paragraph [ref=e737]: potager
+        - link "Photo 1 de Potager de Nora • 1 • 2 • 3 Potager de Nora Petit havre urbain, parfait pour semis. 88 rue des Jardins, Paris verger" [ref=e738] [cursor=pointer]:
+          - /url: /gardens/56
+          - generic [ref=e739]:
+            - generic [ref=e741]:
+              - generic [ref=e743]:
+                - img [ref=e746]
+                - img "Photo 1 de Potager de Nora" [ref=e749]
+                - img [ref=e752]
+                - img [ref=e755]
+                - img [ref=e758]
+                - img [ref=e761]
+                - img [ref=e764]
+              - list [ref=e765]:
+                - listitem [ref=e766]:
+                  - button "• 1" [ref=e767]
+                - listitem [ref=e768]:
+                  - button "• 2" [ref=e769]
+                - listitem [ref=e770]:
+                  - button "• 3" [ref=e771]
+            - generic [ref=e772]:
+              - heading "Potager de Nora" [level=2] [ref=e774]
+              - paragraph [ref=e775]: Petit havre urbain, parfait pour semis.
+              - paragraph [ref=e776]: 88 rue des Jardins, Paris
+              - paragraph [ref=e777]: verger
+  - contentinfo [ref=e778]:
+    - navigation "Footer" [ref=e780]:
+      - list [ref=e781]:
+        - listitem [ref=e782]:
+          - link "Contact" [ref=e783] [cursor=pointer]:
+            - /url: /contact
+        - listitem [ref=e784]:
+          - link "Centre d'aide" [ref=e785] [cursor=pointer]:
+            - /url: /help
+  - button "Open Next.js Dev Tools" [ref=e791] [cursor=pointer]:
+    - img [ref=e792]
+  - alert [ref=e795]
+```
