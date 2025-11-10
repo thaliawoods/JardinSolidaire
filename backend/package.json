@@ -5,6 +5,8 @@
   "type": "commonjs",
   "scripts": {
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
     "start": "node server.js",
     "dev": "node server.js",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
@@ -31,7 +33,10 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "prisma": "^6.16.2"
+    "prisma": "^6.16.2",
+    "supertest": "^7.1.4"
   },
-  "prisma": { "seed": "node prisma/seed_all.js" }
+  "prisma": {
+    "seed": "node prisma/seed_all.js"
+  }
 }

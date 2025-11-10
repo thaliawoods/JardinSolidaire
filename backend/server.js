@@ -45,7 +45,7 @@ const messagesRoutes     = require('./routes/messages');
 const bookingsRoutes     = require('./routes/bookings');
 const contactRoutes      = require('./routes/contact');
 const availabilityRoutes = require('./routes/availability');
-const uploadsRoutes      = require('./routes/uploads'); // <= NEW (multer route)
+const uploadsRoutes      = require('./routes/uploads'); 
 
 /* ---------------------------- Healthcheck -------------------------- */
 app.get('/api/_dbcheck', async (_req, res) => {
@@ -72,7 +72,7 @@ app.use('/api/messages',     messagesRoutes);
 app.use('/api/bookings',     bookingsRoutes);
 app.use('/api/contact',      contactRoutes);
 app.use('/api/availability', availabilityRoutes);
-app.use('/api/uploads',      uploadsRoutes); // <= NEW
+app.use('/api/uploads',      uploadsRoutes);
 
 /* --------------------------- Route Inspector ------------------------ */
 app.get('/api/_routes', (_req, res) => {
@@ -85,7 +85,6 @@ app.get('/api/_routes', (_req, res) => {
           .map(m => m.toUpperCase());
         out.push({ path: base + layer.route.path, methods });
       } else if (layer.name === 'router' && layer.handle?.stack) {
-        // recurse
         out.push(...listRoutes(layer.handle.stack, base));
       }
     }
@@ -119,17 +118,41 @@ app.use((err, _req, res, _next) => {
   res.status(code).json({ error: 'SERVER_ERROR', message: String(err?.message || err) });
 });
 
-/* ------------------------- Start & shutdown ------------------------ */
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server http://localhost:${PORT}`);
-});
+/* ------------------------- Start & export -------------------------- */
+/** 
+ * During tests, we only import `app` and never bind a port.
+ * When running `node server.js`, we start the HTTP server.
+ */
+let server = null;
+
+function startServer(port = PORT) {
+  if (server) return server; // already started
+  server = app.listen(port, () => {
+    console.log(`🚀 Server http://localhost:${port}`);
+  });
+  return server;
+}
+
+// Only start when run directly: `node server.js`
+if (require.main === module) {
+  startServer();
+}
 
 async function gracefulShutdown(signal) {
   console.log(`\n${signal} received, closing server...`);
-  server.close(async () => {
+  if (server) {
+    server.close(async () => {
+      try { await prisma.$disconnect(); } catch {}
+      process.exit(0);
+    });
+  } else {
     try { await prisma.$disconnect(); } catch {}
     process.exit(0);
-  });
+  }
 }
+
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+module.exports = app;                 
+module.exports.startServer = startServer;
