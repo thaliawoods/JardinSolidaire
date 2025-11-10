@@ -73,6 +73,9 @@ jobs:
         run: >
           node -e "const {PrismaClient}=require('@prisma/client');(async()=>{const p=new PrismaClient();console.log(await p.garden.count(),await p.gardener.count(),await p.user.count());await p.\$disconnect();})();"
 
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
