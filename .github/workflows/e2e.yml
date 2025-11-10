@@ -2,18 +2,24 @@ name: E2E
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
 
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_e2e
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:5001
+      E2E_AUTH: "0"
+
     services:
       postgres:
         image: postgres:16
-        ports: [ "5432:5432" ]
+        ports: ['5432:5432']
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -24,50 +30,42 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_e2e
-      NODE_ENV: test
-      NEXT_PUBLIC_API_URL: http://127.0.0.1:5001
-      E2E_AUTH: "0"   # skip auth-dependent tests in CI
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: "npm"
+          cache: npm
           cache-dependency-path: |
             package-lock.json
             backend/package-lock.json
 
-      - name: "Install root deps"
+      - name: Install root deps
         run: npm ci
 
-      - name: "Install backend deps"
+      - name: Install backend deps
         working-directory: backend
         run: npm ci
 
-      - name: "Generate Prisma client"
+      - name: Prisma generate & apply schema
         working-directory: backend
-        run: npx prisma generate
-
-      - name: "Apply schema (deploy or push)"
-        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
+          npx prisma generate
           npx prisma migrate deploy || npx prisma db push
+          npm run seed || true
 
-      - name: "Seed DB"
+      - name: Sanity check DB counts
         working-directory: backend
-        run: npm run seed || true
-
-      - name: "Sanity check: row counts"
-        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           node -e "const {PrismaClient}=require('@prisma/client');(async()=>{const p=new PrismaClient();console.log({gardens:await p.garden.count(), gardeners:await p.gardener.count(), users:await p.user.count()});await p.$disconnect();})();"
 
-      - name: "Install Playwright browsers"
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: "Run E2E tests"
+      - name: Run Playwright
         run: npx playwright test --config=playwright.config.cjs
