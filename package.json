@@ -7,7 +7,7 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "test": "jest",
+    "test": "npm --prefix backend test",        
     "test:api": "npm --prefix backend test",
     "test:api:watch": "npm --prefix backend run test:watch",
     "test:api:cov": "npm --prefix backend run test:cov",
