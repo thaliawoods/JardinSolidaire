@@ -13,7 +13,7 @@ jobs:
     services:
       postgres:
         image: postgres:16
-        ports: [ '5432:5432' ]
+        ports: [ "5432:5432" ]
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -27,7 +27,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_e2e
       NODE_ENV: test
-      NEXT_PUBLIC_API_URL: http://localhost:5001
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:5001
+      E2E_AUTH: "0"   # skip auth-dependent tests in CI
 
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +36,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: |
             package-lock.json
             backend/package-lock.json
@@ -53,21 +54,15 @@ jobs:
 
       - name: "Apply schema (deploy or push)"
         working-directory: backend
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           npx prisma migrate deploy || npx prisma db push
 
       - name: "Seed DB"
         working-directory: backend
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: npm run seed || true
 
       - name: "Sanity check: row counts"
         working-directory: backend
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           node -e "const {PrismaClient}=require('@prisma/client');(async()=>{const p=new PrismaClient();console.log({gardens:await p.garden.count(), gardeners:await p.gardener.count(), users:await p.user.count()});await p.$disconnect();})();"
 
@@ -76,8 +71,3 @@ jobs:
 
       - name: "Run E2E tests"
         run: npx playwright test --config=playwright.config.cjs
-env:
-  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_e2e
-  NODE_ENV: test
-  NEXT_PUBLIC_API_URL: http://127.0.0.1:5001
-  E2E_AUTH: '0'          # ← skip auth E2E in CI
