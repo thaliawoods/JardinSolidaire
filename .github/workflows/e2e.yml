@@ -31,6 +31,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -39,29 +40,39 @@ jobs:
             package-lock.json
             backend/package-lock.json
 
-      - name: Install root deps
+      - name: "Install root deps"
         run: npm ci
 
-      - name: Install backend deps
+      - name: "Install backend deps"
         working-directory: backend
         run: npm ci
 
-      - name: Prepare DB
+      - name: "Generate Prisma client"
         working-directory: backend
+        run: npx prisma generate
+
+      - name: "Apply schema (deploy or push)"
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
-          npm run prisma:generate
-          npm run prisma:migrate -- --name e2e || true
-          npm run seed || true
+          npx prisma migrate deploy || npx prisma db push
 
-      - name: Install Playwright browsers
+      - name: "Seed DB"
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: npm run seed || true
+
+      - name: "Sanity check: row counts"
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          node -e "const {PrismaClient}=require('@prisma/client');(async()=>{const p=new PrismaClient();console.log({gardens:await p.garden.count(), gardeners:await p.gardener.count(), users:await p.user.count()});await p.$disconnect();})();"
+
+      - name: "Install Playwright browsers"
         run: npx playwright install --with-deps
 
-      - name: Run E2E tests
+      - name: "Run E2E tests"
         run: npx playwright test --config=playwright.config.cjs
-
-      - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report
