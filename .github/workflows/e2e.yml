@@ -2,9 +2,9 @@ name: E2E
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   e2e:
@@ -13,7 +13,7 @@ jobs:
     services:
       postgres:
         image: postgres:16
-        ports: [ "5432:5432" ]
+        ports: ['5432:5432']
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -25,18 +25,16 @@ jobs:
           --health-retries=10
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_e2e
+      CI: 'true'
       NODE_ENV: test
-      # Force the frontend to call the backend on 127.0.0.1 (no IPv6 DNS weirdness)
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_e2e
       NEXT_PUBLIC_API_URL: http://127.0.0.1:5001
-      # Disable auth-required tests in CI (they’re flaky without seeded users / emails)
-      E2E_AUTH: "0"
+      E2E_AUTH: '0' # keep auth tests skipped in CI
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
@@ -44,47 +42,47 @@ jobs:
             package-lock.json
             backend/package-lock.json
 
-      # Install root deps (Next + Playwright runner)
-      - name: Install root deps
+      - name: Install root deps (Next + Playwright)
         run: npm ci
 
-      # --- Backend prep ---
       - name: Install backend deps
         working-directory: backend
         run: npm ci
 
-      - name: Generate Prisma client
+      - name: Prisma generate
         working-directory: backend
         run: npx prisma generate
 
-      - name: Apply schema & seed
+      - name: Apply schema (deploy then fallback to push)
         working-directory: backend
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
           npx prisma migrate deploy || npx prisma db push
-          npm run seed || true
 
-      - name: Sanity check counts
+      - name: Seed DB (non-fatal if seed is idempotent)
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: npm run seed || true
+
+      - name: "Sanity: print row counts"
         working-directory: backend
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
         run: |
-          node -e "const {PrismaClient}=require('@prisma/client');(async()=>{const p=new PrismaClient();console.log(await p.garden.count(), await p.gardener.count(), await p.user.count());await p.$disconnect();})();"
-
-      # --- Frontend build (faster + stabler than dev) ---
-      - name: Build Next.js
-        run: npm run build
+          node -e "const {PrismaClient}=require('@prisma/client');(async()=>{const p=new PrismaClient();console.log(await p.garden.count(),await p.gardener.count(),await p.user.count());await p.$disconnect();})();"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright tests
-        # Playwright will start backend + frontend via playwright.config.cjs webServer[]
-        run: npx playwright test --config=playwright.config.cjs
+      - name: Run Playwright (html + line reporters)
+        run: |
+          npx playwright test --config=playwright.config.cjs --reporter=html,line
+        # If this step fails, job will be red; we always upload the report next.
 
-      - name: Upload Playwright HTML report (on fail)
-        if: failure()
+      - name: Upload Playwright report (always)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
