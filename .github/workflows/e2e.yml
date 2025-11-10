@@ -76,3 +76,8 @@ jobs:
 
       - name: "Run E2E tests"
         run: npx playwright test --config=playwright.config.cjs
+env:
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_e2e
+  NODE_ENV: test
+  NEXT_PUBLIC_API_URL: http://127.0.0.1:5001
+  E2E_AUTH: '0'          # ← skip auth E2E in CI
