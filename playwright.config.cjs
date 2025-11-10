@@ -50,3 +50,44 @@ projects: [
   { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } }
 ]
 });
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: 'e2e',
+  timeout: 30_000,
+  expect: { timeout: 5_000 },
+
+  use: {
+    baseURL: 'http://localhost:3000',
+    headless: true,
+    viewport: { width: 1280, height: 720 },
+    actionTimeout: 10_000,
+    ignoreHTTPSErrors: true,
+  },
+
+  // Start prod-like servers (not `next dev`)
+  webServer: [
+    {
+      command: 'node server.js',
+      port: 5001,
+      reuseExistingServer: true,
+      cwd: 'backend',
+      timeout: 120_000
+    },
+    {
+      command: 'NEXT_PUBLIC_API_URL=http://localhost:5001 npm run start',
+      port: 3000,
+      reuseExistingServer: true,
+      timeout: 120_000
+    }
+  ],
+
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
+    // Only include auth project locally
+    ...(process.env.E2E_AUTH === '1'
+      ? [{ name: 'setup-auth', use: { ...devices['Desktop Chrome'] } }]
+      : [])
+  ],
+});
