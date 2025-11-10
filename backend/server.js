@@ -13,18 +13,38 @@ const PORT = process.env.PORT || 5001;
 /* ------------------------- Core middleware ------------------------- */
 app.disable('x-powered-by');
 
+// Accept localhost + 127.0.0.1 in dev/test, and any extra origins via env
+const ORIGIN_ALLOWLIST = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  process.env.FRONTEND_ORIGIN,   // optional override
+  process.env.PLAYWRIGHT_ORIGIN, // optional for CI
+].filter(Boolean);
+
+const LOCALHOST_REGEX = /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/;
+
 app.use(cors({
-  origin: ['http://localhost:3000', process.env.FRONTEND_ORIGIN].filter(Boolean),
+  origin: (origin, cb) => {
+    // No origin = same-origin / curl / server-side; allow it
+    if (!origin) return cb(null, true);
+
+    // In dev/test accept any localhost:port; in prod use the allowlist
+    const isLocal =
+      process.env.NODE_ENV !== 'production' && LOCALHOST_REGEX.test(origin);
+
+    if (isLocal || ORIGIN_ALLOWLIST.includes(origin)) {
+      return cb(null, true);
+    }
+    return cb(new Error(`Not allowed by CORS: ${origin}`));
+  },
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization','Accept'],
   credentials: true,
-  maxAge: 86400
+  maxAge: 86400,
 }));
-app.options('*', cors());
 
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// keep this preflight helper
+app.options('*', cors());
 
 /* ------------------------- Static uploads -------------------------- */
 const UPLOAD_DIR = path.join(__dirname, 'uploads');

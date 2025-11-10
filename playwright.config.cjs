@@ -5,6 +5,10 @@ const PORT_FRONT = String(process.env.PORT_FRONT || 3000);
 const PORT_BACK  = String(process.env.PORT_BACK  || 5001);
 
 module.exports = defineConfig({
+
+    testDir: 'e2e',
+  testMatch: /.*\.spec\.js$/,
+
   timeout: 30_000,
   expect: { timeout: 5_000 },
   retries: isCI ? 1 : 0,
