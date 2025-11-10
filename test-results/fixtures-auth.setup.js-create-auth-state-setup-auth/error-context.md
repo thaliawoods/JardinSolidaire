@@ -1,0 +1,45 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "JardinSolidaire" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img [ref=e6]
+        - generic [ref=e8]: JardinSolidaire
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - link "Se connecter" [ref=e11] [cursor=pointer]:
+            - /url: /login
+            - button "Se connecter" [ref=e12]
+          - link "S’inscrire" [ref=e13] [cursor=pointer]:
+            - /url: /register
+            - button "S’inscrire" [ref=e14]
+        - button "Menu" [ref=e15] [cursor=pointer]:
+          - img [ref=e16]
+  - main [ref=e18]:
+    - generic [ref=e20]:
+      - heading "Connexion" [level=1] [ref=e21]
+      - textbox "Email" [ref=e22]
+      - textbox "Mot de passe" [ref=e23]
+      - link "Mot de passe oublié ?" [ref=e25] [cursor=pointer]:
+        - /url: /forgot-password
+      - button "Se connecter" [ref=e26]
+      - generic [ref=e27]:
+        - text: Pas encore de compte ?
+        - link "Créer un compte" [ref=e28] [cursor=pointer]:
+          - /url: /register
+  - contentinfo [ref=e29]:
+    - navigation "Footer" [ref=e31]:
+      - list [ref=e32]:
+        - listitem [ref=e33]:
+          - link "Contact" [ref=e34] [cursor=pointer]:
+            - /url: /contact
+        - listitem [ref=e35]:
+          - link "Centre d'aide" [ref=e36] [cursor=pointer]:
+            - /url: /help
+  - button "Open Next.js Dev Tools" [ref=e42] [cursor=pointer]:
+    - img [ref=e43]
+  - alert [ref=e46]
+```
