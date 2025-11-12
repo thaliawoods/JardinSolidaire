@@ -4,3 +4,8 @@ Dockerfile*
 prebuilds/
 node_modules/
 build*/
+.gitignore
+.dockerignore
+**/.DS_Store
+.env
+.env.*
