@@ -6,12 +6,18 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const router = express.Router();
 
+// 🔐 Require the same env secret everywhere
+const JWT_SECRET = process.env.JWT_SECRET;
+
 function makeToken(userId) {
-  const secret = process.env.JWT_SECRET || 'dev_secret';
-  return jwt.sign({ userId: Number(userId) }, secret, { expiresIn: '7d' });
+  if (!JWT_SECRET) {
+    // Keep it explicit so you see it in logs if missing in Render
+    throw new Error('JWT_SECRET is not set on the server');
+  }
+  return jwt.sign({ userId: Number(userId) }, JWT_SECRET, { expiresIn: '7d' });
 }
 
-// sanity ping to prove this router is mounted
+// sanity ping
 router.get('/_ping', (_req, res) => res.json({ ok: true, where: 'routes/register.js' }));
 
 /**
@@ -32,18 +38,22 @@ router.post('/', async (req, res) => {
     const hash = await bcrypt.hash(String(password), 10);
     const user = await prisma.user.create({
       data: { email: normalized, passwordHash: hash, role: null },
-      select: { id: true, email: true, role: true }
+      select: { id: true, email: true, role: true },
     });
 
     const token = makeToken(user.id);
     return res.status(201).json({
       token,
-      user: { id: Number(user.id), email: user.email, role: user.role || null }
+      user: { id: Number(user.id), email: user.email, role: user.role || null },
     });
   } catch (e) {
-    console.error('POST /api/register failed:', e);
+    console.error('POST /api/register failed:', e?.stack || e);
+    // If secret is missing we surface a clear error (helps in Render logs)
+    if (String(e.message || '').includes('JWT_SECRET')) {
+      return res.status(500).json({ error: 'server_misconfigured', detail: 'JWT_SECRET missing' });
+    }
     return res.status(500).json({ error: 'server_error' });
   }
 });
 
-module.exports = router; // <-- important
+module.exports = router;
