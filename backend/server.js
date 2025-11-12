@@ -17,33 +17,46 @@ app.disable('x-powered-by');
 const ORIGIN_ALLOWLIST = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  process.env.FRONTEND_ORIGIN,   // optional override
-  process.env.PLAYWRIGHT_ORIGIN, // optional for CI
+  process.env.FRONTEND_ORIGIN,   // set this to your Vercel prod URL
+  process.env.PLAYWRIGHT_ORIGIN, // optional for CI/custom domain
 ].filter(Boolean);
 
 const LOCALHOST_REGEX = /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/;
+// ✅ allow Vercel previews like https://my-branch-123abc.vercel.app
+const VERCEL_PREVIEW_REGEX = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
+// Logging (optional; keep if you like)
+app.use(morgan('tiny'));
+
+// Body parsers (if not already in your routes)
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ CORS — updated block
 app.use(cors({
   origin: (origin, cb) => {
     // No origin = same-origin / curl / server-side; allow it
     if (!origin) return cb(null, true);
 
-    // In dev/test accept any localhost:port; in prod use the allowlist
+    // In dev/test accept any localhost:port; in prod use the allowlist/preview
     const isLocal =
       process.env.NODE_ENV !== 'production' && LOCALHOST_REGEX.test(origin);
 
-    if (isLocal || ORIGIN_ALLOWLIST.includes(origin)) {
+    const inAllowlist = ORIGIN_ALLOWLIST.includes(origin);
+    const isVercelPreview = VERCEL_PREVIEW_REGEX.test(origin); // optional wildcard
+
+    if (isLocal || inAllowlist || isVercelPreview) {
       return cb(null, true);
     }
     return cb(new Error(`Not allowed by CORS: ${origin}`));
   },
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization','Accept'],
-  credentials: true,
+  credentials: true, // set to true only if you actually use cookies/sessions
   maxAge: 86400,
 }));
 
-// keep this preflight helper
+// Keep this preflight helper
 app.options('*', cors());
 
 /* ------------------------- Static uploads -------------------------- */
