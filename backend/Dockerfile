@@ -1,26 +1,25 @@
 # backend/Dockerfile
-FROM node:22-alpine
+FROM node:22-slim
 
-# ✅ TLS + Prisma runtime deps
-RUN apk add --no-cache ca-certificates openssl libc6-compat
-# keep CA bundle up to date
-RUN update-ca-certificates
+# TLS & runtime deps
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates openssl \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# deps
+# Install deps
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-# prisma client
+# Prisma client
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# app source
+# App source
 COPY . .
 
 ENV NODE_ENV=production
 EXPOSE 5001
 
-# ✅ Use direct URL for migrations (schema uses directUrl internally, but this is extra-safe)
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+# Force migrations to use the DIRECT_URL, then start server (runtime uses DATABASE_URL)
+CMD sh -c 'DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy && node server.js'
