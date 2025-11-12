@@ -1,4 +1,7 @@
 require('dotenv').config();
+const parsedDbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
+const hostMatch = parsedDbUrl.match(/@([^/?:]+)(?::\d+)?/);
+console.log('🔌 DB host =', hostMatch ? hostMatch[1] : '(unknown)');
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
