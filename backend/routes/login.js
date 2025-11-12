@@ -16,9 +16,7 @@ router.post("/", async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) return res.status(401).json({ error: "invalid_credentials" });
 
     const stored = user.passwordHash || "";
@@ -30,10 +28,7 @@ router.post("/", async (req, res) => {
       ok = stored === password;
       if (ok) {
         const newHash = await bcrypt.hash(password, 10);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { passwordHash: newHash },
-        });
+        await prisma.user.update({ where: { id: user.id }, data: { passwordHash: newHash } });
       }
     }
 

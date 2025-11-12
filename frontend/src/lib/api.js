@@ -5,7 +5,7 @@ function ensureLeadingSlash(p = '') { return p.startsWith('/') ? p : `/${p}`; }
 function qs(obj = {}) {
   const sp = new URLSearchParams();
   Object.entries(obj).forEach(([k, v]) => {
-    if (v === undefined || v === null || v === '') return;
+    if (v == null || v === '') return;
     if (Array.isArray(v)) v.forEach((item) => sp.append(k, String(item)));
     else sp.set(k, String(v));
   });
@@ -22,12 +22,13 @@ function readCookie(name) {
 
 export function getAnyToken() {
   if (typeof window === 'undefined') return null;
-  const keys = ['jwt', 'token', 'accessToken', 'Authorization'];
+  // 👇 broaden accepted keys
+  const keys = ['token', 'accessToken', 'access_token', 'jwt', 'Authorization'];
   for (const k of keys) {
     const v = localStorage.getItem(k);
     if (v) return v.replace(/^Bearer\s+/i, '');
   }
-  const cookieKeys = ['jwt', 'token', 'accessToken'];
+  const cookieKeys = ['token', 'accessToken', 'access_token', 'jwt'];
   for (const k of cookieKeys) {
     const v = readCookie(k);
     if (v) return v.replace(/^Bearer\s+/i, '');
@@ -53,7 +54,7 @@ export async function apiFetch(
     body: isFormData ? body : body ? JSON.stringify(body) : undefined,
     cache: 'no-store',
     signal,
-    ...(token ? {} : { credentials: 'include' }),
+    ...(token ? {} : { credentials: 'include' }), // cookie fallback
   });
 
   if (raw) return res;
@@ -66,9 +67,7 @@ export async function apiFetch(
   }
 
   if (!res.ok) {
-    const msg =
-      (data && (data.error || data.message || data.detail)) ||
-      `HTTP_${res.status}`;
+    const msg = (data && (data.error || data.message || data.detail)) || `HTTP_${res.status}`;
     const err = new Error(msg);
     err.status = res.status;
     err.details = data || null;
