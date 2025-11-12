@@ -1,17 +1,27 @@
-FROM node:22-alpine
+# backend/Dockerfile
+FROM node:22-alpine AS deps
 WORKDIR /app
-
-# deps first (cache-friendly)
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm ci
 
-# copy prisma first and generate client
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Keep node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy prisma first and generate client
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# then copy the rest (node_modules is ignored by .dockerignore)
+# Copy the rest of the app
 COPY . .
 
+# Your platform will set PORT; default to 5001 locally
+ENV PORT=5001
 EXPOSE 5001
-# safety: (re)generate at runtime in case schema changed
-CMD ["sh", "-c", "npx prisma generate && npm run dev"]
+
+# Apply DB migrations then start the server
+CMD ["sh","-c","npx prisma migrate deploy && node server.js"]
+    
