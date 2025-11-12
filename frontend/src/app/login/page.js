@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { persistAuth } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const router = useRouter();
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -14,27 +17,29 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     try {
-      setSubmitting(true);
       const res = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json().catch(() => ({}));
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data?.error || 'login_failed');
-        setSubmitting(false);
         return;
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      window.location.href = '/';
-    } catch (err) {
-      console.error(err);
+      // ⭐ persist token for /api/me calls
+      persistAuth({ token: data.token });
+      localStorage.setItem('user', JSON.stringify(data.user || {}));
+
+      // go to dashboard (client-side nav)
+      router.push('/dashboard');
+    } catch {
       setError('network_error');
+    } finally {
       setSubmitting(false);
     }
   }

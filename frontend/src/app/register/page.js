@@ -2,21 +2,22 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { persistAuth } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [err, setErr] = useState('');
+  const [err, setErr]           = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(e) {
     e.preventDefault();
     setErr('');
+    setSubmitting(true);
     try {
-      setSubmitting(true);
       const res = await fetch(`${API_BASE}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -26,15 +27,12 @@ export default function RegisterPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setErr(data?.error || `HTTP_${res.status}`);
-        setSubmitting(false);
         return;
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // ★ One-time flag so the dashboard shows the profile form
-      localStorage.setItem('justRegistered', '1');
+      // ⭐ persist token and set first-time flag (Dashboard uses it)
+      persistAuth({ token: data.token });
+      localStorage.setItem('user', JSON.stringify(data.user || {}));
 
       router.push('/dashboard');
     } finally {
