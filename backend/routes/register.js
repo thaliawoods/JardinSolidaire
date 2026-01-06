@@ -1,28 +1,21 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
+
+const { sendMail } = require('../lib/email');
+const { randomToken, hashToken, addMinutes } = require('../lib/tokens');
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// 🔐 Require the same env secret everywhere
-const JWT_SECRET = process.env.JWT_SECRET;
-
-function makeToken(userId) {
-  if (!JWT_SECRET) {
-    // Keep it explicit so you see it in logs if missing in Render
-    throw new Error('JWT_SECRET is not set on the server');
-  }
-  return jwt.sign({ userId: Number(userId) }, JWT_SECRET, { expiresIn: '7d' });
-}
-
-// sanity ping
 router.get('/_ping', (_req, res) => res.json({ ok: true, where: 'routes/register.js' }));
 
 /**
  * POST /api/register
  * body: { email, password }
+ *
+ * ✅ crée un compte NON vérifié + envoie un email de vérification
+ * ❌ ne renvoie PAS de JWT tant que l’email n’est pas confirmé
  */
 router.post('/', async (req, res) => {
   try {
@@ -36,22 +29,57 @@ router.post('/', async (req, res) => {
     if (exists) return res.status(409).json({ error: 'email_taken' });
 
     const hash = await bcrypt.hash(String(password), 10);
+
+    // ✅ token de vérification (on stocke un hash)
+    const rawVerifyToken = randomToken();
+    const verifyTokenHash = hashToken(rawVerifyToken);
+    const expiresAt = addMinutes(new Date(), 60); // 1h
+
     const user = await prisma.user.create({
-      data: { email: normalized, passwordHash: hash, role: null },
-      select: { id: true, email: true, role: true },
+      data: {
+        email: normalized,
+        passwordHash: hash,
+        role: null,
+        emailVerifiedAt: null,
+        emailVerifyTokenHash: verifyTokenHash,
+        emailVerifyExpiresAt: expiresAt,
+      },
+      select: { id: true, email: true },
     });
 
-    const token = makeToken(user.id);
+    const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+    const verifyLink =
+      `${APP_URL}/verify-email?email=${encodeURIComponent(normalized)}&token=${rawVerifyToken}`;
+
+    // ✅ envoi email via Gmail SMTP (nodemailer)
+    await sendMail({
+      to: normalized,
+      subject: 'Confirme ton email — JardinSolidaire',
+      text:
+        `Bienvenue sur JardinSolidaire 🌿\n\n` +
+        `Pour activer ton compte, confirme ton email :\n${verifyLink}\n\n` +
+        `Ce lien expire dans 1 heure.`,
+      html: `
+        <p>Bienvenue sur <b>JardinSolidaire</b> 🌿</p>
+        <p>Pour activer ton compte, confirme ton email :</p>
+        <p><a href="${verifyLink}">Confirmer mon email</a></p>
+        <p><small>Ce lien expire dans 1 heure.</small></p>
+      `,
+    });
+
     return res.status(201).json({
-      token,
-      user: { id: Number(user.id), email: user.email, role: user.role || null },
+      ok: true,
+      message: 'verification_email_sent',
+      user: { id: user.id.toString(), email: user.email },
     });
   } catch (e) {
     console.error('POST /api/register failed:', e?.stack || e);
-    // If secret is missing we surface a clear error (helps in Render logs)
-    if (String(e.message || '').includes('JWT_SECRET')) {
-      return res.status(500).json({ error: 'server_misconfigured', detail: 'JWT_SECRET missing' });
+
+    // SMTP mal configuré => message clair
+    if (String(e.message || '').includes('SMTP')) {
+      return res.status(500).json({ error: 'server_misconfigured', detail: 'SMTP not configured' });
     }
+
     return res.status(500).json({ error: 'server_error' });
   }
 });
