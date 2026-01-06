@@ -10,6 +10,23 @@ const router = express.Router();
 
 router.get('/_ping', (_req, res) => res.json({ ok: true, where: 'routes/register.js' }));
 
+/* ---------- password rules ---------- */
+/**
+ * Règles simples (à adapter si tu veux) :
+ * - min 8 caractères
+ * - au moins 1 minuscule, 1 majuscule, 1 chiffre
+ * - pas d'espaces
+ */
+function isStrongPassword(pw) {
+  const s = String(pw || '');
+  if (s.length < 8) return false;
+  if (/\s/.test(s)) return false;
+  if (!/[a-z]/.test(s)) return false;
+  if (!/[A-Z]/.test(s)) return false;
+  if (!/[0-9]/.test(s)) return false;
+  return true;
+}
+
 /**
  * POST /api/register
  * body: { email, password }
@@ -25,6 +42,21 @@ router.post('/', async (req, res) => {
     }
 
     const normalized = String(email).trim().toLowerCase();
+
+    // ✅ validation mot de passe côté serveur
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        error: 'password_too_weak',
+        rules: {
+          minLength: 8,
+          requireLower: true,
+          requireUpper: true,
+          requireNumber: true,
+          noSpaces: true,
+        },
+      });
+    }
+
     const exists = await prisma.user.findUnique({ where: { email: normalized } });
     if (exists) return res.status(409).json({ error: 'email_taken' });
 
@@ -51,7 +83,6 @@ router.post('/', async (req, res) => {
     const verifyLink =
       `${APP_URL}/verify-email?email=${encodeURIComponent(normalized)}&token=${rawVerifyToken}`;
 
-    // ✅ envoi email via Gmail SMTP (nodemailer)
     await sendMail({
       to: normalized,
       subject: 'Confirme ton email — JardinSolidaire',
@@ -75,7 +106,6 @@ router.post('/', async (req, res) => {
   } catch (e) {
     console.error('POST /api/register failed:', e?.stack || e);
 
-    // SMTP mal configuré => message clair
     if (String(e.message || '').includes('SMTP')) {
       return res.status(500).json({ error: 'server_misconfigured', detail: 'SMTP not configured' });
     }
