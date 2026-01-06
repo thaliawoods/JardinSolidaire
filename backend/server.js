@@ -74,20 +74,21 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d', etag: true }));
 
 /* ----------------------------- Routers ----------------------------- */
-const gardensRoutes      = require('./routes/gardens');
-const gardenersRoutes    = require('./routes/gardeners');
-const ownersRoutes       = require('./routes/owners');
-const loginRoutes        = require('./routes/login');
-const registerRoutes     = require('./routes/register');
-const authCheckEmail     = require('./routes/auth.checkEmail');
-const authResetPassword  = require('./routes/auth.resetPassword');
-const navbarRoutes       = require('./routes/navbar');
-const meRoutes           = require('./routes/me');
-const messagesRoutes     = require('./routes/messages');
-const bookingsRoutes     = require('./routes/bookings');
-const contactRoutes      = require('./routes/contact');
-const availabilityRoutes = require('./routes/availability');
-const uploadsRoutes      = require('./routes/uploads');
+const gardensRoutes       = require('./routes/gardens');
+const gardenersRoutes     = require('./routes/gardeners');
+const ownersRoutes        = require('./routes/owners');
+const loginRoutes         = require('./routes/login');
+const registerRoutes      = require('./routes/register');
+const verifyEmailRoutes   = require('./routes/verifyEmail'); // ✅ NEW
+const authCheckEmail      = require('./routes/auth.checkEmail');
+const authResetPassword   = require('./routes/auth.resetPassword');
+const navbarRoutes        = require('./routes/navbar');
+const meRoutes            = require('./routes/me');
+const messagesRoutes      = require('./routes/messages');
+const bookingsRoutes      = require('./routes/bookings');
+const contactRoutes       = require('./routes/contact');
+const availabilityRoutes  = require('./routes/availability');
+const uploadsRoutes       = require('./routes/uploads');
 
 /* ---------------------------- Healthcheck -------------------------- */
 app.get('/api/_dbcheck', async (_req, res) => {
@@ -106,6 +107,7 @@ app.use('/api/gardeners',    gardenersRoutes);
 app.use('/api/owners',       ownersRoutes);
 app.use('/api/login',        loginRoutes);
 app.use('/api/register',     registerRoutes);
+app.use('/api/verify-email', verifyEmailRoutes); // ✅ IMPORTANT: before 404
 app.use('/api/auth',         authCheckEmail);
 app.use('/api/auth',         authResetPassword);
 app.use('/api/navbar',       navbarRoutes);

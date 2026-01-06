@@ -153,6 +153,10 @@ model User {
   phone         String?   @map("telephone")
   address       String?   @map("adresse")
   averageRating Float?    @map("note_moyenne")
+  emailVerifiedAt       DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  emailVerifyTokenHash  String?   @map("email_verify_token_hash")
+  emailVerifyExpiresAt  DateTime? @map("email_verify_expires_at") @db.Timestamptz(6)
+
 
   reviews     Review[]
   hoursTotals HoursTotal[]

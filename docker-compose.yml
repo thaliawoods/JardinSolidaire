@@ -1,16 +1,19 @@
 services:
-  backend:
-    build: ./backend
-    image: jardin_backend:latest
-    container_name: jardin_backend
-    working_dir: /app
-    ports:
-      - "5001:5001"
-    command: ["npm", "run", "dev"]
-    depends_on:
-      - db
-    environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/jardinsolidaire
+backend:
+  build: ./backend
+  image: jardin_backend:latest
+  container_name: jardin_backend
+  working_dir: /app
+  ports:
+    - "5001:5001"
+  command: ["npm", "run", "dev"]
+  depends_on:
+    - db
+  env_file:
+    - .env
+  environment:
+    - DATABASE_URL=postgresql://user:password@db:5432/jardinsolidaire
+    - DIRECT_URL=postgresql://user:password@db:5432/jardinsolidaire
   frontend:
     build: ./frontend
     image: jardin_frontend:latest
