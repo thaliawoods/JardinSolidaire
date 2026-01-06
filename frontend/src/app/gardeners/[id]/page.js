@@ -1,3 +1,4 @@
+// frontend/src/app/gardeners/[id]/page.js
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -7,7 +8,7 @@ import { getAnyToken } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const BRAND_GREEN = '#16a34a';
-const LOCAL_DIRS  = ['/assets/', '/images/', '/img/', '/icons/'];
+const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
 /* -------- media helpers -------- */
 function resolveMedia(u) {
@@ -28,6 +29,7 @@ function initials(a = '', b = '') {
   const y = (b || '').trim()[0] || '';
   return (`${x}${y}`.toUpperCase() || 'U');
 }
+
 function greenPlaceholder(first, last) {
   const txt = initials(first, last);
   const svg = `
@@ -52,12 +54,21 @@ function pickAvatar(raw) {
   );
 }
 
+function normalizeSkills(maybeSkills) {
+  if (!maybeSkills) return [];
+  if (Array.isArray(maybeSkills)) return maybeSkills.map((s) => String(s).trim()).filter(Boolean);
+  return String(maybeSkills)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export default function GardenerPage({ params }) {
   const { id } = params || {};
   const [gardener, setGardener] = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
-  const [avatarV, setAvatarV]   = useState(0); // cache-buster for <img src>
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [avatarV, setAvatarV] = useState(0); // cache-buster for <img src>
 
   // reload on cross-tab avatar updates
   useEffect(() => {
@@ -65,7 +76,7 @@ export default function GardenerPage({ params }) {
       if (!e) return;
       if (e.key === 'gardenerUpdated' || e.key === 'userUpdated') {
         setAvatarV(Date.now());
-        load(); // refetch fresh data
+        load();
       }
     };
     window.addEventListener('storage', onStorage);
@@ -83,19 +94,18 @@ export default function GardenerPage({ params }) {
 
       setGardener({
         firstName: data.firstName || data.prenom || '',
-        lastName:  data.lastName  || data.nom    || '',
+        lastName: data.lastName || data.nom || '',
         avatarUrl: resolveMedia(pickAvatar(data)),
-        isOnline:  !!data.isOnline,
-        totalReviews: data.totalReviews ?? 0,
-        rating:    data.rating ?? null,
-        location:  data.location || data.localisation || '—',
-        skills:    Array.isArray(data.skills) ? data.skills : [],
+        isOnline: !!data.isOnline,
+
+        // ✅ keep what you want
+        location: data.location || data.localisation || '—',
+        skills: normalizeSkills(data.skills ?? data.competences),
         yearsExperience: data.yearsExperience ?? data.experienceAnnees ?? null,
-        intro:     data.intro || data.presentation || data.description || '—',
-        comments:  data.comments || [],
+        intro: data.intro || data.presentation || data.description || '—',
       });
     } catch (_e) {
-      setError("Impossible de charger le profil jardinier.");
+      setError('Impossible de charger le profil jardinier.');
       setGardener(null);
     } finally {
       setLoading(false);
@@ -117,7 +127,7 @@ export default function GardenerPage({ params }) {
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
         {/* Back */}
-        <div className="mb-4">
+        <div className="mb-6">
           <Link
             href="/gardeners"
             aria-label="Retour aux jardiniers"
@@ -143,67 +153,84 @@ export default function GardenerPage({ params }) {
 
         {gardener && (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              <section className="flex items-start gap-4">
+            {/* Header card */}
+            <section
+              className="rounded-2xl p-6 mb-6"
+              style={{ backgroundColor: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.14)' }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center gap-5">
                 <div
-                  className="relative h-28 w-28 rounded-full bg-gray-200 overflow-hidden flex-shrink-0"
-                  aria-label="Gardener avatar"
-                  style={{ border: `4px solid rgba(22,163,74,0.35)` }}
+                  className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-gray-200 overflow-hidden flex-shrink-0"
+                  style={{ border: '4px solid rgba(22,163,74,0.30)' }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={avatarSrc}
                     alt={`${gardener.firstName} ${gardener.lastName}`}
                     className="h-full w-full object-cover"
-                    onError={(e) => { e.currentTarget.src = greenPlaceholder(gardener.firstName, gardener.lastName); }}
+                    onError={(e) => {
+                      e.currentTarget.src = greenPlaceholder(gardener.firstName, gardener.lastName);
+                    }}
                   />
                   {gardener.isOnline && (
                     <span
-                      className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-lime-500 ring-2 ring-white"
-                      title="online"
+                      className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-lime-500 ring-2 ring-white"
+                      title="En ligne"
                     />
                   )}
                 </div>
-                <div className="flex flex-col gap-2">
-                  <StatBox value={gardener.totalReviews} label="reviews" />
-                  <StatBox value={gardener.rating != null ? `${gardener.rating}★` : '—'} label="average rating" />
-                </div>
-              </section>
 
-              <section className="lg:col-span-2">
-                <Card title="Informations sur le jardinier">
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-                    <Field label="Nom" value={`${gardener.firstName} ${gardener.lastName}`.trim() || '—'} />
-                    <Field label="Localisation" value={gardener.location} />
-                    <Field
-                      label="Compétences"
-                      value={
-                        gardener.skills?.length
-                          ? (Array.isArray(gardener.skills) ? gardener.skills.join(', ') : String(gardener.skills))
-                          : '—'
-                      }
-                    />
-                    <Field
-                      label="Années d'expérience"
-                      value={gardener.yearsExperience != null ? String(gardener.yearsExperience) : '—'}
-                    />
+                <div className="flex-1">
+                  <h1 className="text-2xl font-semibold text-green-900 leading-tight">
+                    {gardener.firstName} {gardener.lastName}
+                  </h1>
+
+                  {/* Skills chips */}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(gardener.skills || []).slice(0, 10).map((s) => (
+                      <span
+                        key={s}
+                        className="px-3 py-1 rounded-full text-xs font-medium"
+                        style={{
+                          backgroundColor: 'rgba(22,163,74,0.10)',
+                          border: '1px solid rgba(22,163,74,0.18)',
+                          color: '#14532d',
+                        }}
+                      >
+                        {s}
+                      </span>
+                    ))}
+                    {(gardener.skills || []).length === 0 && (
+                      <span className="text-sm text-gray-600">Compétences à venir</span>
+                    )}
                   </div>
-                </Card>
-              </section>
-            </div>
+                </div>
 
-            <section className="mt-6">
-              <Card title="Introduction">
-                <p className="mt-3 text-gray-700 whitespace-pre-wrap">{gardener.intro}</p>
+                {/* Small meta pills */}
+                <div className="flex flex-wrap gap-2">
+                  <Pill label="Localisation" value={gardener.location} />
+                  <Pill
+                    label="Expérience"
+                    value={gardener.yearsExperience != null ? `${gardener.yearsExperience} an(s)` : '—'}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Intro */}
+            <section className="mb-6">
+              <Card title="Présentation">
+                <p className="mt-3 text-gray-700 whitespace-pre-wrap">
+                  {gardener.intro || '—'}
+                </p>
               </Card>
             </section>
 
-            <section className="mt-8">
-              <h2 className="sr-only">Disponibilités du jardinier</h2>
-              <div
-                className="rounded-2xl p-6 mb-3"
-                style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
-              />
+            {/* Calendar */}
+            <section className="mt-6">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-green-900">Disponibilités</h2>
+              </div>
               <AvailabilityCalendar mode="gardener" ownerId={id} token={getAnyToken()} />
             </section>
           </>
@@ -217,26 +244,26 @@ function Card({ title, children }) {
   return (
     <div
       className="rounded-2xl p-6"
-      style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
+      style={{ backgroundColor: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.14)' }}
     >
       <h2 className="text-lg font-semibold text-green-800">{title}</h2>
       {children}
     </div>
   );
 }
-function Field({ label, value }) {
+
+function Pill({ label, value }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium">{label}</p>
-      <p className="text-gray-600">{value ?? '—'}</p>
-    </div>
-  );
-}
-function StatBox({ value, label }) {
-  return (
-    <div className="border rounded-md px-3 py-2 text-xs leading-tight w-28 bg-white">
-      <div className="font-semibold text-sm">{value}</div>
-      <div className="text-gray-500">{label}</div>
+    <div
+      className="rounded-full px-4 py-2 text-sm"
+      style={{
+        backgroundColor: 'rgba(22,163,74,0.08)',
+        border: '1px solid rgba(22,163,74,0.18)',
+        color: '#14532d',
+      }}
+      title={label}
+    >
+      <span className="opacity-80">{label} :</span> <span className="font-medium">{value}</span>
     </div>
   );
 }

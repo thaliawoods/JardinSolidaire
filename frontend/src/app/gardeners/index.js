@@ -1,3 +1,4 @@
+// /Users/thaliawoods/Documents/Ada/JardinSolidaire/JardinSolidaire/frontend/src/app/gardeners/index.js
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -40,11 +41,13 @@ function resolveMedia(u) {
   if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
   return `${API_BASE}/uploads/${clean}`;
 }
+
 function initials(a = '', b = '') {
   const x = (a || '').trim()[0] || '';
   const y = (b || '').trim()[0] || '';
   return (`${x}${y}`.toUpperCase() || 'U');
 }
+
 function greenPlaceholder(first, last) {
   const txt = initials(first, last);
   const svg = `
@@ -55,17 +58,32 @@ function greenPlaceholder(first, last) {
 </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
+
 function unwrapGardeners(raw) {
   if (Array.isArray(raw)) return raw;
   if (!raw || typeof raw !== 'object') return [];
   return raw.gardeners ?? raw.gardener ?? raw.jardiniers ?? raw.jardinier ?? raw.data ?? [];
 }
+
+function normalizeSkills(maybeSkills) {
+  if (!maybeSkills) return [];
+  if (Array.isArray(maybeSkills)) {
+    return maybeSkills.map((s) => String(s).trim()).filter(Boolean);
+  }
+  // Accept "a,b,c"
+  return String(maybeSkills)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function normalizeGardeners(raw) {
   const arr = unwrapGardeners(raw);
   if (!Array.isArray(arr)) return [];
   return arr.map((item) => {
     const firstName = item.firstName ?? item.prenom ?? '';
-    const lastName  = item.lastName  ?? item.nom    ?? '';
+    const lastName = item.lastName ?? item.nom ?? '';
+
     const avatarRaw =
       item.avatarUrl ??
       item.photo_profil ??
@@ -75,22 +93,26 @@ function normalizeGardeners(raw) {
       item.user?.avatar ??
       null;
 
+    const skillsRaw =
+      item.skills ??
+      item.competences ??
+      item.user?.skills ??
+      item.user?.competences ??
+      null;
+
     return {
       id: String(item.id ?? item.id_utilisateur ?? item.userId ?? ''),
       firstName,
       lastName,
       avatarUrl: resolveMedia(avatarRaw),
-      intro: item.intro ?? item.presentation ?? item.biographie ?? '',
-      phone: item.phone ?? item.telephone ?? '',
-      address: item.address ?? item.localisation ?? item.adresse ?? '',
-      rating: item.rating ?? item.note_moyenne ?? null,
+      skills: normalizeSkills(skillsRaw),
     };
   });
 }
 
 /* ----- robust fetch over multiple endpoints ----- */
 async function fetchGardeners(params) {
-  const { search, minRating, kind, signal } = params || {};
+  const { search, skill, signal } = params || {};
   const candidates = [
     `${API_BASE}/api/gardeners`,
     `${API_BASE}/api/jardiniers`,
@@ -103,8 +125,7 @@ async function fetchGardeners(params) {
     try {
       const url = new URL(base);
       if (search) url.searchParams.set('search', search);
-      if (minRating) url.searchParams.set('minRating', minRating);
-      if (kind) url.searchParams.set('kind', kind);
+      if (skill) url.searchParams.set('skill', skill);
 
       const res = await fetch(url.toString(), { cache: 'no-store', signal });
       if (!res.ok) {
@@ -118,7 +139,7 @@ async function fetchGardeners(params) {
         const err = new Error('aborted');
         err.name = 'AbortError';
         lastErr = err;
-        break; // user changed filters/navigation; stop trying others
+        break;
       }
       lastErr = e;
     }
@@ -129,21 +150,20 @@ async function fetchGardeners(params) {
 export default function GardenersList() {
   const [gardeners, setGardeners] = useState([]);
   const [favorites, setFavorites] = useState([]);
-  const [minRating, setMinRating] = useState('');
-  const [kind, setKind]           = useState('');
-  const [search, setSearch]       = useState('');
-  const searchDebounced           = useDebounced(search, 300);
-  const [loading, setLoading]     = useState(true);
-  const [err, setErr]             = useState('');
-  const [isAuthed, setIsAuthed]   = useState(false);
+
+  const [skill, setSkill] = useState('');
+  const [search, setSearch] = useState('');
+  const searchDebounced = useDebounced(search, 300);
+
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const [isAuthed, setIsAuthed] = useState(false);
 
   // avatar cache-buster + listener (updates when you change avatar from dashboard)
   const [avatarV, setAvatarV] = useState(0);
   useEffect(() => {
     const onStorage = (e) => {
-      if (e?.key === 'userUpdated') {
-        setAvatarV(Date.now());
-      }
+      if (e?.key === 'userUpdated') setAvatarV(Date.now());
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -157,24 +177,18 @@ export default function GardenersList() {
     return () => window.removeEventListener('storage', sync);
   }, []);
   useEffect(() => {
-    if (isAuthed) {
-      setFavorites(getFavGardeners().map((g) => String(g.id)));
-    } else {
-      setFavorites([]);
-    }
+    if (isAuthed) setFavorites(getFavGardeners().map((g) => String(g.id)));
+    else setFavorites([]);
   }, [isAuthed]);
 
   async function load(signal) {
     setLoading(true);
     setErr('');
     try {
-      const list = await fetchGardeners({ search: searchDebounced, minRating, kind, signal });
+      const list = await fetchGardeners({ search: searchDebounced, skill, signal });
       setGardeners(list);
     } catch (e) {
-      if (isAbort(e)) {
-        // silent: request was canceled on purpose (typing/filter change)
-        return;
-      }
+      if (isAbort(e)) return;
       console.error('[gardeners] load failed:', e);
       setErr('Impossible de charger les jardiniers.' + (e?.message ? `\n${e.message}` : ''));
       setGardeners([]);
@@ -187,17 +201,28 @@ export default function GardenersList() {
     const ac = new AbortController();
     load(ac.signal);
     return () => ac.abort();
-  }, [searchDebounced, minRating, kind]);
+  }, [searchDebounced, skill]);
+
+  const allSkills = useMemo(() => {
+    const set = new Set();
+    for (const g of gardeners) {
+      for (const s of (g.skills || [])) set.add(s);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'fr'));
+  }, [gardeners]);
 
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return gardeners.filter((g) => {
-      const q = search.trim().toLowerCase();
       const matchesSearch =
-        !q || [g.firstName, g.lastName, g.intro, g.address].join(' ').toLowerCase().includes(q);
-      const matchesRating = !minRating || (g.rating ?? 0) >= Number(minRating);
-      return matchesSearch && matchesRating;
+        !q || [g.firstName, g.lastName, ...(g.skills || [])].join(' ').toLowerCase().includes(q);
+
+      const matchesSkill =
+        !skill || (g.skills || []).map((x) => x.toLowerCase()).includes(skill.toLowerCase());
+
+      return matchesSearch && matchesSkill;
     });
-  }, [gardeners, search, minRating]);
+  }, [gardeners, search, skill]);
 
   const toggleFavorite = (g) => {
     if (!isAuthed) return;
@@ -213,15 +238,16 @@ export default function GardenersList() {
           firstName: g.firstName,
           lastName: g.lastName,
           avatarUrl: g.avatarUrl,
-          rating: g.rating,
-          address: g.address,
         });
         return [...prev, id];
       }
     });
   };
 
-  const resetFilters = () => { setSearch(''); setMinRating(''); setKind(''); };
+  const resetFilters = () => {
+    setSearch('');
+    setSkill('');
+  };
 
   return (
     <main className="min-h-screen bg-white px-6 py-10">
@@ -229,7 +255,11 @@ export default function GardenersList() {
         <div className="flex items-center justify-between gap-4 mb-4">
           <h1 className="text-3xl font-bold text-green-800">Les Jardiniers</h1>
           {isAuthed && (
-            <Link href="/favorites" className="px-4 py-2 rounded-full text-white" style={{ backgroundColor: BRAND_GREEN }}>
+            <Link
+              href="/favorites"
+              className="px-4 py-2 rounded-full text-white"
+              style={{ backgroundColor: BRAND_GREEN }}
+            >
               Favoris ({favorites.length})
             </Link>
           )}
@@ -237,8 +267,10 @@ export default function GardenersList() {
 
         {/* filtres */}
         <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
-          <div className="relative w-full lg:w-[30%]">
-            <span className="absolute left-3 top-2.5 text-gray-400" aria-hidden>🔍</span>
+          <div className="relative w-full lg:w-[38%]">
+            <span className="absolute left-3 top-2.5 text-gray-400" aria-hidden>
+              🔍
+            </span>
             <input
               type="text"
               placeholder="Rechercher un·e jardinier·e…"
@@ -248,29 +280,20 @@ export default function GardenersList() {
               aria-label="Rechercher un·e jardinier·e"
             />
           </div>
+
           <select
-            value={minRating}
-            onChange={(e) => setMinRating(e.target.value)}
-            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
+            value={skill}
+            onChange={(e) => setSkill(e.target.value)}
+            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[26%] text-sm text-gray-700"
           >
-            <option value="">Note minimale</option>
-            <option value="5">5★</option>
-            <option value="4.5">4.5★</option>
-            <option value="4">4★</option>
-            <option value="3.5">3.5★</option>
-            <option value="3">3★</option>
+            <option value="">Toutes les compétences</option>
+            {allSkills.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
-          <select
-            value={kind}
-            onChange={(e) => setKind(e.target.value)}
-            className="h-10 px-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 w-full lg:w-[20%] text-sm text-gray-700"
-          >
-            <option value="">Tous les profils</option>
-            <option value="arrosage">Arrosage</option>
-            <option value="tonte">Tonte</option>
-            <option value="plantation">Plantation</option>
-            <option value="taille">Taille</option>
-          </select>
+
           <button
             onClick={resetFilters}
             className="h-10 px-5 rounded-full text-white w-full lg:w-auto transition bg-pink-500 hover:bg-pink-600"
@@ -310,45 +333,81 @@ export default function GardenersList() {
         <div className="space-y-6">
           {filtered.map((g) => {
             const fallback = greenPlaceholder(g.firstName, g.lastName);
-            const baseSrc  = g.avatarUrl || fallback;
-            const src      = g.avatarUrl ? `${baseSrc}${baseSrc.includes('?') ? '&' : '?'}v=${avatarV}` : baseSrc;
-            const favbed   = favorites.includes(String(g.id));
+            const baseSrc = g.avatarUrl || fallback;
+            const src = g.avatarUrl
+              ? `${baseSrc}${baseSrc.includes('?') ? '&' : '?'}v=${avatarV}`
+              : baseSrc;
+
+            const favbed = favorites.includes(String(g.id));
+
             return (
               <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
                 <article
-                  className="flex rounded-2xl p-4 hover:shadow transition"
-                  style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
+                  className="flex rounded-2xl p-4 hover:shadow-md transition"
+                  style={{
+                    backgroundColor: 'rgba(22,163,74,0.06)',
+                    border: '1px solid rgba(22,163,74,0.14)',
+                  }}
                 >
                   <div
-                    className="w-32 h-32 rounded-2xl shadow relative overflow-hidden shrink-0"
-                    style={{ border: '4px solid rgba(22,163,74,0.35)' }}
+                    className="w-28 h-28 rounded-2xl shadow-sm relative overflow-hidden shrink-0"
+                    style={{ border: '3px solid rgba(22,163,74,0.30)' }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
                       alt={`${g.firstName} ${g.lastName}`}
                       className="object-cover w-full h-full"
-                      onError={(e) => { e.currentTarget.src = fallback; }}
+                      onError={(e) => {
+                        e.currentTarget.src = fallback;
+                      }}
                     />
                     {isAuthed && (
                       <button
                         type="button"
-                        onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleFavorite(g);
+                        }}
                         className="absolute top-2 right-2 text-xl hover:scale-125 transition"
                         aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                       >
-                        {favbed ? <span className="text-pink-500">♥</span> : <span className="text-gray-400">♡</span>}
+                        {favbed ? (
+                          <span className="text-pink-500">♥</span>
+                        ) : (
+                          <span className="text-gray-400">♡</span>
+                        )}
                       </button>
                     )}
                   </div>
 
-                  <div className="ml-6 flex flex-col justify-center gap-1.5">
-                    <p className="text-sm text-gray-700"><strong>Nom&nbsp;:</strong> {g.lastName}</p>
-                    <p className="text-sm text-gray-700"><strong>Prénom&nbsp;:</strong> {g.firstName}</p>
-                    <p className="text-sm text-gray-700"><strong>Description&nbsp;:</strong> {g.intro || '—'}</p>
-                    <p className="text-sm text-gray-700"><strong>Téléphone&nbsp;:</strong> {g.phone || '—'}</p>
-                    <p className="text-sm text-gray-700">📍 {g.address || '—'}</p>
-                    <p className="text-sm text-gray-700"><strong>Note&nbsp;:</strong> {g.rating ?? '—'}★</p>
+                  <div className="ml-6 flex-1 flex flex-col justify-center gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className="text-lg font-semibold text-green-900 leading-tight">
+                        {g.firstName} {g.lastName}
+                      </h2>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {(g.skills || []).slice(0, 8).map((s) => (
+                        <span
+                          key={s}
+                          className="px-3 py-1 rounded-full text-xs font-medium"
+                          style={{
+                            backgroundColor: 'rgba(22,163,74,0.10)',
+                            border: '1px solid rgba(22,163,74,0.18)',
+                            color: '#14532d',
+                          }}
+                        >
+                          {s}
+                        </span>
+                      ))}
+                      {(g.skills || []).length === 0 && (
+                        <span className="text-xs text-gray-500">Compétences à venir</span>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-gray-500">Voir le profil →</div>
                   </div>
                 </article>
               </Link>

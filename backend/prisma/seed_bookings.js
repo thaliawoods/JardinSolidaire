@@ -18,7 +18,7 @@ function atHour(baseDate, hh, mm = 0) {
         email: 'seed@example.com',
         firstName: 'Seed',
         lastName: 'User',
-        passwordHash: 'bcrypt$dummy', // replace with a real hash if your login needs it
+        passwordHash: 'bcrypt$dummy', 
       },
     });
 

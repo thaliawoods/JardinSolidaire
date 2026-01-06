@@ -1,5 +1,5 @@
-require('dotenv').config();
-const { PrismaClient } = require('@prisma/client');
+require("dotenv").config();
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 /* ---------------- config ---------------- */
@@ -7,17 +7,56 @@ const OWNER_COUNT = 18;
 const GARDENER_COUNT = 18;
 
 const firstNames = [
-  'Nora','Ali','Camille','Hugo','Lina','Sofia','Jules','Chloé','Omar','Maya',
-  'Léa','Mathis','Inès','Nabil','Zoé','Yanis','Emma','Victor','Adèle','Sami',
+  "Nora","Ali","Camille","Hugo","Lina","Sofia","Jules","Chloé","Omar","Maya",
+  "Léa","Mathis","Inès","Nabil","Zoé","Yanis","Emma","Victor","Adèle","Sami",
 ];
 const lastNames = [
-  'Durand','Ben Amar','Morel','Bernard','B.','A.','Martin','Lemoine','Diallo','Rossi',
-  'Petit','Leroy','Garcia','Nguyen','Robin','Fabre','Marchand','Gauthier','Renard','Chevalier',
+  "Durand","Ben Amar","Morel","Bernard","B.","A.","Martin","Lemoine","Diallo","Rossi",
+  "Petit","Leroy","Garcia","Nguyen","Robin","Fabre","Marchand","Gauthier","Renard","Chevalier",
 ];
 
-/* Only pretty green garden / potager photos (stable Unsplash IDs) */
+const districts = [
+  "Montmartre","Belleville","République","Bastille","Canal Saint-Martin",
+  "Nation","Auteuil","Quartier Latin","Batignolles","Buttes-Chaumont",
+];
+
+const gardenerLocations = ["Paris 11","Paris 19","Montreuil","Pantin","Ivry","Boulogne","Saint-Ouen","Bagnolet"];
+
+const gardenKinds = ["potager","urbain","serre","fleurs","verger"];
+const gardenNeeds = ["arrosage","désherbage","plantation","taille","tonte","paillage","semis"];
+
+const skillsPool = ["arrosage","désherbage","plantation","taille","tonte","compost","semis","permaculture","paillage","greffe"];
+
+const OWNER_INTROS = [
+  "Je partage volontiers mon jardin : j’aime quand il vit et qu’on apprend ensemble.",
+  "Bienvenue ! Je cherche des coups de main ponctuels et des personnes fiables.",
+  "Ici on jardine simple : entraide, calme, et une bonne dose de verdure.",
+  "J’ai un jardin urbain et j’adore transmettre mes astuces aux débutant·es.",
+];
+
+const OWNER_DESCRIPTIONS = [
+  "Carrés potagers, aromatiques, et coin compost. Accès facile, outils sur place.",
+  "Terrain plat, récupérateur d’eau, plantations variées. On avance petit à petit.",
+  "Petit espace cosy, parfait pour semis / entretien léger. Ambiance tranquille.",
+  "Beaucoup de fleurs et d’arbustes. Besoin d’aide pour désherbage et taille.",
+];
+
+const GARDENER_INTROS = [
+  "Disponible pour entretiens réguliers et conseils.",
+  "J’aime jardiner proprement : arrosage, désherbage, paillage, et semis.",
+  "Je peux aider sur des créneaux fixes en semaine et parfois le week-end.",
+  "Je suis à l’aise avec les potagers et les aromatiques, et j’adore apprendre.",
+];
+
+const GARDENER_BIOS = [
+  "Je jardine depuis quelques années, surtout en potager. Je travaille calmement, et je respecte les lieux.",
+  "J’aime les jardins urbains : je sais optimiser l’espace, pailler, et organiser les tâches.",
+  "Je suis plutôt “mains dans la terre” : semis, arrosage, entretien, et compost.",
+  "Je peux venir régulièrement, et je préfère une communication simple et claire.",
+];
+
+/* Only pretty green garden / potager photos */
 const GARDEN_PHOTOS = [
-  // garden paths / beds / potager / greenhouse / herbs — all very green
   "https://www.nidouillet.com/wp-content/uploads/2018/01/paysagiste-3.jpg",
   "https://www.guide-des-landes.com/_bibli/annonces/4775/hd/jardin-des-barthes.jpg",
   "https://www.nidouillet.com/wp-content/uploads/2018/01/paysagiste-2.jpg",
@@ -47,198 +86,293 @@ const GARDEN_PHOTOS = [
 const paris = { lat: 48.8566, lng: 2.3522 };
 
 /* ---------------- helpers ---------------- */
-function jitter(c, max = 0.03) {
-  const r = () => (Math.random() * 2 - 1) * max;
-  return { lat: +(c.lat + r()).toFixed(6), lng: +(c.lng + r()).toFixed(6) };
-}
 function rand(min, max) { return Math.random() * (max - min) + min; }
 function rint(min, max) { return Math.floor(rand(min, max + 1)); }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function pickMany(arr, n) {
-  const a = [...arr]; const out = [];
-  while (a.length && out.length < n) out.push(a.splice(Math.floor(Math.random() * a.length),1)[0]);
+  const a = [...arr];
+  const out = [];
+  while (a.length && out.length < n) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]);
   return out;
 }
-
-function avatar(seed) { return `https://i.pravatar.cc/256?img=${(seed % 70) + 1}`; }
-
-/* pick 3 distinct green garden photos */
+function jitter(c, max = 0.03) {
+  const r = () => (Math.random() * 2 - 1) * max;
+  return { lat: +(c.lat + r()).toFixed(6), lng: +(c.lng + r()).toFixed(6) };
+}
+function avatar(seed) {
+  return `https://i.pravatar.cc/256?img=${(seed % 70) + 1}`;
+}
 function gardenPhotoTriplet(seedIndex) {
   const N = GARDEN_PHOTOS.length;
   const a = seedIndex % N;
-  const b = (a + 5) % N;      // spaced to reduce duplicates
+  const b = (a + 5) % N;
   const c = (a + 11) % N;
   return [GARDEN_PHOTOS[a], GARDEN_PHOTOS[b], GARDEN_PHOTOS[c]];
 }
 
-const gardenKinds = ['potager','urbain','serre','fleurs','verger'];
-const gardenNeeds = ['arrosage','désherbage','plantation','taille','tonte','paillage','semis'];
-const districts = ['Montmartre','Belleville','République','Bastille','Canal Saint-Martin','Nation','Auteuil','Latin','Batignolles','Buttes-Chaumont'];
-const skillsPool = ['arrosage','désherbage','plantation','taille','tonte','compost','semis','permaculture','paillage','greffe'];
+/**
+ * Create availability slots that match your schema:
+ * AvailabilitySlot: date (Date), startTime (Time), endTime (Time), status (String)
+ *
+ * In PostgreSQL, Prisma "Time" fields are represented as Date objects whose date part is ignored.
+ */
+function makeTime(h, m = 0) {
+  return new Date(Date.UTC(1970, 0, 1, h, m, 0));
+}
+function makeDateOnly(d) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+/* next monday (UTC) */
+function nextMondayUTC() {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const day = d.getUTCDay(); // 0=Sun..6=Sat
+  const diff = (8 - day) % 7 || 7; // days until next monday
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d;
+}
 
 /* -------------- main -------------- */
 async function main() {
-  console.log('🧹 Cleaning tables…');
+  console.log("🧹 Cleaning tables…");
+
+  // Order matters because of FK constraints
   await prisma.booking.deleteMany();
   await prisma.availabilitySlot.deleteMany();
+  await prisma.gardenerAvailabilitySlot.deleteMany();
+
+  // We do NOT seed comments/reviews anymore, so we clear them too (if any exist)
+  await prisma.review.deleteMany();
   await prisma.gardenerComment.deleteMany();
   await prisma.ownerComment.deleteMany();
+
   await prisma.garden.deleteMany();
   await prisma.gardener.deleteMany();
   await prisma.owner.deleteMany();
+
   await prisma.userSkill.deleteMany();
   await prisma.skill.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.hoursTotal.deleteMany();
   await prisma.user.deleteMany();
 
-  console.log('📚 Seeding skills…');
+  console.log("📚 Seeding skills…");
   const skills = await Promise.all(
     skillsPool.map((name) => prisma.skill.create({ data: { name } }))
   );
 
-  console.log('👥 Seeding users (owners & gardeners)…');
+  console.log("👥 Seeding users…");
   const ownerUsers = [];
   const gardenerUsers = [];
 
-  // owners
+  // --- owners users ---
   for (let i = 0; i < OWNER_COUNT; i++) {
     const fn = firstNames[i % firstNames.length];
     const ln = lastNames[i % lastNames.length];
-    ownerUsers.push(
-      await prisma.user.create({
-        data: {
-          firstName: fn,
-          lastName: ln,
-          email: `owner${i+1}@example.com`,
-          passwordHash: 'bcrypt$demo',
-          role: 'proprietaire',
-          avatarUrl: avatar(i),
-          bio: `Propriétaire de jardin à ${pick(districts)}.`,
-          phone: `0600${String(i).padStart(6,'0')}`,
-          address: `${rint(1,120)} rue des Jardins, Paris`,
-          averageRating: +rand(4.2, 5.0).toFixed(1),
-        }
-      })
-    );
-  }
 
-  // gardeners
-  for (let i = 0; i < GARDENER_COUNT; i++) {
-    const fn = firstNames[(i+5) % firstNames.length];
-    const ln = lastNames[(i+7) % lastNames.length];
     const u = await prisma.user.create({
       data: {
         firstName: fn,
         lastName: ln,
-        email: `gardener${i+1}@example.com`,
-        passwordHash: 'bcrypt$demo',
-        role: 'ami_du_vert',
-        avatarUrl: avatar(100 + i),
-        bio: `Jardiner·e passionné·e, spécialisé·e ${pick(gardenNeeds)}.`,
-        phone: `0700${String(i).padStart(6,'0')}`,
-        address: `${rint(1,180)} avenue Verte, Paris`,
-        averageRating: +rand(3.8, 5.0).toFixed(1),
-      }
+        email: `owner${i + 1}@example.com`,
+        passwordHash: "bcrypt$demo",
+        role: "proprietaire",
+        avatarUrl: avatar(i),
+        bio: `J’habite à ${pick(districts)}. J’aime partager mon jardin et avancer étape par étape.`,
+        phone: `0600${String(i).padStart(6, "0")}`,
+        address: `${rint(1, 180)} rue des Jardins, Paris`,
+        averageRating: null, // ✅ no ratings feature yet
+      },
     });
-    gardenerUsers.push(u);
+
+    // attach a few skills too (optional but makes profiles richer)
+    for (const s of pickMany(skills, 2)) {
+      await prisma.userSkill.create({ data: { userId: u.id, skillId: s.id } });
+    }
+
+    ownerUsers.push(u);
+  }
+
+  // --- gardeners users ---
+  for (let i = 0; i < GARDENER_COUNT; i++) {
+    const fn = firstNames[(i + 5) % firstNames.length];
+    const ln = lastNames[(i + 7) % lastNames.length];
+
+    const u = await prisma.user.create({
+      data: {
+        firstName: fn,
+        lastName: ln,
+        email: `gardener${i + 1}@example.com`,
+        passwordHash: "bcrypt$demo",
+        role: "ami_du_vert",
+        avatarUrl: avatar(100 + i),
+        bio: pick(GARDENER_BIOS),
+        phone: `0700${String(i).padStart(6, "0")}`,
+        address: `${rint(1, 200)} avenue Verte, Paris`,
+        averageRating: null, // ✅ no ratings feature yet
+      },
+    });
 
     for (const s of pickMany(skills, 3)) {
       await prisma.userSkill.create({ data: { userId: u.id, skillId: s.id } });
     }
+
+    gardenerUsers.push(u);
   }
 
-  console.log('🏠 Seeding owners…');
+  console.log("🏠 Seeding owners profiles…");
   const owners = [];
   for (let i = 0; i < ownerUsers.length; i++) {
     const u = ownerUsers[i];
-    owners.push(
-      await prisma.owner.create({
-        data: {
-          userId: u.id,
-          firstName: u.firstName,
-          lastName: u.lastName,
-          avatarUrl: u.avatarUrl,
-          isOnline: Math.random() < 0.5,
-          totalReviews: rint(3, 120),
-          rating: u.averageRating ?? +rand(4.2, 5.0).toFixed(1),
-          district: pick(districts),
-          availability: pick(['Matins','Après-midi','Soirs & week-ends']),
-          area: rint(20, 160),
-          kind: pick(gardenKinds),
-          intro: 'Je partage volontiers mon jardin.',
-          description: 'Carrés potagers, fleurs, coin compost.',
-          published: true,
-          comments: {
-            create: [
-              { authorName: 'Sarah', text: 'Accueil chaleureux !' },
-              { authorName: 'Marc', text: 'Super coin potager.' },
-            ]
-          }
-        }
-      })
-    );
-  }
-
-  console.log('🌿 Seeding gardens (green only)…');
-  for (let i = 0; i < owners.length; i++) {
-    const u = ownerUsers[i];
-    const coords = jitter(paris);
-    const photos = gardenPhotoTriplet(i);
-
-    await prisma.garden.create({
-      data: {
-        ownerUserId: u.id, // Garden links to User (owner)
-        title: `${pick(['Potager','Jardin','Verger'])} de ${u.firstName}`,
-        description: pick([
-          'Soleil le matin, ombre l’après-midi. Idéal tomates & herbes.',
-          'Terrain plat avec récupérateur d’eau.',
-          'Petit havre urbain, parfait pour semis.',
-          'Beaucoup de fleurs et d’aromatiques.',
-        ]),
-        address: u.address || `${rint(1,120)} rue des Jardins, Paris`,
-        area: rint(25, 120),
-        kind: pick(['potager','verger','urbain']),
-        needs: pickMany(gardenNeeds, 2).join(', '),
-        photos, // ✅ only curated green garden/potager images
-        lat: coords.lat,
-        lng: coords.lng,
-        publishedAt: new Date(),
-        status: 'disponible',
-        averageRating: +rand(4.0, 5.0).toFixed(1),
-      }
-    });
-  }
-
-  console.log('🧑‍🌾 Seeding gardeners…');
-  for (let i = 0; i < gardenerUsers.length; i++) {
-    const u = gardenerUsers[i];
-    await prisma.gardener.create({
+    const o = await prisma.owner.create({
       data: {
         userId: u.id,
         firstName: u.firstName,
         lastName: u.lastName,
         avatarUrl: u.avatarUrl,
-        isOnline: Math.random() < 0.6,
-        location: pick(['Paris 11','Paris 19','Montreuil','Pantin','Ivry','Boulogne']),
-        skills: pickMany(skillsPool, 3),
-        yearsExperience: rint(0, 7),
-        intro: 'Disponible pour entretiens réguliers et conseils.',
-        totalReviews: rint(0, 140),
-        rating: +rand(3.8, 5.0).toFixed(1),
+        isOnline: Math.random() < 0.5,
+
+        // ✅ no reviews/ratings
+        totalReviews: 0,
+        rating: null,
+
+        district: pick(districts),
+        availability: pick(["Matins", "Après-midi", "Soirs & week-ends"]),
+        area: rint(20, 160),
+        kind: pick(gardenKinds),
+        intro: pick(OWNER_INTROS),
+        description: pick(OWNER_DESCRIPTIONS),
         published: true,
-        comments: {
-          create: [
-            { authorName: 'Claire', text: 'Très pédagogue ✨' },
-            { authorName: 'Noé', text: 'Travail soigné.' },
-          ]
-        }
-      }
+      },
     });
+    owners.push(o);
   }
 
-  console.log('✅ Seed completed: 18 owners + 18 gardens + 18 gardeners');
+  console.log("🌿 Seeding gardens + availability…");
+  const gardens = [];
+  const monday = nextMondayUTC();
+
+  for (let i = 0; i < owners.length; i++) {
+    const ownerUser = ownerUsers[i];
+    const coords = jitter(paris);
+    const photos = gardenPhotoTriplet(i);
+
+    const g = await prisma.garden.create({
+      data: {
+        ownerUserId: ownerUser.id,
+        title: `${pick(["Potager", "Jardin", "Verger"])} de ${ownerUser.firstName}`,
+        description: pick([
+          "Soleil le matin, ombre l’après-midi. Idéal tomates & aromatiques.",
+          "Terrain plat avec récupérateur d’eau. Accès simple, ambiance calme.",
+          "Petit havre urbain : semis, paillage, entretien léger.",
+          "Fleurs et aromatiques : besoin d’un coup de main régulier.",
+        ]),
+        address: ownerUser.address || `${rint(1, 120)} rue des Jardins, Paris`,
+        area: +rand(25, 120).toFixed(1),
+        kind: pick(["potager", "verger", "urbain"]),
+        needs: pickMany(gardenNeeds, 2).join(", "),
+        photos, // ✅ same photo sources
+        lat: coords.lat,
+        lng: coords.lng,
+        publishedAt: new Date(),
+        status: "disponible",
+        averageRating: null, // ✅ no ratings feature yet
+      },
+    });
+
+    gardens.push(g);
+
+    // ✅ Create 2 weeks of slots, 3 days/week, 2 slots/day
+    const daysOffsets = pickMany([0,1,2,3,4,5,6], 3).sort(); // 3 days in the week
+    for (let w = 0; w < 2; w++) {
+      for (const off of daysOffsets) {
+        const date = new Date(monday);
+        date.setUTCDate(monday.getUTCDate() + w * 7 + off);
+
+        const dateOnly = makeDateOnly(date);
+
+        // 10:00-12:00
+        await prisma.availabilitySlot.create({
+          data: {
+            gardenId: g.id,
+            date: dateOnly,
+            startTime: makeTime(10, 0),
+            endTime: makeTime(12, 0),
+            status: "free",
+          },
+        });
+
+        // 14:00-16:00
+        await prisma.availabilitySlot.create({
+          data: {
+            gardenId: g.id,
+            date: dateOnly,
+            startTime: makeTime(14, 0),
+            endTime: makeTime(16, 0),
+            status: "free",
+          },
+        });
+      }
+    }
+  }
+
+  console.log("🧑‍🌾 Seeding gardeners profiles + personal availability…");
+  for (let i = 0; i < gardenerUsers.length; i++) {
+    const u = gardenerUsers[i];
+
+    const gard = await prisma.gardener.create({
+      data: {
+        userId: u.id,
+        firstName: u.firstName || "",
+        lastName: u.lastName || "",
+        avatarUrl: u.avatarUrl,
+        isOnline: Math.random() < 0.6,
+        location: pick(gardenerLocations),
+        skills: pickMany(skillsPool, 3),
+        yearsExperience: rint(0, 7),
+        intro: pick(GARDENER_INTROS),
+
+        // ✅ no reviews/ratings
+        totalReviews: 0,
+        rating: null,
+
+        published: true,
+      },
+    });
+
+    // ✅ Personal availability: 2 weeks, 3 days/week, 1 slot/day (18:00-20:00)
+    const daysOffsets = pickMany([0,1,2,3,4,5,6], 3).sort();
+    for (let w = 0; w < 2; w++) {
+      for (const off of daysOffsets) {
+        const date = new Date(monday);
+        date.setUTCDate(monday.getUTCDate() + w * 7 + off);
+        const dateOnly = makeDateOnly(date);
+
+        await prisma.gardenerAvailabilitySlot.create({
+          data: {
+            gardenerId: gard.id,
+            date: dateOnly,
+            startTime: makeTime(18, 0),
+            endTime: makeTime(20, 0),
+            status: "free",
+          },
+        });
+      }
+    }
+  }
+
+  console.log(`✅ Seed completed:
+- ${OWNER_COUNT} owners + ${OWNER_COUNT} gardens (+ slots)
+- ${GARDENER_COUNT} gardeners (+ personal slots)
+- skills + userSkill`);
 }
 
-/* run */
 main()
-  .catch((e) => { console.error('❌ Seed failed', e); process.exit(1); })
-  .finally(async () => { await prisma.$disconnect(); });
+  .catch((e) => {
+    console.error("❌ Seed failed", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

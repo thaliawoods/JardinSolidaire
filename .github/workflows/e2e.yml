@@ -28,7 +28,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jardin_e2e
       NODE_ENV: test
       NEXT_PUBLIC_API_URL: http://127.0.0.1:5001
-      E2E_AUTH: "0"              # keep auth tests skipped in CI
+      E2E_AUTH: "0"             
       PORT_FRONT: "3000"
       PORT_BACK: "5001"
       CI: "1"
