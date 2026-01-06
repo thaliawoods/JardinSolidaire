@@ -1,35 +1,27 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const BRAND_PINK = '#EC4899';
 
 export default function VerifyEmailPage() {
   const sp = useSearchParams();
   const email = sp.get('email') || '';
   const token = sp.get('token') || '';
 
-  const [status, setStatus] = useState('idle'); // idle | loading | success | error
-  const [message, setMessage] = useState('');
-
-  const canSubmit = useMemo(() => {
-    return Boolean(email && token);
-  }, [email, token]);
+  const [status, setStatus] = useState('loading'); // loading | ok | error
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function verify() {
-      if (!canSubmit) {
+    async function run() {
+      if (!email || !token) {
         setStatus('error');
-        setMessage("Lien invalide : email ou token manquant.");
+        setError('missing_params');
         return;
       }
-
-      setStatus('loading');
-      setMessage('');
 
       try {
         const res = await fetch(`${API_BASE}/api/verify-email`, {
@@ -41,137 +33,85 @@ export default function VerifyEmailPage() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          // erreurs connues côté API
-          const err = data?.error || 'server_error';
-
-          const pretty =
-            err === 'token_expired'
-              ? "Ce lien a expiré. Demande un nouvel email de vérification."
-              : err === 'invalid_token'
-              ? "Ce lien est invalide. Vérifie que tu as utilisé le dernier email reçu."
-              : err === 'user_not_found'
-              ? "Aucun compte ne correspond à cet email."
-              : err === 'email_and_token_required'
-              ? "Lien invalide : informations manquantes."
-              : err === 'no_verification_in_progress'
-              ? "Aucune vérification en cours pour ce compte."
-              : "Une erreur est survenue. Réessaie plus tard.";
-
-          if (!cancelled) {
-            setStatus('error');
-            setMessage(pretty);
-          }
+          setStatus('error');
+          setError(data?.error || `HTTP_${res.status}`);
           return;
         }
 
-        // success
-        const okMsg =
-          data?.message === 'already_verified'
-            ? "Ton email était déjà vérifié ✅"
-            : "Email vérifié ✅ Ton compte est activé.";
-
-        if (!cancelled) {
-          setStatus('success');
-          setMessage(okMsg);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setStatus('error');
-          setMessage("Impossible de contacter le serveur. Vérifie ta connexion.");
-        }
+        // ok
+        setStatus('ok');
+      } catch {
+        setStatus('error');
+        setError('network_error');
       }
     }
 
-    verify();
-    return () => {
-      cancelled = true;
-    };
-  }, [email, token, canSubmit]);
+    run();
+  }, [email, token]);
+
+  const msg =
+    error === 'missing_params' ? 'Lien invalide : paramètres manquants.' :
+    error === 'invalid_token' ? 'Token invalide.' :
+    error === 'token_expired' ? 'Lien expiré (token expiré).' :
+    error === 'user_not_found' ? 'Compte introuvable.' :
+    error === 'already_verified' ? 'Email déjà vérifié ✅ Tu peux te connecter.' :
+    error === 'network_error' ? 'Erreur réseau. Réessaie.' :
+    error ? 'Vérification impossible.' : '';
 
   return (
-    <main style={{ maxWidth: 640, margin: '0 auto', padding: '48px 16px' }}>
-      <h1 style={{ fontSize: 28, marginBottom: 12 }}>Vérification de l’email</h1>
+    <main className="min-h-screen bg-white px-6 py-10 flex items-center justify-center">
+      <div className="w-full max-w-md rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
+        {status === 'loading' && (
+          <>
+            <h1 className="text-2xl font-bold text-green-700">Vérification en cours…</h1>
+            <p className="mt-3 text-sm text-gray-700">
+              On confirme ton email, ne ferme pas cette page.
+            </p>
+          </>
+        )}
 
-      {status === 'loading' && (
-        <p style={{ fontSize: 16, lineHeight: 1.5 }}>Vérification en cours…</p>
-      )}
+        {status === 'ok' && (
+          <>
+            <h1 className="text-2xl font-bold text-green-700">Email vérifié ✅</h1>
+            <p className="mt-3 text-sm text-gray-700">
+              Ton compte est activé. Tu peux maintenant te connecter.
+            </p>
 
-      {status === 'success' && (
-        <>
-          <p style={{ fontSize: 16, lineHeight: 1.5 }}>{message}</p>
+            <div className="mt-6">
+              <Link
+                href="/login"
+                className="inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-white shadow-sm hover:opacity-95"
+                style={{ backgroundColor: BRAND_PINK }}
+              >
+                Se connecter
+              </Link>
+            </div>
+          </>
+        )}
 
-          <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-            <Link
-              href="/login"
-              style={{
-                padding: '10px 14px',
-                borderRadius: 10,
-                background: 'black',
-                color: 'white',
-                textDecoration: 'none',
-              }}
-            >
-              Se connecter
-            </Link>
+        {status === 'error' && (
+          <>
+            <h1 className="text-2xl font-bold text-green-700">Vérification échouée</h1>
+            <p className="mt-3 text-sm text-red-700">{msg}</p>
 
-            <Link
-              href="/"
-              style={{
-                padding: '10px 14px',
-                borderRadius: 10,
-                border: '1px solid #ddd',
-                textDecoration: 'none',
-              }}
-            >
-              Retour à l’accueil
-            </Link>
-          </div>
-        </>
-      )}
+            <div className="mt-6 flex gap-3">
+              <Link
+                href="/login"
+                className="inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 text-white shadow-sm hover:opacity-95"
+                style={{ backgroundColor: BRAND_PINK }}
+              >
+                Se connecter
+              </Link>
 
-      {status === 'error' && (
-        <>
-          <p style={{ fontSize: 16, lineHeight: 1.5 }}>{message || "Lien invalide."}</p>
-
-          <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-            <Link
-              href="/login"
-              style={{
-                padding: '10px 14px',
-                borderRadius: 10,
-                background: 'black',
-                color: 'white',
-                textDecoration: 'none',
-              }}
-            >
-              Aller à la connexion
-            </Link>
-
-            <Link
-              href="/"
-              style={{
-                padding: '10px 14px',
-                borderRadius: 10,
-                border: '1px solid #ddd',
-                textDecoration: 'none',
-              }}
-            >
-              Retour à l’accueil
-            </Link>
-          </div>
-        </>
-      )}
-
-      {status === 'idle' && (
-        <p style={{ fontSize: 16, lineHeight: 1.5 }}>
-          Préparation de la vérification…
-        </p>
-      )}
-
-      <div style={{ marginTop: 28, fontSize: 13, color: '#666' }}>
-        <p style={{ margin: 0 }}>
-          Email : <span style={{ fontFamily: 'monospace' }}>{email || '—'}</span>
-        </p>
+              <Link
+                href="/register"
+                className="inline-flex flex-1 items-center justify-center rounded-full px-5 py-3 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition"
+              >
+                Réessayer
+              </Link>
+            </div>
+          </>
+        )}
       </div>
     </main>
   );
