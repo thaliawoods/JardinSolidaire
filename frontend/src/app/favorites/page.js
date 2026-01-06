@@ -1,18 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   getFavGardens,
   getFavGardeners,
   removeFavGarden,
   removeFavGardener,
   clearAllFavorites,
+  getFavoritesOwnerId,
 } from '@/lib/favorites';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
+/* ---------------- utils ---------------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -68,7 +70,6 @@ async function fetchGardenCoverById(id) {
   if (!res.ok) return null;
 
   const data = await res.json();
-
   const candidates = [
     data.cover,
     data.image,
@@ -90,17 +91,53 @@ async function fetchGardenCoverById(id) {
   return null;
 }
 
+/* ---------------- small UI bits ---------------- */
+function Pill({ children }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
+      {children}
+    </span>
+  );
+}
+
+function EmptyCard({ title, subtitle, href, linkText }) {
+  return (
+    <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50 p-6 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="h-12 w-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-xl">💚</div>
+        <div className="flex-1">
+          <p className="text-base font-semibold text-emerald-900">{title}</p>
+          <p className="mt-1 text-sm text-emerald-900/70">{subtitle}</p>
+          <div className="mt-4">
+            <Link
+              href={href}
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition"
+            >
+              {linkText} <span aria-hidden>→</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- page ---------------- */
 export default function FavoritesPage() {
   const [gardens, setGardens] = useState([]);
   const [gardeners, setGardeners] = useState([]);
+  const [tab, setTab] = useState('gardens'); // 'gardens' | 'gardeners'
+  const [ownerId, setOwnerId] = useState('guest');
 
   useEffect(() => {
-    // Load from local storage (delegated to lib)
-    const storedGardens = getFavGardens().map((g) => ({
+    const uid = getFavoritesOwnerId();
+    setOwnerId(uid);
+
+    const storedGardens = getFavGardens(uid).map((g) => ({
       ...g,
       cover: resolveMedia(g.cover) || null,
     }));
-    const storedGardeners = getFavGardeners().map((p) => ({
+    const storedGardeners = getFavGardeners(uid).map((p) => ({
       ...p,
       avatarUrl: resolveMedia(p.avatarUrl) || null,
     }));
@@ -108,7 +145,6 @@ export default function FavoritesPage() {
     setGardens(storedGardens);
     setGardeners(storedGardeners);
 
-    // Fetch covers only for items missing one, in parallel, then update once.
     (async () => {
       const needs = storedGardens.filter((g) => !g.cover);
       if (needs.length === 0) return;
@@ -125,157 +161,227 @@ export default function FavoritesPage() {
     })();
   }, []);
 
-  const syncGardens = () => setGardens(getFavGardens().map((g) => ({ ...g, cover: resolveMedia(g.cover) || null })));
-  const syncGardeners = () =>
-    setGardeners(getFavGardeners().map((p) => ({ ...p, avatarUrl: resolveMedia(p.avatarUrl) || null })));
+  const syncGardens = (uid = ownerId) =>
+    setGardens(getFavGardens(uid).map((g) => ({ ...g, cover: resolveMedia(g.cover) || null })));
+
+  const syncGardeners = (uid = ownerId) =>
+    setGardeners(getFavGardeners(uid).map((p) => ({ ...p, avatarUrl: resolveMedia(p.avatarUrl) || null })));
 
   const removeGarden = (id) => {
-    removeFavGarden(id);
-    syncGardens();
+    removeFavGarden(id, ownerId);
+    syncGardens(ownerId);
   };
 
   const removeGardener = (id) => {
-    removeFavGardener(id);
-    syncGardeners();
+    removeFavGardener(id, ownerId);
+    syncGardeners(ownerId);
   };
 
   const clearAll = () => {
-    clearAllFavorites();
+    clearAllFavorites(ownerId);
     setGardens([]);
     setGardeners([]);
   };
 
-  return (
-    <main className="min-h-screen bg-white px-6 py-10">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-green-800">Mes favoris</h1>
-          {(gardens.length > 0 || gardeners.length > 0) && (
-            <button
-              onClick={clearAll}
-              className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-              title="Supprimer tous les favoris"
-            >
-              Tout effacer
-            </button>
-          )}
-        </div>
+  const hasAny = gardens.length > 0 || gardeners.length > 0;
 
+  const headerSubtitle = useMemo(() => {
+    if (ownerId === 'guest') return 'Connecte-toi pour garder tes favoris liés à ton compte.';
+    return 'Tes favoris sont enregistrés pour ton compte (et pas pour les autres).';
+  }, [ownerId]);
+
+  return (
+    <main className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="border-b border-emerald-100 bg-gradient-to-b from-emerald-50 to-white">
+        <div className="max-w-6xl mx-auto px-6 py-10">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-emerald-950">Mes favoris</h1>
+                {hasAny && <Pill>{gardens.length + gardeners.length} total</Pill>}
+              </div>
+              <p className="mt-2 text-sm text-emerald-900/70">{headerSubtitle}</p>
+            </div>
+
+            {hasAny && (
+              <button
+                onClick={clearAll}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 transition"
+                title="Supprimer tous les favoris"
+              >
+                🧹 Tout effacer
+              </button>
+            )}
+          </div>
+
+          {/* Tabs */}
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button
+              onClick={() => setTab('gardens')}
+              className={[
+                'rounded-full px-4 py-2 text-sm font-semibold transition border',
+                tab === 'gardens'
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50',
+              ].join(' ')}
+            >
+              Jardins <span className="ml-2 opacity-90">({gardens.length})</span>
+            </button>
+
+            <button
+              onClick={() => setTab('gardeners')}
+              className={[
+                'rounded-full px-4 py-2 text-sm font-semibold transition border',
+                tab === 'gardeners'
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50',
+              ].join(' ')}
+            >
+              Jardiniers <span className="ml-2 opacity-90">({gardeners.length})</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Gardens */}
-        <section className="mt-8">
-          <h2 className="text-xl font-semibold text-green-900 mb-4">Jardins</h2>
-          {gardens.length === 0 ? (
-            <p className="text-gray-600 text-sm">
-              Pas encore de jardins favoris. Allez voir{' '}
-              <Link href="/gardens" className="underline text-[#E3107D]">
-                Jardins
-              </Link>
-              .
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {gardens.map((g) => {
-                const title = g.title || `Jardin #${g.id}`;
-                const coverFallback = gardenCoverPlaceholder(title);
-                const firstChoice = g.cover || '/assets/default.jpg';
-                return (
-                  <div
-                    key={g.id}
-                    className="bg-green-50 border border-emerald-100 rounded-2xl overflow-hidden shadow-sm hover:shadow transition"
-                  >
-                    <Link href={`/gardens/${g.id}`}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={firstChoice}
-                        alt={title}
-                        className="h-40 w-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = coverFallback;
-                        }}
-                      />
-                    </Link>
-                    <div className="p-4 text-sm">
-                      <div className="flex justify-between items-start gap-3">
-                        <Link href={`/gardens/${g.id}`} className="font-semibold text-green-900">
-                          {title}
+        {tab === 'gardens' && (
+          <section>
+            {gardens.length === 0 ? (
+              <EmptyCard
+                title="Aucun jardin en favoris"
+                subtitle="Ajoute des jardins pour les retrouver ici en 1 clic."
+                href="/gardens"
+                linkText="Explorer les jardins"
+              />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {gardens.map((g) => {
+                  const title = g.title || `Jardin #${g.id}`;
+                  const coverFallback = gardenCoverPlaceholder(title);
+                  const firstChoice = g.cover || '/assets/default.jpg';
+
+                  return (
+                    <div
+                      key={g.id}
+                      className="group rounded-3xl border border-emerald-100 bg-white overflow-hidden shadow-sm hover:shadow-md transition"
+                    >
+                      <Link href={`/gardens/${g.id}`} className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={firstChoice}
+                          alt={title}
+                          className="h-44 w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = coverFallback;
+                          }}
+                        />
+                      </Link>
+
+                      <div className="p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <Link
+                              href={`/gardens/${g.id}`}
+                              className="block font-semibold text-emerald-950 truncate group-hover:underline"
+                              title={title}
+                            >
+                              {title}
+                            </Link>
+                            {!!g.address && <p className="mt-1 text-sm text-emerald-900/70">📍 {g.address}</p>}
+                          </div>
+
+                          <button
+                            onClick={() => removeGarden(g.id)}
+                            className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 text-emerald-700 hover:bg-pink-50 hover:text-pink-700 hover:border-pink-200 transition"
+                            title="Retirer des favoris"
+                            aria-label={`Retirer ${title} des favoris`}
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {!!g.kind && <Pill>{g.kind}</Pill>}
+                          <Pill>💚 Favori</Pill>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Gardeners */}
+        {tab === 'gardeners' && (
+          <section>
+            {gardeners.length === 0 ? (
+              <EmptyCard
+                title="Aucun jardinier en favoris"
+                subtitle="Ajoute des profils pour les recontacter facilement."
+                href="/gardeners"
+                linkText="Explorer les jardiniers"
+              />
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {gardeners.map((p) => {
+                  const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || `Jardinier #${p.id}`;
+                  const avatarFallback = greenAvatarPlaceholder(p.firstName, p.lastName);
+                  const src = p.avatarUrl || avatarFallback;
+
+                  return (
+                    <div
+                      key={p.id}
+                      className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm hover:shadow-md transition"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Link href={`/gardeners/${p.id}`} className="shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={src}
+                            alt={name}
+                            className="w-16 h-16 rounded-full object-cover border-4 border-emerald-200 shadow-sm"
+                            onError={(e) => {
+                              e.currentTarget.src = avatarFallback;
+                            }}
+                          />
                         </Link>
+
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            href={`/gardeners/${p.id}`}
+                            className="block font-semibold text-emerald-950 truncate hover:underline"
+                            title={name}
+                          >
+                            {name}
+                          </Link>
+                          {!!p.address && <p className="mt-1 text-sm text-emerald-900/70">📍 {p.address}</p>}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Pill>{p.rating != null ? `⭐ ${p.rating}` : '⭐ —'}</Pill>
+                            <Pill>💚 Favori</Pill>
+                          </div>
+                        </div>
+
                         <button
-                          onClick={() => removeGarden(g.id)}
-                          className="text-gray-400 hover:text-pink-600"
+                          onClick={() => removeGardener(p.id)}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 text-emerald-700 hover:bg-pink-50 hover:text-pink-700 hover:border-pink-200 transition"
                           title="Retirer des favoris"
-                          aria-label={`Retirer ${title} des favoris`}
+                          aria-label={`Retirer ${name} des favoris`}
                         >
                           ✕
                         </button>
                       </div>
-                      {!!g.address && <p className="text-gray-600 mt-1">📍 {g.address}</p>}
-                      {!!g.kind && (
-                        <p className="mt-1 inline-block px-2 py-0.5 rounded-full bg-green-100 text-green-800">
-                          {g.kind}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* Gardeners */}
-        <section className="mt-10">
-          <h2 className="text-xl font-semibold text-green-900 mb-4">Jardiniers</h2>
-          {gardeners.length === 0 ? (
-            <p className="text-gray-600 text-sm">
-              Pas encore de jardiniers favoris. Allez voir{' '}
-              <Link href="/gardeners" className="underline text-[#E3107D]">
-                Jardiniers
-              </Link>
-              .
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {gardeners.map((p) => {
-                const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || `Jardinier #${p.id}`;
-                const avatarFallback = greenAvatarPlaceholder(p.firstName, p.lastName);
-                const src = p.avatarUrl || avatarFallback;
-                return (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 shadow-sm"
-                  >
-                    <Link href={`/gardeners/${p.id}`}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={src}
-                        alt={name}
-                        className="w-16 h-16 rounded-full object-cover border-4 border-green-300 shadow"
-                        onError={(e) => {
-                          e.currentTarget.src = avatarFallback;
-                        }}
-                      />
-                    </Link>
-                    <div className="flex-1 text-sm">
-                      <Link href={`/gardeners/${p.id}`} className="font-medium text-green-900">
-                        {name}
-                      </Link>
-                      {!!p.address && <p className="text-gray-600">📍 {p.address}</p>}
-                      <p className="text-gray-600">{p.rating != null ? `${p.rating}★` : '—'}</p>
-                    </div>
-                    <button
-                      onClick={() => removeGardener(p.id)}
-                      className="text-gray-400 hover:text-pink-600"
-                      title="Retirer des favoris"
-                      aria-label={`Retirer ${name} des favoris`}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </main>
   );
