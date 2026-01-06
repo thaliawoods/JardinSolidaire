@@ -1,19 +1,21 @@
 services:
-backend:
-  build: ./backend
-  image: jardin_backend:latest
-  container_name: jardin_backend
-  working_dir: /app
-  ports:
-    - "5001:5001"
-  command: ["npm", "run", "dev"]
-  depends_on:
-    - db
-  env_file:
-    - .env
-  environment:
-    - DATABASE_URL=postgresql://user:password@db:5432/jardinsolidaire
-    - DIRECT_URL=postgresql://user:password@db:5432/jardinsolidaire
+  backend:
+    build: ./backend
+    image: jardin_backend:latest
+    container_name: jardin_backend
+    working_dir: /app
+    ports:
+      - "5001:5001"
+    command: ["npm", "run", "dev"]
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/jardinsolidaire
+      # DIRECT_URL: postgresql://user:password@db:5432/jardinsolidaire
+      # ↑ si tu veux garder DIRECT_URL, décommente. Sinon enlève.
+
   frontend:
     build: ./frontend
     image: jardin_frontend:latest
@@ -33,12 +35,10 @@ backend:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-
     ports:
       - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-
 
   pgadmin:
     image: dpage/pgadmin4
@@ -61,7 +61,6 @@ backend:
     command: sh -c "npm install && npx prisma generate && tail -f /dev/null"
     depends_on:
       - db
-
 
 volumes:
   pg_data:
