@@ -19,6 +19,11 @@ router.post("/", async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) return res.status(401).json({ error: "invalid_credentials" });
 
+    // ✅ BLOQUE tant que l'email n'est pas vérifié
+    if (!user.emailVerifiedAt) {
+      return res.status(403).json({ error: "email_not_verified" });
+    }
+
     const stored = user.passwordHash || "";
     let ok = false;
 
@@ -36,14 +41,19 @@ router.post("/", async (req, res) => {
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      return res.status(500).json({ error: "server_misconfigured", detail: "JWT_SECRET is not set" });
+      return res.status(500).json({
+        error: "server_misconfigured",
+        detail: "JWT_SECRET is not set",
+      });
     }
 
-    const token = jwt.sign({ userId: Number(user.id) }, secret, { expiresIn: "7d" });
+    // ✅ Recommandé BigInt-safe : renvoyer id en string (au lieu de Number)
+    const token = jwt.sign({ userId: user.id.toString() }, secret, { expiresIn: "7d" });
+
     return res.json({
       token,
       user: {
-        id: Number(user.id),
+        id: user.id.toString(),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
