@@ -210,7 +210,6 @@ export default function GardenerPage({ params }) {
             </section>
 
             <section className="mt-6">
-              <h2 className="text-lg font-semibold text-green-900 mb-3">Disponibilités</h2>
               <AvailabilityCalendar mode="gardener" ownerId={id} token={getAnyToken()} />
             </section>
           </>
