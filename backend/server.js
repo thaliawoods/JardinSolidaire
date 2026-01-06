@@ -1,7 +1,12 @@
+/**
+ * backend/server.js
+ */
 require('dotenv').config();
+
 const parsedDbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
 const hostMatch = parsedDbUrl.match(/@([^/?:]+)(?::\d+)?/);
 console.log('🔌 DB host =', hostMatch ? hostMatch[1] : '(unknown)');
+
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
@@ -18,8 +23,11 @@ app.disable('x-powered-by');
 
 // Accept localhost + 127.0.0.1 in dev/test, and any extra origins via env
 const ORIGIN_ALLOWLIST = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "https://jardin-solidaire.vercel.app",
   process.env.FRONTEND_ORIGIN,   // set this to your Vercel prod URL
   process.env.PLAYWRIGHT_ORIGIN, // optional for CI/custom domain
 ].filter(Boolean);
@@ -28,15 +36,15 @@ const LOCALHOST_REGEX = /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/;
 // ✅ allow Vercel previews like https://my-branch-123abc.vercel.app
 const VERCEL_PREVIEW_REGEX = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
-// Logging (optional; keep if you like)
+// Logging
 app.use(morgan('tiny'));
 
-// Body parsers (if not already in your routes)
+// Body parsers
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ CORS — updated block
-app.use(cors({
+// ✅ CORS — single source of truth (important for preflight)
+const corsOptions = {
   origin: (origin, cb) => {
     // No origin = same-origin / curl / server-side; allow it
     if (!origin) return cb(null, true);
@@ -46,21 +54,19 @@ app.use(cors({
       process.env.NODE_ENV !== 'production' && LOCALHOST_REGEX.test(origin);
 
     const inAllowlist = ORIGIN_ALLOWLIST.includes(origin);
-    const isVercelPreview = VERCEL_PREVIEW_REGEX.test(origin); // optional wildcard
+    const isVercelPreview = VERCEL_PREVIEW_REGEX.test(origin);
 
-    if (isLocal || inAllowlist || isVercelPreview) {
-      return cb(null, true);
-    }
+    if (isLocal || inAllowlist || isVercelPreview) return cb(null, true);
     return cb(new Error(`Not allowed by CORS: ${origin}`));
   },
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','Accept'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true, // set to true only if you actually use cookies/sessions
   maxAge: 86400,
-}));
+};
 
-// Keep this preflight helper
-app.options('*', cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 /* ------------------------- Static uploads -------------------------- */
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
@@ -81,7 +87,7 @@ const messagesRoutes     = require('./routes/messages');
 const bookingsRoutes     = require('./routes/bookings');
 const contactRoutes      = require('./routes/contact');
 const availabilityRoutes = require('./routes/availability');
-const uploadsRoutes      = require('./routes/uploads'); 
+const uploadsRoutes      = require('./routes/uploads');
 
 /* ---------------------------- Healthcheck -------------------------- */
 app.get('/api/_dbcheck', async (_req, res) => {
@@ -130,9 +136,9 @@ app.get('/api/_routes', (_req, res) => {
 });
 
 /* ------------------------- Legacy redirects ------------------------ */
-app.post('/api/verifier-email',      (req, res) => res.redirect(307, '/api/auth/check-email'));
-app.post('/api/modifier_mdp',        (req, res) => res.redirect(307, '/api/auth/reset-password'));
-app.post('/api/mdp/verifier-email',  (req, res) => res.redirect(307, '/api/auth/check-email'));
+app.post('/api/verifier-email',     (req, res) => res.redirect(307, '/api/auth/check-email'));
+app.post('/api/modifier_mdp',       (req, res) => res.redirect(307, '/api/auth/reset-password'));
+app.post('/api/mdp/verifier-email', (req, res) => res.redirect(307, '/api/auth/check-email'));
 
 app.use('/api/jardins',       (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/jardins/, '/api/gardens')));
 app.use('/api/jardiniers',    (req, res) => res.redirect(301, req.originalUrl.replace(/^\/api\/jardiniers/, '/api/gardeners')));
@@ -150,12 +156,19 @@ app.use((req, res) => {
 
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
-  const code = err.status || 500;
-  res.status(code).json({ error: 'SERVER_ERROR', message: String(err?.message || err) });
+  const code =
+    String(err?.message || '').startsWith('Not allowed by CORS')
+      ? 403
+      : (err.status || 500);
+
+  res.status(code).json({
+    error: 'SERVER_ERROR',
+    message: String(err?.message || err),
+  });
 });
 
 /* ------------------------- Start & export -------------------------- */
-/** 
+/**
  * During tests, we only import `app` and never bind a port.
  * When running `node server.js`, we start the HTTP server.
  */
@@ -190,5 +203,5 @@ async function gracefulShutdown(signal) {
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-module.exports = app;                 
+module.exports = app;
 module.exports.startServer = startServer;

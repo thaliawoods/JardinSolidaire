@@ -1,3 +1,4 @@
+// /Users/thaliawoods/Documents/Ada/JardinSolidaire/JardinSolidaire/frontend/src/app/gardens/index.js
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -42,6 +43,16 @@ const uiToApiKind = {
   flowers: 'fleurs',
   mowing: 'tondre',
 };
+
+function kindLabel(kind) {
+  const k = String(kind || '').toLowerCase();
+  if (!k) return '';
+  if (k === 'potager' || k === 'vegetable') return 'Potager';
+  if (k === 'serre' || k === 'greenhouse') return 'Serre';
+  if (k === 'fleurs' || k === 'flowers') return 'Fleurs';
+  if (k === 'tondre' || k === 'mowing') return 'Tonte';
+  return kind; // fallback
+}
 
 export default function GardensList() {
   const [favorites, setFavorites] = useState([]);
@@ -129,7 +140,6 @@ export default function GardensList() {
       <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-3xl md:text-4xl font-bold text-green-700">Les Jardins</h1>
 
-        {/* favorites link hidden if not connected */}
         {isAuthed && (
           <Link
             href="/favorites"
@@ -183,10 +193,13 @@ export default function GardensList() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
         {filtered.map((g) => {
           const favbed = favorites.includes(String(g.id));
+          const kLabel = kindLabel(g.kind);
+
           return (
             <Link key={g.id} href={`/gardens/${g.id}`} className="block group">
-              <div className="bg-green-100 rounded-2xl overflow-hidden shadow-md ring-1 ring-black/5 hover:shadow-lg transition">
-                <div className="h-48 overflow-hidden">
+              <div className="rounded-2xl overflow-hidden shadow-md ring-1 ring-black/5 hover:shadow-lg transition bg-white">
+                {/* image */}
+                <div className="relative h-48 overflow-hidden">
                   {g.photos.length > 0 ? (
                     <Slider dots arrows={false} infinite speed={400} slidesToShow={1} slidesToScroll={1}>
                       {g.photos.map((photo, index) => (
@@ -207,33 +220,64 @@ export default function GardensList() {
                       className="h-48 w-full object-cover"
                     />
                   )}
+
+                  {/* subtle gradient for readability */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
+
+                  {/* heart */}
+                  {isAuthed && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
+                      className="absolute top-3 right-3 h-10 w-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow hover:scale-105 transition"
+                      aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      title={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                    >
+                      {favbed ? (
+                        <span className="text-pink-500 text-xl leading-none">♥</span>
+                      ) : (
+                        <span className="text-gray-400 text-xl leading-none">♡</span>
+                      )}
+                    </button>
+                  )}
                 </div>
 
-                {/* ---- FOOTER (title/desc/address/kind + heart) ---- */}
-                <div className="px-4 py-3 text-sm text-gray-700">
-                  <div className="flex justify-between items-start mb-1">
-                    <h2 className="font-bold text-base text-green-900 line-clamp-1">{g.title}</h2>
+                {/* ✅ footer "plus pro" */}
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="font-semibold text-[17px] text-gray-900 leading-snug line-clamp-1">
+                        {g.title}
+                      </h2>
 
-                    {/* heart hidden if not connected */}
-                    {isAuthed && (
-                      <button
-                        onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
-                        className="text-xl transition-transform hover:scale-110"
-                        aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                        title={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                      >
-                        {favbed ? (
-                          <span className="text-pink-500">♥</span>
-                        ) : (
-                          <span className="text-gray-300 group-hover:text-gray-400">♡</span>
-                        )}
-                      </button>
+                      <div className="mt-1 flex items-center gap-2 text-sm text-gray-600 min-w-0">
+                        <span className="shrink-0">📍</span>
+                        <span className="line-clamp-1">{g.address || 'Adresse non renseignée'}</span>
+                      </div>
+                    </div>
+
+                    {!!kLabel && (
+                      <span className="shrink-0 rounded-full px-3 py-1 text-xs font-medium bg-green-50 text-green-800 ring-1 ring-green-200">
+                        {kLabel}
+                      </span>
                     )}
                   </div>
 
-                  <p className="text-xs leading-tight line-clamp-2">{g.description}</p>
-                  <p className="text-xs leading-tight">{g.address}</p>
-                  <p className="text-xs leading-tight">{g.kind}</p>
+                  {!!g.description && (
+                    <p className="mt-3 text-sm text-gray-600 leading-snug line-clamp-2">
+                      {g.description}
+                    </p>
+                  )}
+
+                  {/* tiny "cta" feel without adding buttons */}
+                  <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                      Disponible
+                    </span>
+                    <span className="text-green-700 font-medium group-hover:underline">
+                      Voir le détail →
+                    </span>
+                  </div>
                 </div>
               </div>
             </Link>

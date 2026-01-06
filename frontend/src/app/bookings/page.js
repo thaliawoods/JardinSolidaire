@@ -48,7 +48,7 @@ function BookingsListInner() {
       </div>
 
       {justCreated && (
-        <div className="rounded-md bg-emerald-50 p-3 text-emerald-800">Réservation créée ✅</div>
+        <div className="rounded-md bg-emerald-50 p-3 text-emerald-800">Réservation créée</div>
       )}
 
       {err && <p className="text-red-600">{err}</p>}

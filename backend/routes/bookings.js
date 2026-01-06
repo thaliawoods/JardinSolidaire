@@ -26,7 +26,6 @@ function requireAuth(req, res, next) {
 /* ---------------------------------------
    Helpers
 ----------------------------------------*/
-// Build Date ranges from AvailabilitySlot (date + time columns)
 function buildRangeFromSlot(slot) {
   if (!slot?.date || !slot?.startTime || !slot?.endTime) {
     return { startsAt: null, endsAt: null };
@@ -42,7 +41,6 @@ function buildRangeFromSlot(slot) {
   return { startsAt: start, endsAt: end };
 }
 
-// overlap if NOT( a.end <= b.start OR a.start >= b.end )
 function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return !(bEnd <= aStart || bStart >= aEnd);
 }
@@ -131,9 +129,6 @@ async function sendMessage({ fromUserId, toUserId, content }) {
 /* ---------------------------------------
    ROUTES
 ----------------------------------------*/
-
-// Owner inbox — bookings on gardens owned by current user
-// GET /api/bookings/inbox?status=pending|confirmed|cancelled|completed
 router.get('/inbox', requireAuth, async (req, res) => {
   try {
     const ownerUserId = BigInt(req.user.id);
@@ -142,7 +137,6 @@ router.get('/inbox', requireAuth, async (req, res) => {
       garden: { ownerUserId: ownerUserId },
     };
     if (status) {
-      // safety: only allow known statuses
       const allowed = ['pending', 'confirmed', 'cancelled', 'completed'];
       if (!allowed.includes(status)) {
         return res.status(400).json({ error: 'invalid_status' });
@@ -213,7 +207,6 @@ router.get('/can-book', requireAuth, async (req, res) => {
 });
 
 // POST /api/bookings
-// Body: { slotId }  OR  { gardenId, startsAt, endsAt, notes? }
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { slotId, gardenId, startsAt, endsAt, notes } = req.body || {};
@@ -244,7 +237,6 @@ router.post('/', requireAuth, async (req, res) => {
           include: { slot: true, garden: { select: { id: true, title: true, ownerUserId: true } } },
         });
 
-        // Notify owner
         if (booking.garden?.ownerUserId) {
           const { startsAt: s2, endsAt: e2 } = buildRangeFromSlot(booking.slot);
           const content = `Nouvelle demande de réservation pour "${booking.garden.title || 'Jardin'}" le ${s2?.toLocaleString()} → ${e2?.toLocaleString()}.`;
