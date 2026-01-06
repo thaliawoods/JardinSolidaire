@@ -1,10 +1,9 @@
+// /Users/thaliawoods/Documents/Ada/JardinSolidaire/JardinSolidaire/frontend/src/components/availability/AvailabilityCalendar.js
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  useGardenAvailability,
-  useGardenerAvailability,
-} from './useAvailability';
+import { useGardenAvailability, useGardenerAvailability } from './useAvailability';
+import { createBooking } from '@/lib/bookings';
 
 const BRAND_GREEN = '#16a34a';
 
@@ -46,8 +45,18 @@ function mondayOf(date) {
 function monthLabel(date) {
   const d = new Date(date);
   const months = [
-    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
   ];
   return `${months[d.getMonth()]} ${d.getFullYear()}`;
 }
@@ -58,31 +67,39 @@ function uniqById(list) {
   return [...m.values()];
 }
 
+function isoToLocalDateTimeValue(isoDate, hhmm) {
+  // returns "YYYY-MM-DDTHH:mm"
+  return `${isoDate}T${hhmm}`;
+}
+
 /**
  * ✅ Calendrier style “site classique / un peu Airbnb”
- * - Vue mois (sélection jour)
- * - Liste de créneaux du jour (ajout/suppression)
  *
- * Props recommandées (robustes) :
+ * Props:
  * - mode="gardener" + gardenerId="..."
  * - mode="garden"   + gardenId="..."
  *
- * Backward compatible :
+ * - intent="manage" (owner/gardener manages slots)
+ * - intent="book"   (gardener requests a slot => creates a pending booking inbox)
+ *
+ * Backward compatible:
  * - targetId / ownerId (fallback)
  */
 export default function AvailabilityCalendar({
   mode,
+  intent = 'manage',
   gardenerId,
   gardenId,
   targetId, // legacy fallback
-  ownerId,  // legacy fallback
+  ownerId, // legacy fallback
   token,
   title,
+  hint, // optional subtitle override
+  // UX bonus: let parent read selected date/time if needed
+  onPick, // ({ dateISO, startTime, endTime }) => void
 }) {
   const resolvedId =
-    mode === 'garden'
-      ? (gardenId ?? targetId ?? ownerId)
-      : (gardenerId ?? targetId ?? ownerId);
+    mode === 'garden' ? gardenId ?? targetId ?? ownerId : gardenerId ?? targetId ?? ownerId;
 
   // month cursor (first day of month)
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
@@ -113,7 +130,7 @@ export default function AvailabilityCalendar({
     return { days, fromISO, toISO, monthStart: first };
   }, [monthCursor]);
 
-  // ✅ Only run the hook that matches the mode (avoid “pollution” / useless fetches)
+  // ✅ Only run the hook that matches the mode
   const gardenerAvail = useGardenerAvailability(
     mode === 'gardener' ? resolvedId : null,
     monthGrid.fromISO,
@@ -142,7 +159,7 @@ export default function AvailabilityCalendar({
     }));
   }, [data]);
 
-  // count slots per day (for the dot + “1 créneau”)
+  // count slots per day (for the dot + “X créneau(x)”)
   const dayCounts = useMemo(() => {
     const counts = new Map();
     for (const s of slots) {
@@ -153,8 +170,9 @@ export default function AvailabilityCalendar({
   }, [slots]);
 
   const selectedSlots = useMemo(() => {
-    return uniqById(slots.filter((s) => s.date === selectedISO))
-      .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+    return uniqById(slots.filter((s) => s.date === selectedISO)).sort((a, b) =>
+      (a.startTime || '').localeCompare(b.startTime || '')
+    );
   }, [slots, selectedISO]);
 
   // Add flow
@@ -164,6 +182,15 @@ export default function AvailabilityCalendar({
   const [addStatus, setAddStatus] = useState('free');
   const [busy, setBusy] = useState(false);
 
+  // toast
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', text }
+  function showToast(type, text) {
+    setToast({ type, text });
+    window.clearTimeout(window.__avail_toast__);
+    window.__avail_toast__ = window.setTimeout(() => setToast(null), 2500);
+  }
+
+  // keep selected date in visible grid
   useEffect(() => {
     const isInGrid = monthGrid.days.some((d) => d.iso === selectedISO);
     if (!isInGrid) {
@@ -172,6 +199,14 @@ export default function AvailabilityCalendar({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthCursor]);
+
+  // UX bonus: when selecting a day, push into datetime pickers if parent wants it
+  useEffect(() => {
+    if (typeof onPick === 'function') {
+      onPick({ dateISO: selectedISO, startTime: addStart, endTime: addEnd });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedISO]);
 
   async function handleAddSlot() {
     if (!resolvedId) return;
@@ -184,9 +219,10 @@ export default function AvailabilityCalendar({
         status: addStatus,
       });
       setAddOpen(false);
+      showToast('success', 'Créneau ajouté ✅');
       await reload();
     } catch (e) {
-      alert(`Erreur création créneau: ${e?.message || 'server_error'}`);
+      showToast('error', `Erreur création créneau: ${e?.message || 'server_error'}`);
     } finally {
       setBusy(false);
     }
@@ -197,9 +233,39 @@ export default function AvailabilityCalendar({
     try {
       setBusy(true);
       await deleteSlot(slotId);
+      showToast('success', 'Créneau supprimé ✅');
       await reload();
     } catch (e) {
-      alert(`Suppression impossible: ${e?.message || 'server_error'}`);
+      showToast('error', `Suppression impossible: ${e?.message || 'server_error'}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRequestBooking() {
+    if (!resolvedId) return;
+
+    try {
+      setBusy(true);
+
+      // Build ISO datetimes from selected day + time inputs
+      const startsAt = new Date(isoToLocalDateTimeValue(selectedISO, addStart)).toISOString();
+      const endsAt = new Date(isoToLocalDateTimeValue(selectedISO, addEnd)).toISOString();
+
+      // ✅ creates a pending booking (and therefore owner inbox pending as before)
+      await createBooking({
+        gardenId: resolvedId,
+        title: 'Demande de créneau',
+        notes: '',
+        startsAt,
+        endsAt,
+      });
+
+      setAddOpen(false);
+      showToast('success', 'Demande envoyée ✅ (en attente de validation)');
+      await reload();
+    } catch (e) {
+      showToast('error', e?.message || 'Erreur lors de l’envoi');
     } finally {
       setBusy(false);
     }
@@ -207,13 +273,19 @@ export default function AvailabilityCalendar({
 
   const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
+  const subtitle =
+    hint ||
+    (intent === 'book'
+      ? 'Choisis un jour, puis demande un créneau.'
+      : 'Choisis un jour dans le calendrier, puis gère les créneaux.');
+
   return (
     <div className="mt-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <h3 className="text-lg font-semibold text-green-800">{title || 'Disponibilités'}</h3>
-          <p className="text-sm text-gray-600">Choisis un jour dans le calendrier, puis gère les créneaux.</p>
+          <p className="text-sm text-gray-600">{subtitle}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -288,21 +360,20 @@ export default function AvailabilityCalendar({
                 >
                   <div className="text-sm font-medium">{d.date.getDate()}</div>
 
-{/* today badge */}
-{d.isToday && (
-  <span
-    className="absolute top-1 right-1 text-[9px] leading-none rounded-full border px-1.5 py-0.5 whitespace-nowrap max-w-[64px] truncate"
-    style={{
-      borderColor: 'rgba(22,163,74,0.35)',
-      color: BRAND_GREEN,
-      background: 'rgba(22,163,74,0.06)',
-    }}
-    title="aujourd'hui"
-  >
-    aujourd&apos;hui
-  </span>
-)}
-
+                  {/* today badge */}
+                  {d.isToday && (
+                    <span
+                      className="absolute top-1 right-1 text-[9px] leading-none rounded-full border px-1.5 py-0.5 whitespace-nowrap max-w-[64px] truncate"
+                      style={{
+                        borderColor: 'rgba(22,163,74,0.35)',
+                        color: BRAND_GREEN,
+                        background: 'rgba(22,163,74,0.06)',
+                      }}
+                      title="aujourd'hui"
+                    >
+                      aujourd&apos;hui
+                    </span>
+                  )}
 
                   {/* slots indicator */}
                   <div className="absolute left-3 bottom-3 flex items-center gap-2">
@@ -326,31 +397,35 @@ export default function AvailabilityCalendar({
             })}
           </div>
 
-          {/* legend */}
-          <div className="flex items-center gap-4 px-4 py-3 border-t border-gray-200 text-xs text-gray-600">
-            <span className="inline-flex items-center gap-2">
-              <span className="h-3 w-3 rounded-sm border border-emerald-300 bg-emerald-200" />
-              Libre
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span className="h-3 w-3 rounded-sm border border-rose-300 bg-rose-200" />
-              Réservé
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span className="h-3 w-3 rounded-sm border border-gray-300 bg-gray-200" />
-              Indispo
-            </span>
-          </div>
+          {/* legend (manage only) */}
+          {intent !== 'book' && (
+            <div className="flex items-center gap-4 px-4 py-3 border-t border-gray-200 text-xs text-gray-600">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded-sm border border-emerald-300 bg-emerald-200" />
+                Libre
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded-sm border border-rose-300 bg-rose-200" />
+                Réservé
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded-sm border border-gray-300 bg-gray-200" />
+                Indispo
+              </span>
+            </div>
+          )}
         </section>
 
-        {/* Day slots */}
+        {/* Day slots / request */}
         <section
           className="rounded-2xl bg-white border border-gray-200 shadow-sm p-6"
           aria-label="Créneaux du jour"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h4 className="text-lg font-semibold text-green-800">Créneaux du jour</h4>
+              <h4 className="text-lg font-semibold text-green-800">
+                {intent === 'book' ? 'Demander un créneau' : 'Créneaux du jour'}
+              </h4>
               <p className="text-sm text-gray-600">{selectedISO}</p>
             </div>
 
@@ -362,9 +437,22 @@ export default function AvailabilityCalendar({
               disabled={!resolvedId}
               title={!resolvedId ? 'ID manquant — impossible de charger' : undefined}
             >
-              + Demander un créneau
+              {intent === 'book' ? '+ Demander ce créneau' : '+ Ajouter un créneau'}
             </button>
           </div>
+
+          {/* toast */}
+          {toast && (
+            <div
+              className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+                toast.type === 'success'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : 'border-red-200 bg-red-50 text-red-700'
+              }`}
+            >
+              {toast.text}
+            </div>
+          )}
 
           {loading && (
             <div className="mt-4 space-y-3">
@@ -388,7 +476,7 @@ export default function AvailabilityCalendar({
             </div>
           )}
 
-          {/* request form */}
+          {/* request / add form */}
           {addOpen && (
             <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -402,6 +490,9 @@ export default function AvailabilityCalendar({
                       const sh = parseInt(e.target.value.slice(0, 2), 10);
                       const eh = Math.min(23, sh + 1);
                       setAddEnd(`${pad2(eh)}:${e.target.value.slice(3, 5)}`);
+                      if (typeof onPick === 'function') {
+                        onPick({ dateISO: selectedISO, startTime: e.target.value, endTime: `${pad2(eh)}:${e.target.value.slice(3, 5)}` });
+                      }
                     }}
                     className="w-full h-10 rounded-lg border border-gray-200 bg-white px-3"
                   />
@@ -412,33 +503,41 @@ export default function AvailabilityCalendar({
                   <input
                     type="time"
                     value={addEnd}
-                    onChange={(e) => setAddEnd(e.target.value)}
+                    onChange={(e) => {
+                      setAddEnd(e.target.value);
+                      if (typeof onPick === 'function') {
+                        onPick({ dateISO: selectedISO, startTime: addStart, endTime: e.target.value });
+                      }
+                    }}
                     className="w-full h-10 rounded-lg border border-gray-200 bg-white px-3"
                   />
                 </label>
 
-                <label className="text-sm">
-                  <span className="block text-xs text-gray-600 mb-1">Statut</span>
-                  <select
-                    value={addStatus}
-                    onChange={(e) => setAddStatus(e.target.value)}
-                    className="w-full h-10 rounded-lg border border-gray-200 bg-white px-3"
-                  >
-                    <option value="free">Libre</option>
-                    <option value="unavailable">Indispo</option>
-                  </select>
-                </label>
+                {/* status only in manage */}
+                {intent !== 'book' && (
+                  <label className="text-sm">
+                    <span className="block text-xs text-gray-600 mb-1">Statut</span>
+                    <select
+                      value={addStatus}
+                      onChange={(e) => setAddStatus(e.target.value)}
+                      className="w-full h-10 rounded-lg border border-gray-200 bg-white px-3"
+                    >
+                      <option value="free">Libre</option>
+                      <option value="unavailable">Indispo</option>
+                    </select>
+                  </label>
+                )}
               </div>
 
               <div className="mt-4 flex items-center gap-3">
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={handleAddSlot}
+                  onClick={intent === 'book' ? handleRequestBooking : handleAddSlot}
                   className="rounded-full px-5 py-2.5 text-white disabled:opacity-60"
                   style={{ backgroundColor: BRAND_GREEN }}
                 >
-                  {busy ? 'Demande…' : 'Demander le créneau'}
+                  {busy ? 'Envoi…' : intent === 'book' ? 'Envoyer la demande' : 'Créer le créneau'}
                 </button>
 
                 <button
@@ -449,6 +548,12 @@ export default function AvailabilityCalendar({
                 >
                   Annuler
                 </button>
+
+                {intent === 'book' && (
+                  <span className="text-xs text-gray-500">
+                    Le propriétaire recevra ta demande en “en attente”.
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -456,9 +561,13 @@ export default function AvailabilityCalendar({
           {/* list */}
           {!loading && !error && (
             <div className="mt-4">
-              {selectedSlots.length === 0 ? (
+              {intent === 'book' ? (
                 <div className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-6 text-sm text-gray-600">
-                  Aucun créneau ce jour. Demande-en un avec “+ Demander un créneau”.
+                  Choisis une date, puis clique sur “+ Demander ce créneau” pour proposer une plage horaire.
+                </div>
+              ) : selectedSlots.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-6 text-sm text-gray-600">
+                  Aucun créneau ce jour. Ajoute-en un avec “+ Ajouter un créneau”.
                 </div>
               ) : (
                 <ul className="space-y-2">
@@ -495,7 +604,11 @@ export default function AvailabilityCalendar({
                                 : 'rgb(6,95,70)',
                           }}
                         >
-                          {s.status === 'booked' ? 'réservé' : s.status === 'unavailable' ? 'indispo' : 'libre'}
+                          {s.status === 'booked'
+                            ? 'réservé'
+                            : s.status === 'unavailable'
+                            ? 'indispo'
+                            : 'libre'}
                         </span>
                       </div>
 

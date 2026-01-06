@@ -427,6 +427,7 @@ export default function GardenDetailPage({ params }) {
 <div className="mt-6">
   <AvailabilityCalendar
     mode="garden"
+    intent='book'
     gardenId={garden.id}
     token={getAnyToken()}
   />
