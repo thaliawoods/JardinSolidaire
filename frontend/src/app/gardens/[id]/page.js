@@ -1,39 +1,42 @@
-"use client";
+// ✅ OPTION 2 “PARFAITE” : alignement automatique des deux cards (À propos / Propriétaire)
+// -> on strech la rangée en desktop + on met h-full sur les deux Card concernées
 
-import React, { use, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import dynamic from "next/dynamic";
-import BookingButton from "@/components/booking/BookingButton";
-import { getAnyToken } from "@/lib/api";
+'use client';
+
+import React, { use, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import BookingButton from '@/components/booking/BookingButton';
+import { getAnyToken } from '@/lib/api';
 
 const AvailabilityCalendar = dynamic(
-  () => import("@/components/availability/AvailabilityCalendar"),
+  () => import('@/components/availability/AvailabilityCalendar'),
   { ssr: false }
 );
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-const BRAND_GREEN = "#16a34a";
-const BRAND_PINK = "#E3107D";
-const LOCAL_DIRS = ["/assets/", "/images/", "/img/", "/icons/"];
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const BRAND_GREEN = '#16a34a';
+const BRAND_PINK = '#E3107D';
+const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
 /* ---------- media helpers ---------- */
 function resolveMedia(u) {
-  if (!u) return "";
+  if (!u) return '';
   const s = String(u).trim();
-  if (s.startsWith("http") || s.startsWith("data:")) return s;
+  if (s.startsWith('http') || s.startsWith('data:')) return s;
   if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;
-  if (s.startsWith("/uploads/")) return `${API_BASE}${s}`;
-  if (s.startsWith("/")) return s;
-  const clean = s.replace(/^\.?\/*/, "");
-  if (clean.startsWith("uploads/")) return `${API_BASE}/${clean}`;
+  if (s.startsWith('/uploads/')) return `${API_BASE}${s}`;
+  if (s.startsWith('/')) return s;
+  const clean = s.replace(/^\.?\/*/, '');
+  if (clean.startsWith('uploads/')) return `${API_BASE}/${clean}`;
   if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
   return `${API_BASE}/uploads/${clean}`;
 }
 
-function initials(a = "", b = "") {
-  const x = (a || "").trim()[0] || "";
-  const y = (b || "").trim()[0] || "";
-  return (`${x}${y}`.toUpperCase() || "U");
+function initials(a = '', b = '') {
+  const x = (a || '').trim()[0] || '';
+  const y = (b || '').trim()[0] || '';
+  return (`${x}${y}`.toUpperCase() || 'U');
 }
 function greenAvatar(first, last) {
   const txt = initials(first, last);
@@ -52,7 +55,7 @@ function normalizeGarden(payload) {
   const photosRaw = payload.photos ?? [];
   const photos = (Array.isArray(photosRaw)
     ? photosRaw
-    : typeof photosRaw === "string"
+    : typeof photosRaw === 'string'
       ? [photosRaw]
       : []
   ).map(resolveMedia);
@@ -61,10 +64,10 @@ function normalizeGarden(payload) {
   const owner =
     ownerRaw &&
     {
-      id: String(ownerRaw.id ?? ownerRaw.id_utilisateur ?? ""),
-      firstName: ownerRaw.firstName ?? ownerRaw.prenom ?? "",
-      lastName: ownerRaw.lastName ?? ownerRaw.nom ?? "",
-      avatarUrl: resolveMedia(ownerRaw.avatarUrl ?? ownerRaw.photo_profil ?? ""),
+      id: String(ownerRaw.id ?? ownerRaw.id_utilisateur ?? ''),
+      firstName: ownerRaw.firstName ?? ownerRaw.prenom ?? '',
+      lastName: ownerRaw.lastName ?? ownerRaw.nom ?? '',
+      avatarUrl: resolveMedia(ownerRaw.avatarUrl ?? ownerRaw.photo_profil ?? ''),
       address: ownerRaw.address ?? ownerRaw.adresse ?? null,
       intro: ownerRaw.bio ?? ownerRaw.presentation ?? null,
       ownerId:
@@ -76,12 +79,12 @@ function normalizeGarden(payload) {
     };
 
   return {
-    id: String(payload.id ?? payload.id_jardin ?? ""),
-    title: payload.title ?? payload.titre ?? "",
-    description: payload.description ?? "",
-    address: payload.address ?? payload.adresse ?? "",
-    kind: payload.kind ?? payload.type ?? "",
-    needs: payload.needs ?? payload.besoins ?? "",
+    id: String(payload.id ?? payload.id_jardin ?? ''),
+    title: payload.title ?? payload.titre ?? '',
+    description: payload.description ?? '',
+    address: payload.address ?? payload.adresse ?? '',
+    kind: payload.kind ?? payload.type ?? '',
+    needs: payload.needs ?? payload.besoins ?? '',
     photos,
     owner: owner || null,
     demoOwnerId:
@@ -98,7 +101,7 @@ function normalizeGarden(payload) {
 }
 
 /* ---------- UI atoms ---------- */
-function Card({ title, children, className = "" }) {
+function Card({ title, children, className = '' }) {
   return (
     <section
       className={`rounded-2xl border border-black/5 bg-white p-6 shadow-sm ${className}`}
@@ -106,32 +109,31 @@ function Card({ title, children, className = "" }) {
       {title ? (
         <h2 className="text-base font-semibold text-green-900">{title}</h2>
       ) : null}
-      <div className={title ? "mt-4" : ""}>{children}</div>
+      <div className={title ? 'mt-4' : ''}>{children}</div>
     </section>
   );
 }
 
-/** ✅ chips plus lisibles sur la photo (style “glass”) */
-function HeroChip({ children, tone = "mint" }) {
+function HeroChip({ children, tone = 'mint' }) {
   const base =
-    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap backdrop-blur-md shadow-sm";
+    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap backdrop-blur-md shadow-sm';
   const style =
-    tone === "mint"
+    tone === 'mint'
       ? {
-          backgroundColor: "rgba(236,253,245,0.90)", // ✅ beaucoup plus visible
-          border: "1px solid rgba(22,163,74,0.28)",
-          color: "#166534",
+          backgroundColor: 'rgba(236,253,245,0.90)',
+          border: '1px solid rgba(22,163,74,0.28)',
+          color: '#166534',
         }
-      : tone === "gray"
+      : tone === 'gray'
         ? {
-            backgroundColor: "rgba(255,255,255,0.86)",
-            border: "1px solid rgba(17,24,39,0.12)",
-            color: "#111827",
+            backgroundColor: 'rgba(255,255,255,0.86)',
+            border: '1px solid rgba(17,24,39,0.12)',
+            color: '#111827',
           }
         : {
-            backgroundColor: "rgba(255,240,248,0.90)",
-            border: "1px solid rgba(227,16,125,0.22)",
-            color: "#a10b59",
+            backgroundColor: 'rgba(255,240,248,0.90)',
+            border: '1px solid rgba(227,16,125,0.22)',
+            color: '#a10b59',
           };
 
   return (
@@ -141,25 +143,24 @@ function HeroChip({ children, tone = "mint" }) {
   );
 }
 
-/** chips “normales” dans le contenu */
-function Chip({ children, tone = "mint" }) {
+function Chip({ children, tone = 'mint' }) {
   const styles =
-    tone === "mint"
+    tone === 'mint'
       ? {
-          backgroundColor: "rgba(22,163,74,0.06)",
-          border: "1px solid rgba(22,163,74,0.22)",
-          color: "#166534",
+          backgroundColor: 'rgba(22,163,74,0.06)',
+          border: '1px solid rgba(22,163,74,0.22)',
+          color: '#166534',
         }
-      : tone === "gray"
+      : tone === 'gray'
         ? {
-            backgroundColor: "rgba(17,24,39,0.04)",
-            border: "1px solid rgba(17,24,39,0.10)",
-            color: "#374151",
+            backgroundColor: 'rgba(17,24,39,0.04)',
+            border: '1px solid rgba(17,24,39,0.10)',
+            color: '#374151',
           }
         : {
-            backgroundColor: "rgba(227,16,125,0.06)",
-            border: "1px solid rgba(227,16,125,0.20)",
-            color: "#a10b59",
+            backgroundColor: 'rgba(227,16,125,0.06)',
+            border: '1px solid rgba(227,16,125,0.20)',
+            color: '#a10b59',
           };
 
   return (
@@ -176,24 +177,24 @@ export default function GardenDetailPage({ params }) {
   const { id } = use(params) || {};
   const [garden, setGarden] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         setLoading(true);
-        setError("");
+        setError('');
 
-        let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: "no-store" });
-        if (!res.ok) res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: "no-store" });
+        let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: 'no-store' });
+        if (!res.ok) res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
         if (alive) setGarden(normalizeGarden(data));
       } catch {
         if (alive) {
-          setError("Impossible de charger ce jardin.");
+          setError('Impossible de charger ce jardin.');
           setGarden(null);
         }
       } finally {
@@ -236,10 +237,10 @@ export default function GardenDetailPage({ params }) {
       <div className="min-h-screen bg-white text-gray-900 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
-            {error || "Erreur inconnue"}
+            {error || 'Erreur inconnue'}
           </div>
           <p className="text-gray-600">
-            Retour aux{" "}
+            Retour aux{' '}
             <Link href="/gardens" className="underline text-green-700">
               jardins
             </Link>
@@ -250,7 +251,7 @@ export default function GardenDetailPage({ params }) {
     );
   }
 
-  const hero = garden.photos?.[0] || "";
+  const hero = garden.photos?.[0] || '';
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
@@ -273,7 +274,7 @@ export default function GardenDetailPage({ params }) {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={hero}
-                alt={garden.title || "Photo de jardin"}
+                alt={garden.title || 'Photo de jardin'}
                 className="w-full h-56 md:h-72 lg:h-80 object-cover"
               />
             ) : (
@@ -287,7 +288,6 @@ export default function GardenDetailPage({ params }) {
                 {garden.title}
               </h1>
 
-              {/* ✅ chips lisibles + wrap */}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {!!garden.address && (
                   <HeroChip tone="gray">
@@ -311,144 +311,131 @@ export default function GardenDetailPage({ params }) {
             </p>
 
             <div className="flex items-center gap-3">
-              {/* ✅ garder le réserver en rose */}
               <BookingButton gardenId={garden.id} />
             </div>
           </div>
         </div>
 
         {/* CONTENT */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* left */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card title="À propos du jardin">
-              {garden.description ? (
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {garden.description}
-                </p>
-              ) : (
-                <p className="text-sm text-gray-600">Aucune description.</p>
-              )}
+        {/* ✅ IMPORTANT: lg:items-stretch pour que la rangée des cards s’étire en hauteur */}
+        {/* CONTENT */}
+<div className="mt-8 space-y-6">
+  {/* ✅ Rangée 1 : À propos + Propriétaire (alignés parfaitement) */}
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch items-start">
+    {/* left (2 colonnes) */}
+    <div className="lg:col-span-2">
+      {/* ✅ h-full ici OK car cette rangée ne contient QUE les cards */}
+      <Card title="À propos du jardin" className="h-full">
+        {garden.description ? (
+          <p className="text-sm text-gray-700 leading-relaxed">
+            {garden.description}
+          </p>
+        ) : (
+          <p className="text-sm text-gray-600">Aucune description.</p>
+        )}
 
-              {/* ✅ chips mint (petits détails, pas de grosse plage) */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                {!!garden.kind && <Chip>Type : {garden.kind}</Chip>}
-                {!!garden.needs && <Chip>Besoins : {garden.needs}</Chip>}
-                {!!garden.address && (
-                  <Chip tone="gray">Adresse : {garden.address}</Chip>
-                )}
-              </div>
-            </Card>
-
-            {/* ✅ UN SEUL titre Disponibilités */}
-            <section>
-
-              {/* ✅ wrapper responsive / pas collé */}
-              <div className="mt-4">
-                <AvailabilityCalendar
-                  mode="garden"
-                  ownerId={garden.id}
-                  token={getAnyToken()}
-                />
-              </div>
-            </section>
-          </div>
-
-          {/* right */}
-          <aside className="space-y-6">
-            <Card title="Propriétaire">
-              {!owner ? (
-                <p className="text-sm text-gray-600">Pas de propriétaire lié.</p>
-              ) : (
-                <>
-                  {ownerHref ? (
-                    <Link
-                      href={ownerHref}
-                      className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3 hover:bg-gray-100 transition"
-                      aria-label={`Voir le profil de ${owner.firstName} ${owner.lastName}`}
-                    >
-                      <div
-                        className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
-                        style={{ border: "3px solid rgba(22,163,74,0.18)" }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={ownerAvatar}
-                          alt={`${owner.firstName} ${owner.lastName}`}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
-                          }}
-                        />
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="font-medium text-gray-900 line-clamp-1">
-                          {owner.firstName} {owner.lastName}
-                        </div>
-                        <div className="text-sm text-gray-600 line-clamp-1">
-                          {owner.address || "Adresse non renseignée"}
-                        </div>
-                        <div className="mt-1 text-sm font-medium text-green-700">
-                          Voir le profil →
-                        </div>
-                      </div>
-                    </Link>
-                  ) : (
-                    <div className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3">
-                      <div
-                        className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
-                        style={{ border: "3px solid rgba(22,163,74,0.18)" }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={ownerAvatar}
-                          alt={`${owner.firstName} ${owner.lastName}`}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
-                          }}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-medium text-gray-900 line-clamp-1">
-                          {owner.firstName} {owner.lastName}
-                        </div>
-                        <div className="text-sm text-gray-600 line-clamp-1">
-                          {owner.address || "Adresse non renseignée"}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    className="mt-3 w-full rounded-full px-4 py-2.5 text-white font-medium hover:opacity-95 transition"
-                    style={{ backgroundColor: BRAND_PINK }}
-                    onClick={() => alert("Fonction contact à brancher 🙂")}
-                  >
-                    Contacter
-                  </button>
-                </>
-              )}
-            </Card>
-
-            {/* ✅ SUPPRIMÉ : la rangée de besoins/infos à droite (ça faisait doublon) */}
-          </aside>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {!!garden.kind && <Chip>Type : {garden.kind}</Chip>}
+          {!!garden.needs && <Chip>Besoins : {garden.needs}</Chip>}
+          {!!garden.address && <Chip tone="gray">Adresse : {garden.address}</Chip>}
         </div>
+      </Card>
+    </div>
 
-        {/* ✅ responsiveness fix (override sans toucher tes composants) */}
-        <style jsx global>{`
-          /* Le calendrier doit pouvoir scroller sur mobile si besoin */
-          .availabilityShell {
-            overflow-x: auto;
-          }
-          /* Si ton AvailabilityCalendar a une table large, on évite de casser le layout */
-          .availabilityShell > * {
-            min-width: 320px;
-          }
-        `}</style>
-      </main>
+    {/* right (1 colonne) */}
+    <aside>
+      <Card title="Propriétaire" className="h-full">
+        {!owner ? (
+          <p className="text-sm text-gray-600">Pas de propriétaire lié.</p>
+        ) : (
+          <>
+            {ownerHref ? (
+              <Link
+                href={ownerHref}
+                className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3 hover:bg-gray-100 transition"
+                aria-label={`Voir le profil de ${owner.firstName} ${owner.lastName}`}
+              >
+                <div
+                  className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
+                  style={{ border: '3px solid rgba(22,163,74,0.18)' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ownerAvatar}
+                    alt={`${owner.firstName} ${owner.lastName}`}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
+                    }}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 line-clamp-1">
+                    {owner.firstName} {owner.lastName}
+                  </div>
+                  <div className="text-sm text-gray-600 line-clamp-1">
+                    {owner.address || 'Adresse non renseignée'}
+                  </div>
+                  <div className="mt-1 text-sm font-medium text-green-700">
+                    Voir le profil →
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3">
+                <div
+                  className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
+                  style={{ border: '3px solid rgba(22,163,74,0.18)' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ownerAvatar}
+                    alt={`${owner.firstName} ${owner.lastName}`}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
+                    }}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 line-clamp-1">
+                    {owner.firstName} {owner.lastName}
+                  </div>
+                  <div className="text-sm text-gray-600 line-clamp-1">
+                    {owner.address || 'Adresse non renseignée'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="mt-3 w-full rounded-full px-4 py-2.5 text-white font-medium hover:opacity-95 transition"
+              style={{ backgroundColor: BRAND_PINK }}
+              onClick={() => alert('Fonction contact à brancher 🙂')}
+            >
+              Contacter
+            </button>
+          </>
+        )}
+      </Card>
+    </aside>
+  </div>
+
+{/* ✅ Rangée 2 : Calendrier FULL WIDTH */}
+<div className="mt-6">
+  <AvailabilityCalendar
+    mode="garden"
+    gardenId={garden.id}
+    token={getAnyToken()}
+  />
+</div>
+
+        {/* colonne vide à droite en desktop (pour garder l'alignement visuel) */}
+        <div className="hidden lg:block" />
+      </div>
+    </main>
     </div>
   );
 }

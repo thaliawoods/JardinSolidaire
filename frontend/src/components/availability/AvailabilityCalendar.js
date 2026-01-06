@@ -63,10 +63,26 @@ function uniqById(list) {
  * - Vue mois (sélection jour)
  * - Liste de créneaux du jour (ajout/suppression)
  *
- * Libellés modifiés : “Ajouter” -> “Demander un créneau”
+ * Props recommandées (robustes) :
+ * - mode="gardener" + gardenerId="..."
+ * - mode="garden"   + gardenId="..."
+ *
+ * Backward compatible :
+ * - targetId / ownerId (fallback)
  */
-export default function AvailabilityCalendar({ mode, targetId, ownerId, token, title }) {
-  const id = targetId ?? ownerId;
+export default function AvailabilityCalendar({
+  mode,
+  gardenerId,
+  gardenId,
+  targetId, // legacy fallback
+  ownerId,  // legacy fallback
+  token,
+  title,
+}) {
+  const resolvedId =
+    mode === 'garden'
+      ? (gardenId ?? targetId ?? ownerId)
+      : (gardenerId ?? targetId ?? ownerId);
 
   // month cursor (first day of month)
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
@@ -97,8 +113,20 @@ export default function AvailabilityCalendar({ mode, targetId, ownerId, token, t
     return { days, fromISO, toISO, monthStart: first };
   }, [monthCursor]);
 
-  const gardenerAvail = useGardenerAvailability(id, monthGrid.fromISO, monthGrid.toISO, token);
-  const gardenAvail = useGardenAvailability(id, monthGrid.fromISO, monthGrid.toISO, token);
+  // ✅ Only run the hook that matches the mode (avoid “pollution” / useless fetches)
+  const gardenerAvail = useGardenerAvailability(
+    mode === 'gardener' ? resolvedId : null,
+    monthGrid.fromISO,
+    monthGrid.toISO,
+    token
+  );
+
+  const gardenAvail = useGardenAvailability(
+    mode === 'garden' ? resolvedId : null,
+    monthGrid.fromISO,
+    monthGrid.toISO,
+    token
+  );
 
   const { data, loading, error, reload, createSlot, deleteSlot } =
     mode === 'gardener' ? gardenerAvail : gardenAvail;
@@ -107,10 +135,10 @@ export default function AvailabilityCalendar({ mode, targetId, ownerId, token, t
     const arr = Array.isArray(data?.slots) ? data.slots : [];
     return arr.map((s) => ({
       id: s.id,
-      date: String(s.date).trim(),                 // YYYY-MM-DD
+      date: String(s.date).trim(), // YYYY-MM-DD
       startTime: String(s.startTime || '00:00').slice(0, 5),
       endTime: String(s.endTime || '00:00').slice(0, 5),
-      status: s.status || 'free',                  // free | booked | unavailable
+      status: s.status || 'free', // free | booked | unavailable
     }));
   }, [data]);
 
@@ -146,7 +174,7 @@ export default function AvailabilityCalendar({ mode, targetId, ownerId, token, t
   }, [monthCursor]);
 
   async function handleAddSlot() {
-    if (!id) return;
+    if (!resolvedId) return;
     try {
       setBusy(true);
       await createSlot({
@@ -260,19 +288,21 @@ export default function AvailabilityCalendar({ mode, targetId, ownerId, token, t
                 >
                   <div className="text-sm font-medium">{d.date.getDate()}</div>
 
-                  {/* today badge */}
-                  {d.isToday && (
-                    <span
-                      className="absolute top-2 right-2 text-[10px] leading-none rounded-full border px-2 py-1 whitespace-nowrap"
-                      style={{
-                        borderColor: 'rgba(22,163,74,0.35)',
-                        color: BRAND_GREEN,
-                        background: 'rgba(22,163,74,0.06)',
-                      }}
-                    >
-                      aujourd&apos;hui
-                    </span>
-                  )}
+{/* today badge */}
+{d.isToday && (
+  <span
+    className="absolute top-1 right-1 text-[9px] leading-none rounded-full border px-1.5 py-0.5 whitespace-nowrap max-w-[64px] truncate"
+    style={{
+      borderColor: 'rgba(22,163,74,0.35)',
+      color: BRAND_GREEN,
+      background: 'rgba(22,163,74,0.06)',
+    }}
+    title="aujourd'hui"
+  >
+    aujourd&apos;hui
+  </span>
+)}
+
 
                   {/* slots indicator */}
                   <div className="absolute left-3 bottom-3 flex items-center gap-2">
@@ -329,6 +359,8 @@ export default function AvailabilityCalendar({ mode, targetId, ownerId, token, t
               onClick={() => setAddOpen((v) => !v)}
               className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-white shadow-sm"
               style={{ backgroundColor: BRAND_GREEN }}
+              disabled={!resolvedId}
+              title={!resolvedId ? 'ID manquant — impossible de charger' : undefined}
             >
               + Demander un créneau
             </button>
