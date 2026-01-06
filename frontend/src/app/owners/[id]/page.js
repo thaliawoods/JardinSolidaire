@@ -7,29 +7,36 @@ import { useEffect, useMemo, useState } from "react";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 const BRAND_GREEN = "#16a34a";
 const BRAND_PINK = "#E3107D";
+const LOCAL_DIRS = ["/assets/", "/images/", "/img/", "/icons/"];
 
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
   if (s.startsWith("http") || s.startsWith("data:")) return s;
+  if (LOCAL_DIRS.some((p) => s.startsWith(p))) return s;
   if (s.startsWith("/uploads/")) return `${API_BASE}${s}`;
   if (s.startsWith("/")) return s;
-  return `${API_BASE}/uploads/${s.replace(/^\.?\/*/, "")}`;
+  const clean = s.replace(/^\.?\/*/, "");
+  if (clean.startsWith("uploads/")) return `${API_BASE}/${clean}`;
+  if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
+  return `${API_BASE}/uploads/${clean}`;
 }
+
 function initials(a = "", b = "") {
   const x = (a || "").trim()[0] || "";
   const y = (b || "").trim()[0] || "";
-  return `${x}${y}`.toUpperCase() || "U";
+  return (`${x}${y}`.toUpperCase() || "U");
 }
+
 function greenPlaceholder(first, last) {
   const txt = initials(first, last);
-  return `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'>
-      <rect width='256' height='256' rx='24' fill='${BRAND_GREEN}'/>
-      <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle'
-        font-family='Inter, Arial' font-weight='700' font-size='110' fill='#fff'>${txt}</text>
-    </svg>`
-  )}`;
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="24" fill="${BRAND_GREEN}"/>
+  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
+        font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
+</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 function normalizeOwner(raw) {
@@ -43,7 +50,7 @@ function normalizeOwner(raw) {
   const avatarRaw = base.avatarUrl ?? base.photo_profil ?? base.avatar ?? null;
   const avatarUrl = resolveMedia(avatarRaw);
 
-  const address = base.address ?? base.localisation ?? base.adresse ?? "";
+  const address = base.address ?? base.localisation ?? base.adresse ?? "—";
   const availability = base.availability ?? base.disponibilite ?? "";
   const surface =
     base.surface ??
@@ -52,23 +59,13 @@ function normalizeOwner(raw) {
     base.superficie_m2 ??
     "";
   const gardenType = base.gardenType ?? base.type_jardin ?? base.kind ?? "";
-  const rating = base.rating ?? base.note ?? base.note_moyenne ?? null;
-  const reviewsCount =
-    base.reviewsCount ??
-    base.nb_avis ??
-    (Array.isArray(base.reviews) ? base.reviews.length : null);
 
   const intro =
     base.intro ??
     base.presentation ??
     base.biographie ??
     base.description ??
-    "";
-  const comments = Array.isArray(base.comments)
-    ? base.comments
-    : Array.isArray(base.avis)
-    ? base.avis
-    : [];
+    "—";
 
   return {
     id: String(base.id ?? base.id_utilisateur ?? base.id_proprietaire ?? ""),
@@ -79,11 +76,23 @@ function normalizeOwner(raw) {
     availability,
     surface,
     gardenType,
-    rating,
-    reviewsCount,
     intro,
-    comments,
   };
+}
+
+function Chip({ children }) {
+  return (
+    <span
+      className="px-3 py-1 rounded-full text-xs font-medium"
+      style={{
+        backgroundColor: "rgba(22,163,74,0.06)",
+        border: "1px solid rgba(22,163,74,0.18)",
+        color: "#14532d",
+      }}
+    >
+      {children}
+    </span>
+  );
 }
 
 export default function OwnerDetailPage({ params }) {
@@ -101,13 +110,8 @@ export default function OwnerDetailPage({ params }) {
         setLoading(true);
         setErr("");
 
-        let res = await fetch(`${API_BASE}/api/owners/${id}`, {
-          cache: "no-store",
-        });
-        if (!res.ok)
-          res = await fetch(`${API_BASE}/api/proprietaires/${id}`, {
-            cache: "no-store",
-          });
+        let res = await fetch(`${API_BASE}/api/owners/${id}`, { cache: "no-store" });
+        if (!res.ok) res = await fetch(`${API_BASE}/api/proprietaires/${id}`, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
@@ -122,9 +126,7 @@ export default function OwnerDetailPage({ params }) {
         if (alive) setLoading(false);
       }
     })();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [id]);
 
   const fallback = useMemo(
@@ -134,26 +136,29 @@ export default function OwnerDetailPage({ params }) {
 
   if (loading) {
     return (
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="h-24 bg-gray-100 rounded-2xl animate-pulse mb-4" />
-        <div className="h-40 bg-gray-100 rounded-2xl animate-pulse" />
+      <main className="min-h-screen bg-white px-6 py-10">
+        <div className="max-w-6xl mx-auto animate-pulse space-y-4">
+          <div className="h-24 bg-gray-100 rounded-2xl" />
+          <div className="h-36 bg-gray-100 rounded-2xl" />
+        </div>
       </main>
     );
   }
 
   if (err || !owner) {
     return (
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 mb-4">
-          {err || "Impossible de charger le propriétaire."}
+      <main className="min-h-screen bg-white px-6 py-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
+            {err || "Impossible de charger le propriétaire."}
+          </div>
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition"
+          >
+            ← Retour
+          </button>
         </div>
-        <button
-          onClick={() => router.back()}
-          className="inline-block mt-4 px-4 py-2 rounded-full text-white"
-          style={{ backgroundColor: BRAND_GREEN }}
-        >
-          ← Retour au jardin
-        </button>
       </main>
     );
   }
@@ -161,197 +166,103 @@ export default function OwnerDetailPage({ params }) {
   const avatarSrc = owner.avatarUrl || fallback;
 
   return (
-    <main className="max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => router.back()}
-          aria-label="Retour au jardin"
-          className="
-    inline-flex items-center gap-2
-    rounded-full px-4 py-2
-    bg-white/80 text-[#16a34a]
-    border border-[rgba(22,163,74,0.28)]
-    hover:bg-[rgba(22,163,74,0.06)]
-    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)]
-    shadow-sm transition
-  "
-        >
-          <span aria-hidden>←</span> Retour au jardin
-        </button>
-      </div>
-
-      <section className="flex items-start gap-4 mb-6">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={avatarSrc}
-          alt={`${owner.firstName} ${owner.lastName}`}
-          className="w-20 h-20 rounded-full object-cover shadow"
-          style={{ border: `4px solid rgba(22,163,74,0.35)` }}
-          onError={(e) => {
-            e.currentTarget.src = fallback;
-          }}
-        />
-        <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-green-700">
-            {owner.firstName} {owner.lastName}
-          </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {!!owner.reviewsCount && (
-              <span
-                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                style={{
-                  backgroundColor: "white",
-                  border: "1px solid rgba(22,163,74,0.25)",
-                  color: BRAND_GREEN,
-                }}
-              >
-                {owner.reviewsCount} avis
-              </span>
-            )}
-            {owner.rating != null && (
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800">
-                ★ {Number(owner.rating).toFixed(1)} note globale
-              </span>
-            )}
-          </div>
+    <main className="min-h-screen bg-white px-6 py-10">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition"
+          >
+            ← Retour
+          </button>
         </div>
-      </section>
 
-      <section className="grid md:grid-cols-2 gap-4 mb-6">
-        <Card title="Owner details">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-700">
-            <p>
-              <span className="font-medium text-gray-800">Full name</span>
-              <br />
-              {owner.firstName} {owner.lastName}
-            </p>
-            {!!owner.address && (
-              <p>
-                <span className="font-medium text-gray-800">Neighborhood</span>
-                <br />
-                {owner.address}
-              </p>
-            )}
-            {!!owner.availability && (
-              <p>
-                <span className="font-medium text-gray-800">Availability</span>
-                <br />
-                {owner.availability}
-              </p>
-            )}
-            {!!owner.surface && (
-              <p>
-                <span className="font-medium text-gray-800">Surface</span>
-                <br />
-                {owner.surface}
-              </p>
-            )}
-            {!!owner.gardenType && (
-              <p>
-                <span className="font-medium text-gray-800">Garden type</span>
-                <br />
-                {owner.gardenType}
-              </p>
-            )}
-          </div>
-        </Card>
-
-        <Card title="Badges">
-          <div className="flex flex-wrap gap-2">
-            <span
-              className="px-2 py-1 text-xs rounded-full"
-              style={{
-                backgroundColor: "rgba(22,163,74,0.12)",
-                color: BRAND_GREEN,
-              }}
+        {/* ✅ même disposition qu’avant : avatar + nom + chips + pills */}
+        <section className="rounded-2xl p-6 mb-6 bg-white border border-gray-100 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            <div
+              className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden flex-shrink-0"
+              style={{ border: "4px solid rgba(22,163,74,0.20)" }}
             >
-              Propriétaire
-            </span>
-            {!!owner.gardenType && (
-              <span
-                className="px-2 py-1 text-xs rounded-full"
-                style={{
-                  backgroundColor: "white",
-                  border: "1px solid rgba(22,163,74,0.25)",
-                  color: BRAND_GREEN,
-                }}
-              >
-                {owner.gardenType}
-              </span>
-            )}
-            {!!owner.address && (
-              <span
-                className="px-2 py-1 text-xs rounded-full"
-                style={{
-                  backgroundColor: "white",
-                  border: "1px solid rgba(22,163,74,0.25)",
-                  color: BRAND_GREEN,
-                }}
-              >
-                📍 {owner.address}
-              </span>
-            )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarSrc}
+                alt={`${owner.firstName} ${owner.lastName}`}
+                className="h-full w-full object-cover"
+                onError={(e) => { e.currentTarget.src = fallback; }}
+              />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl md:text-3xl font-semibold text-green-900 leading-tight">
+                {owner.firstName} {owner.lastName}
+              </h1>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Chip>Propriétaire</Chip>
+                {owner.gardenType ? <Chip>{owner.gardenType}</Chip> : null}
+                {owner.address && owner.address !== "—" ? <Chip>{owner.address}</Chip> : null}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <MetaPill label="Localisation" value={owner.address || "—"} />
+              <MetaPill label="Type" value={owner.gardenType || "—"} />
+              {owner.surface ? <MetaPill label="Surface" value={String(owner.surface)} /> : null}
+              {owner.availability ? <MetaPill label="Dispo" value={String(owner.availability)} /> : null}
+            </div>
           </div>
-        </Card>
-      </section>
 
-      <Card title="Introduction" className="mb-6">
-        <p className="text-gray-700">{owner.intro || "—"}</p>
-      </Card>
+          {/* CTA rose */}
+          <div className="mt-5 flex flex-col sm:flex-row gap-3">
+            <button
+              type="button"
+              className="px-6 py-3 rounded-full text-white shadow-sm hover:opacity-95 transition w-full sm:w-auto"
+              style={{ backgroundColor: BRAND_PINK }}
+            >
+              Contacter
+            </button>
 
-      <Card title="Comments">
-        {owner.comments?.length ? (
-          <ul className="space-y-3">
-            {owner.comments.map((c, i) => {
-              const text =
-                typeof c === "string"
-                  ? c
-                  : c.comment || c.contenu || c.commentaire || "—";
-              const who =
-                typeof c === "object" ? c.author || c.auteur || "" : "";
-              const note =
-                typeof c === "object" && c.note != null ? ` • ★ ${c.note}` : "";
-              return (
-                <li
-                  key={i}
-                  className="text-sm text-gray-700 rounded-xl px-3 py-2"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.6)",
-                    border: "1px solid rgba(22,163,74,0.15)",
-                  }}
-                >
-                  <span className="block">{text}</span>
-                  {(who || note) && (
-                    <span className="text-xs text-gray-500">
-                      {who}
-                      {note}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-gray-600 text-sm">No comments yet.</p>
-        )}
-      </Card>
+            <Link
+              href="/gardens"
+              className="px-6 py-3 rounded-full border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 transition w-full sm:w-auto text-center"
+            >
+              Voir les jardins
+            </Link>
+          </div>
+        </section>
+
+        <section>
+          <Card title="Présentation">
+            <p className="mt-3 text-gray-700 whitespace-pre-wrap">{owner.intro || "—"}</p>
+          </Card>
+        </section>
+      </div>
     </main>
   );
 }
 
-function Card({ title, children, className = "" }) {
+function Card({ title, children }) {
   return (
-    <section
-      className={`rounded-2xl p-5 shadow-sm ${className}`}
+    <div className="rounded-2xl p-6 bg-white border border-gray-100 shadow-sm">
+      <h2 className="text-lg font-semibold text-green-800">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function MetaPill({ label, value }) {
+  return (
+    <div
+      className="rounded-full px-4 py-2 text-sm"
       style={{
-        backgroundColor: "rgba(22,163,74,0.08)", 
-        border: "1px solid rgba(22,163,74,0.15)",
+        backgroundColor: "rgba(22,163,74,0.06)",
+        border: "1px solid rgba(22,163,74,0.18)",
+        color: "#14532d",
       }}
+      title={label}
     >
-      <h2 className="text-sm font-semibold" style={{ color: BRAND_GREEN }}>
-        {title}
-      </h2>
-      <div className="mt-3">{children}</div>
-    </section>
+      <span className="opacity-80">{label} :</span> <span className="font-medium">{value}</span>
+    </div>
   );
 }

@@ -20,3 +20,30 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* =========================
+   Leaflet — anti overflow
+   ========================= */
+
+/* Empêche la carte de dépasser horizontalement */
+.leaflet-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Certains éléments Leaflet peuvent dépasser (controls/panes) */
+.leaflet-pane,
+.leaflet-control-container {
+  max-width: 100% !important;
+}
+
+/* Bonus : évite les débordements horizontaux globaux */
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* IMPORTANT en layout flex : permet aux enfants (ex: carte) de shrink */
+.min-w-0 {
+  min-width: 0;
+}

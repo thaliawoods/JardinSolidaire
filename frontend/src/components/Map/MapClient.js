@@ -41,19 +41,28 @@ export default function MapClient({ center = [48.8566, 2.3522], zoom = 12, marke
 
   const { MapContainer, TileLayer, Marker, Popup } = RL;
 
-  return (
-    <div style={{ width: '100%', height: '100%', minHeight: 400 }}>
-      <MapContainer center={center} zoom={zoom} style={{ width: '100%', height: '100%' }}>
-        <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {points.map((p, i) => (
-          <Marker key={i} position={[p.lat, p.lng]}>
-            {p.label ? <Popup>{p.label}</Popup> : null}
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
-  );
+return (
+  <div
+    className="w-full max-w-full min-w-0 overflow-hidden rounded-2xl border border-gray-200"
+    style={{ height: '100%', minHeight: 400 }}
+  >
+    <MapContainer
+      center={center}
+      zoom={zoom}
+      className="w-full h-full"
+      style={{ width: '100%', height: '100%', maxWidth: '100%' }}
+    >
+      <TileLayer
+        attribution='&copy; OpenStreetMap contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      {points.map((p, i) => (
+        <Marker key={i} position={[p.lat, p.lng]}>
+          {p.label ? <Popup>{p.label}</Popup> : null}
+        </Marker>
+      ))}
+    </MapContainer>
+  </div>
+);
+
 }

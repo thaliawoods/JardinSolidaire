@@ -1,13 +1,9 @@
+// GardensMap.js
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 
-// Do NOT import 'leaflet' or its CSS at the top level.
-// Add Leaflet CSS once in app/layout.js:
-// <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-// react-leaflet must be SSR-disabled
 const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
 const TileLayer    = dynamic(() => import('react-leaflet').then(m => m.TileLayer),    { ssr: false });
 const Marker       = dynamic(() => import('react-leaflet').then(m => m.Marker),       { ssr: false });
@@ -15,18 +11,12 @@ const Popup        = dynamic(() => import('react-leaflet').then(m => m.Popup),  
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
-/**
- * Props:
- * - height: CSS height (e.g. '360px' or '60vh')
- * - fullPage: boolean → when true, fills the viewport below the navbar
- */
 export default function GardensMap({ height = '360px', fullPage = false }) {
   const [gardens, setGardens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userPos, setUserPos] = useState(null);
-  const [ready, setReady] = useState(false); // leaflet assets ready
+  const [ready, setReady] = useState(false);
 
-  // Load gardens with coordinates from the API
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -36,7 +26,6 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
         if (!alive) return;
 
         const list = Array.isArray(data?.gardens) ? data.gardens : Array.isArray(data) ? data : [];
-        // Normalize lat/lng in case they come as strings
         const cleaned = list
           .map(g => ({
             ...g,
@@ -55,7 +44,6 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
     return () => { alive = false; };
   }, []);
 
-  // Load Leaflet on the client and set default icons
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -79,7 +67,6 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
     return () => { mounted = false; };
   }, []);
 
-  // Optional browser geolocation
   useEffect(() => {
     if (typeof window === 'undefined' || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
@@ -92,15 +79,21 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
   const center = useMemo(() => {
     if (userPos) return [userPos.lat, userPos.lng];
     if (gardens.length > 0) return [gardens[0].lat, gardens[0].lng];
-    return [48.8566, 2.3522]; // Paris fallback
+    return [48.8566, 2.3522];
   }, [userPos, gardens]);
 
   const mapHeight = fullPage ? 'calc(100vh - 64px)' : height;
 
-  // Wait until Leaflet is ready before rendering the map
+  // ✅ wrapper anti overflow horizontal (important)
+  const frameClass =
+    'relative w-full max-w-full min-w-0 overflow-hidden rounded-2xl border border-gray-200';
+
   if (!ready) {
     return (
-      <div className="relative rounded-xl overflow-hidden border" style={{ height: mapHeight }}>
+      <div
+        className={frameClass}
+        style={{ height: mapHeight, width: '100%', maxWidth: '100%' }}
+      >
         <div className="absolute inset-0 grid place-items-center bg-white/60 text-sm">
           Chargement de la carte…
         </div>
@@ -109,8 +102,17 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
   }
 
   return (
-    <div className="relative rounded-xl overflow-hidden border" style={{ height: mapHeight }}>
-      <MapContainer center={center} zoom={12} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
+    <div
+      className={frameClass}
+      style={{ height: mapHeight, width: '100%', maxWidth: '100%' }}
+    >
+      <MapContainer
+        center={center}
+        zoom={12}
+        scrollWheelZoom
+        className="w-full h-full"
+        style={{ height: '100%', width: '100%', maxWidth: '100%' }}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
