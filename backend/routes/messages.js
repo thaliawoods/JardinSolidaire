@@ -225,3 +225,57 @@ router.post('/mark-read', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+
+/* ---------------------------------------------------
+   POST /api/messages/mark-read
+   Body:
+   - { all?: boolean }
+   - { ids?: number[] }
+   - { fromUserId?: number }   ✅ NEW: mark only messages from that user as read
+---------------------------------------------------- */
+router.post('/mark-read', requireAuth, async (req, res) => {
+  try {
+    const me = BigInt(req.user.id);
+    const { all = false, ids = [], fromUserId = null } = req.body || {};
+
+    // ✅ Mark ONLY messages received from a specific user
+    if (fromUserId != null && String(fromUserId).trim() !== '') {
+      const other = BigInt(Number(fromUserId));
+      await prisma.message.updateMany({
+        where: {
+          targetUserId: me,
+          senderUserId: other,
+          read: false,
+        },
+        data: { read: true },
+      });
+      return res.json({ ok: true });
+    }
+
+    // ✅ Mark ALL inbox as read (existing behavior)
+    if (all) {
+      await prisma.message.updateMany({
+        where: { targetUserId: me, read: false },
+        data: { read: true },
+      });
+      return res.json({ ok: true });
+    }
+
+    // ✅ Mark selected IDs as read (existing behavior)
+    const validIds = (Array.isArray(ids) ? ids : [])
+      .map((x) => Number(x))
+      .filter((x) => Number.isFinite(x) && x > 0);
+
+    if (!validIds.length) return res.json({ ok: true });
+
+    await prisma.message.updateMany({
+      where: { id: { in: validIds.map((n) => BigInt(n)) }, targetUserId: me },
+      data: { read: true },
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('POST /messages/mark-read failed:', e?.stack || e);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
