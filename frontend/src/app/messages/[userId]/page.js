@@ -108,13 +108,6 @@ export default function ThreadPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link
-              href="/messages"
-              className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-              style={{ color: BRAND_GREEN }}
-            >
-              ← Messagerie
-            </Link>
 
             <button
               onClick={() => router.back()}
