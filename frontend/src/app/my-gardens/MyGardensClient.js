@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
+import AvailabilityCalendar from "@/components/availability/AvailabilityCalendar";
 
 const BRAND_GREEN = "#16a34a";
 
@@ -68,6 +69,9 @@ export default function MyGardensClient() {
   const [toast, setToast] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // ✅ Option 2: un seul calendrier, pour le jardin sélectionné
+  const [openAvailId, setOpenAvailId] = useState(null);
+
   const { confirm, confirmState, closeConfirm } = useConfirm();
 
   function pushToast(t) {
@@ -106,6 +110,13 @@ export default function MyGardensClient() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  // ✅ si le jardin ouvert n'existe plus après reload, on ferme
+  useEffect(() => {
+    if (!openAvailId) return;
+    const exists = rows.some((r) => r.id === openAvailId);
+    if (!exists) setOpenAvailId(null);
+  }, [rows, openAvailId]);
 
   const stats = useMemo(() => {
     const published = rows.filter((r) => !!r.publishedAt).length;
@@ -176,6 +187,8 @@ export default function MyGardensClient() {
       setBusyId(id);
       await apiFetch(`/api/gardens/${id}`, { method: "DELETE" });
       pushToast("Jardin supprimé.");
+      // ✅ si on supprime le jardin ouvert, on ferme le calendrier
+      setOpenAvailId((prev) => (prev === id ? null : prev));
       await load();
     } catch (e) {
       console.error(e);
@@ -286,6 +299,7 @@ export default function MyGardensClient() {
         {rows.map((g) => {
           const isBusy = busyId === g.id;
           const isPublished = !!g.publishedAt;
+          const isOpen = openAvailId === g.id;
 
           return (
             <div
@@ -324,6 +338,13 @@ export default function MyGardensClient() {
                 >
                   Modifier
                 </button>
+
+                <Link
+                  href={`/my-gardens/${g.id}/slots`}
+                  className="px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm"
+                >
+                  Gérer créneaux
+                </Link>
 
                 {isPublished ? (
                   <button
@@ -372,6 +393,18 @@ export default function MyGardensClient() {
                   {isBusy ? "…" : "Supprimer"}
                 </button>
               </div>
+
+              {isOpen && (
+                <div className="mt-5">
+                  <AvailabilityCalendar
+                    mode="garden"
+                    intent="form"
+                    gardenId={gardenId}
+                    title="Calendrier"
+                    onDateSelect={(iso) => setDate(iso)} // ✅ clic jour => remplit la date du form
+                  />
+                </div>
+              )}
 
               <div className="mt-3 text-xs text-gray-500">
                 Astuce : garde en brouillon tant que tu n’as pas ajouté toutes

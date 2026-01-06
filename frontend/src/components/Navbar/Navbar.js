@@ -343,7 +343,7 @@ export default function Navbar() {
               <>
                 <li>
                   <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-                    Mon profil
+                    Dashboard
                   </Link>
                 </li>
 
