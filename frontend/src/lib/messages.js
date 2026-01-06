@@ -1,71 +1,43 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-
-function authHeaders() {
-  const token =
-    typeof window !== 'undefined'
-      ? (localStorage.getItem('token') || localStorage.getItem('jwt'))
-      : null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-async function handle(res) {
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || 'request_failed');
-  return data;
-}
-
-// ✅ NEW: exported so Navbar can import it without breaking the build
-export async function unreadCount() {
-  try {
-    if (typeof window === 'undefined') return 0; // during SSR/build
-    const res = await fetch(`${API_BASE}/api/messages/unread-count`, {
-      headers: { ...authHeaders() },
-      cache: 'no-store',
-    });
-    if (!res.ok) return 0;
-    const data = await res.json().catch(() => ({}));
-    return typeof data?.count === 'number' ? data.count : 0;
-  } catch {
-    return 0;
-  }
-}
-
-export async function sendMessage({ toUserId, content }) {
-  const res = await fetch(`${API_BASE}/api/messages`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ toUserId, content }),
-  });
-  return handle(res);
-}
+import { apiFetch } from '@/lib/api';
 
 export async function listInbox({ unreadOnly = false } = {}) {
-  const url = `${API_BASE}/api/messages${unreadOnly ? '?unread=1' : ''}`;
-  const res = await fetch(url, { headers: { ...authHeaders() }, cache: 'no-store' });
-  return handle(res); // { messages: [...] }
+  const query = {};
+  if (unreadOnly) query.unread = 1;
+  return apiFetch('/api/messages', { query });
 }
 
 export async function listConversations() {
-  const res = await fetch(`${API_BASE}/api/messages/conversations`, {
-    headers: { ...authHeaders() },
-    cache: 'no-store',
-  });
-  return handle(res); // { conversations: [...] }
+  return apiFetch('/api/messages/conversations');
 }
 
-export async function getThread(otherUserId) {
-  const res = await fetch(`${API_BASE}/api/messages/with/${otherUserId}`, {
-    headers: { ...authHeaders() },
-    cache: 'no-store',
+export async function getThread(userId) {
+  return apiFetch(`/api/messages/with/${encodeURIComponent(String(userId))}`);
+}
+
+export async function sendMessage({ toUserId, content }) {
+  return apiFetch('/api/messages', {
+    method: 'POST',
+    body: { toUserId: Number(toUserId), content },
   });
-  return handle(res); // { messages: [...] }
 }
 
 export async function markAllRead() {
-  const res = await fetch(`${API_BASE}/api/messages/mark-read`, {
+  return apiFetch('/api/messages/mark-read', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ all: true }),
+    body: { all: true },
   });
-  return handle(res); // { ok: true }
+}
+
+/** ✅ NEW: mark only messages coming from one user as read */
+export async function markThreadRead(fromUserId) {
+  return apiFetch('/api/messages/mark-read', {
+    method: 'POST',
+    body: { fromUserId: Number(fromUserId) },
+  });
+}
+
+export async function unreadCount() {
+  const inbox = await listInbox({ unreadOnly: true });
+  const msgs = inbox?.messages || [];
+  return { count: Array.isArray(msgs) ? msgs.length : 0 };
 }
