@@ -93,7 +93,6 @@ async function authFetch(url, opts = {}) {
  * Factory for garden/gardener availability hooks
  * ----------------------------------------------------- */
 function makeAvailabilityHook(kind) {
-  // kind: 'garden' | 'gardener'
   const plural = kind === 'garden' ? 'gardens' : 'gardeners';
 
   return function useAvailability(ownerId, fromISO, toISO, token) {
@@ -102,7 +101,6 @@ function makeAvailabilityHook(kind) {
     const [error, setError] = useState('');
 
     const authHeader = useMemo(() => {
-      // Prefer explicit token prop; fallback to localStorage if present
       const t =
         token ||
         (typeof window !== 'undefined' ? localStorage.getItem('TOKEN') : null) ||
@@ -118,7 +116,6 @@ function makeAvailabilityHook(kind) {
         const url = `${API_BASE}/api/availability/${plural}/${ownerId}?from=${encodeURIComponent(
           fromISO
         )}&to=${encodeURIComponent(toISO)}`;
-        // IMPORTANT: include auth header even for GET
         const body = await authFetch(url, { method: 'GET', headers: { ...authHeader } });
         setData(Array.isArray(body?.slots) ? body : { slots: [] });
       } catch (e) {
@@ -156,7 +153,6 @@ function makeAvailabilityHook(kind) {
           headers: { ...authHeader },
         });
       } catch (e) {
-        // Friendly handling of booked slots (409)
         if (e.status === 409 && e.body?.error === 'slot_booked') {
           alert('Ce créneau est déjà réservé – vous ne pouvez pas le supprimer.');
           return;

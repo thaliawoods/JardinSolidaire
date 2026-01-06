@@ -10,27 +10,23 @@ describe('GET /api/gardens', () => {
     if (res.body.length > 0) {
       const g = res.body[0];
 
-      // required keys you actually return
       expect(g).toEqual(expect.objectContaining({
         id: expect.any(String),
         title: expect.any(String),
         status: expect.any(String),
       }));
 
-      // numeric coords
       expect(g).toHaveProperty('lat');
       expect(g).toHaveProperty('lng');
       expect(typeof g.lat).toBe('number');
       expect(typeof g.lng).toBe('number');
 
-      // address + photos
       expect(g).toHaveProperty('address');
       expect(typeof g.address).toBe('string');
 
       expect(g).toHaveProperty('photos');
       expect(Array.isArray(g.photos)).toBe(true);
 
-      // optional fields
       if (g.averageRating != null) expect(typeof g.averageRating).toBe('number');
       if (g.publishedAt != null)   expect(typeof g.publishedAt).toBe('string');
     }

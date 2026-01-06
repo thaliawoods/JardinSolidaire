@@ -36,7 +36,6 @@ export async function getBooking(id) {
   return handle(res, 'not_found');
 }
 
-// Gardener can update own booking (notes; cancel/complete)
 export async function updateBooking(id, patch) {
   const res = await fetch(`${API_BASE}/api/bookings/${id}`, {
     method: 'PATCH',
@@ -56,10 +55,9 @@ export async function canBook({ gardenId, startsAt, endsAt }) {
     headers: { ...authHeaders() },
     cache: 'no-store',
   });
-  return handle(res, 'check_failed'); // { ok, reasons, conflict? }
+  return handle(res, 'check_failed'); 
 }
 
-/* ---------- OWNER endpoints ---------- */
 export async function getOwnerInbox() {
   const res = await fetch(`${API_BASE}/api/bookings/inbox`, {
     headers: { 'Content-Type': 'application/json', ...authHeaders() },

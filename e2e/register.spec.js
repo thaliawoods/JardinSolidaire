@@ -1,4 +1,3 @@
-// e2e/register.spec.js
 const { test, expect } = require('@playwright/test');
 
 async function gotoFirstWorking(page, paths) {
