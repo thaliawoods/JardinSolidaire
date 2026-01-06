@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { persistAuth } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const BRAND_PINK = '#E3107D';
@@ -19,6 +18,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setErr('');
     setSubmitting(true);
+
     try {
       const res = await fetch(`${API_BASE}/api/register`, {
         method: 'POST',
@@ -32,9 +32,14 @@ export default function RegisterPage() {
         return;
       }
 
-      persistAuth({ token: data.token });
-      localStorage.setItem('user', JSON.stringify(data.user || {}));
-      router.push('/dashboard');
+      // ✅ Nouveau flow: pas de token à l’inscription, on demande de vérifier l’email
+      if (data?.message === 'verification_email_sent') {
+        router.push(`/check-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      // fallback (si back change)
+      router.push('/login');
     } catch {
       setErr('network_error');
     } finally {
@@ -45,6 +50,7 @@ export default function RegisterPage() {
   const errMsg =
     err === 'email_taken' ? 'Cet email est déjà utilisé.' :
     err === 'email_and_password_required' ? 'Email et mot de passe requis.' :
+    err === 'server_misconfigured' ? 'Serveur mal configuré.' :
     err === 'server_error' ? 'Erreur serveur.' :
     err === 'network_error' ? 'Erreur réseau. Réessaie.' :
     err ? 'Création de compte impossible.' : '';
