@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useEffect, useState } from "react";
+import React, { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import BookingButton from "@/components/booking/BookingButton";
@@ -29,6 +29,7 @@ function resolveMedia(u) {
   if (LOCAL_DIRS.some((p) => clean.startsWith(p.slice(1)))) return `/${clean}`;
   return `${API_BASE}/uploads/${clean}`;
 }
+
 function initials(a = "", b = "") {
   const x = (a || "").trim()[0] || "";
   const y = (b || "").trim()[0] || "";
@@ -52,8 +53,8 @@ function normalizeGarden(payload) {
   const photos = (Array.isArray(photosRaw)
     ? photosRaw
     : typeof photosRaw === "string"
-    ? [photosRaw]
-    : []
+      ? [photosRaw]
+      : []
   ).map(resolveMedia);
 
   const ownerRaw = payload.owner ?? null;
@@ -64,9 +65,7 @@ function normalizeGarden(payload) {
       firstName: ownerRaw.firstName ?? ownerRaw.prenom ?? "",
       lastName: ownerRaw.lastName ?? ownerRaw.nom ?? "",
       avatarUrl: resolveMedia(ownerRaw.avatarUrl ?? ownerRaw.photo_profil ?? ""),
-      phone: ownerRaw.phone ?? ownerRaw.telephone ?? null,
       address: ownerRaw.address ?? ownerRaw.adresse ?? null,
-      averageRating: ownerRaw.averageRating ?? ownerRaw.note ?? null,
       intro: ownerRaw.bio ?? ownerRaw.presentation ?? null,
       ownerId:
         ownerRaw.ownerId ??
@@ -84,10 +83,7 @@ function normalizeGarden(payload) {
     kind: payload.kind ?? payload.type ?? "",
     needs: payload.needs ?? payload.besoins ?? "",
     photos,
-    averageRating: payload.averageRating ?? payload.note_moyenne ?? null,
     owner: owner || null,
-
-    // champs utiles pour construire le lien propriétaire
     demoOwnerId:
       payload.ownerProfileId ??
       payload.ownerDemoId ??
@@ -99,6 +95,81 @@ function normalizeGarden(payload) {
       payload.id_ownerUser ??
       null,
   };
+}
+
+/* ---------- UI atoms ---------- */
+function Card({ title, children, className = "" }) {
+  return (
+    <section
+      className={`rounded-2xl border border-black/5 bg-white p-6 shadow-sm ${className}`}
+    >
+      {title ? (
+        <h2 className="text-base font-semibold text-green-900">{title}</h2>
+      ) : null}
+      <div className={title ? "mt-4" : ""}>{children}</div>
+    </section>
+  );
+}
+
+/** ✅ chips plus lisibles sur la photo (style “glass”) */
+function HeroChip({ children, tone = "mint" }) {
+  const base =
+    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap backdrop-blur-md shadow-sm";
+  const style =
+    tone === "mint"
+      ? {
+          backgroundColor: "rgba(236,253,245,0.90)", // ✅ beaucoup plus visible
+          border: "1px solid rgba(22,163,74,0.28)",
+          color: "#166534",
+        }
+      : tone === "gray"
+        ? {
+            backgroundColor: "rgba(255,255,255,0.86)",
+            border: "1px solid rgba(17,24,39,0.12)",
+            color: "#111827",
+          }
+        : {
+            backgroundColor: "rgba(255,240,248,0.90)",
+            border: "1px solid rgba(227,16,125,0.22)",
+            color: "#a10b59",
+          };
+
+  return (
+    <span className={base} style={style}>
+      {children}
+    </span>
+  );
+}
+
+/** chips “normales” dans le contenu */
+function Chip({ children, tone = "mint" }) {
+  const styles =
+    tone === "mint"
+      ? {
+          backgroundColor: "rgba(22,163,74,0.06)",
+          border: "1px solid rgba(22,163,74,0.22)",
+          color: "#166534",
+        }
+      : tone === "gray"
+        ? {
+            backgroundColor: "rgba(17,24,39,0.04)",
+            border: "1px solid rgba(17,24,39,0.10)",
+            color: "#374151",
+          }
+        : {
+            backgroundColor: "rgba(227,16,125,0.06)",
+            border: "1px solid rgba(227,16,125,0.20)",
+            color: "#a10b59",
+          };
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+      style={styles}
+    >
+      {children}
+    </span>
+  );
 }
 
 export default function GardenDetailPage({ params }) {
@@ -115,33 +186,45 @@ export default function GardenDetailPage({ params }) {
         setError("");
 
         let res = await fetch(`${API_BASE}/api/gardens/${id}`, { cache: "no-store" });
-        if (!res.ok) {
-          res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: "no-store" });
-        }
+        if (!res.ok) res = await fetch(`${API_BASE}/api/jardins/${id}`, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
         if (alive) setGarden(normalizeGarden(data));
       } catch {
         if (alive) {
-          setError("Couldn't load this garden.");
+          setError("Impossible de charger ce jardin.");
           setGarden(null);
         }
       } finally {
         if (alive) setLoading(false);
       }
     })();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [id]);
+
+  const owner = garden?.owner;
+
+  const ownerAvatar = useMemo(() => {
+    if (!owner) return null;
+    return owner.avatarUrl || greenAvatar(owner.firstName, owner.lastName);
+  }, [owner]);
+
+  const ownerProfileIdRaw =
+    garden?.demoOwnerId ??
+    owner?.ownerId ??
+    owner?.id ??
+    garden?.ownerUserId ??
+    null;
+
+  const ownerHref = ownerProfileIdRaw ? `/owners/${ownerProfileIdRaw}` : null;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white text-gray-900 p-6">
         <div className="animate-pulse space-y-4 max-w-6xl mx-auto">
-          <div className="h-28 bg-gray-100 rounded-2xl" />
-          <div className="h-40 bg-gray-100 rounded-2xl" />
+          <div className="h-10 w-56 bg-gray-100 rounded-full" />
+          <div className="h-72 bg-gray-100 rounded-3xl" />
           <div className="h-40 bg-gray-100 rounded-2xl" />
         </div>
       </div>
@@ -153,28 +236,21 @@ export default function GardenDetailPage({ params }) {
       <div className="min-h-screen bg-white text-gray-900 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
-            {error || "Unknown error"}
+            {error || "Erreur inconnue"}
           </div>
           <p className="text-gray-600">
-            Retour aux <Link href="/gardens" className="underline text-green-700">jardins</Link>.
+            Retour aux{" "}
+            <Link href="/gardens" className="underline text-green-700">
+              jardins
+            </Link>
+            .
           </p>
         </div>
       </div>
     );
   }
 
-  const owner = garden.owner;
-  const ownerAvatar = owner?.avatarUrl || greenAvatar(owner?.firstName, owner?.lastName);
-
-  // construit le meilleur id possible pour /owners/[id]
-  const ownerProfileIdRaw =
-    garden.demoOwnerId ??
-    owner?.ownerId ??        // id de la table Owner (préféré)
-    owner?.id ??             // parfois owner.id est l'id Owner
-    garden.ownerUserId ??    // fallback : id du User
-    null;
-
-  const ownerHref = ownerProfileIdRaw ? `/owners/${ownerProfileIdRaw}` : null;
+  const hero = garden.photos?.[0] || "";
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
@@ -184,138 +260,195 @@ export default function GardenDetailPage({ params }) {
           <Link
             href="/gardens"
             aria-label="Retour aux jardins"
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/80 text-[#16a34a] border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(22,163,74,0.35)] shadow-sm transition"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-[#16a34a] border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] shadow-sm transition"
           >
             <span aria-hidden>←</span> Retour aux jardins
           </Link>
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-green-700 mb-5">{garden.title}</h1>
+        {/* HERO */}
+        <div className="rounded-3xl overflow-hidden border border-black/5 shadow-sm">
+          <div className="relative">
+            {hero ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={hero}
+                alt={garden.title || "Photo de jardin"}
+                className="w-full h-56 md:h-72 lg:h-80 object-cover"
+              />
+            ) : (
+              <div className="w-full h-56 md:h-72 lg:h-80 bg-gray-100" />
+            )}
 
-        {garden.photos.length > 0 && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={garden.photos[0]}
-            alt={garden.title || "Photo de jardin"}
-            className="w-full h-56 md:h-72 lg:h-80 object-cover rounded-2xl mb-6"
-          />
-        )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <section className="lg:col-span-2">
-            <Card title="Informations sur le jardin">
-              <div className="mt-3 space-y-1.5 text-sm text-gray-700">
-                <p>{garden.description}</p>
-                <p><strong>Addresse:</strong> {garden.address || "—"}</p>
-                <p><strong>Type:</strong> {garden.kind || "—"}</p>
-                <p><strong>Besoins:</strong> {garden.needs || "—"}</p>
-                <p><strong>Note moyenne:</strong> {garden.averageRating ?? "—"}★</p>
+            <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
+              <h1 className="text-2xl md:text-3xl font-semibold text-white drop-shadow">
+                {garden.title}
+              </h1>
+
+              {/* ✅ chips lisibles + wrap */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {!!garden.address && (
+                  <HeroChip tone="gray">
+                    <span aria-hidden>📍</span>
+                    <span className="max-w-[70vw] md:max-w-[520px] truncate">
+                      {garden.address}
+                    </span>
+                  </HeroChip>
+                )}
+                {!!garden.kind && <HeroChip>{garden.kind}</HeroChip>}
+                {!!garden.needs && <HeroChip>{garden.needs}</HeroChip>}
+                <HeroChip tone="mint">{garden.photos?.length || 0} photos</HeroChip>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA row */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-5 md:px-6 py-4 bg-white">
+            <p className="text-sm text-gray-600">
+              Choisis un jour dans le calendrier, puis demande un créneau.
+            </p>
+
+            <div className="flex items-center gap-3">
+              {/* ✅ garder le réserver en rose */}
+              <BookingButton gardenId={garden.id} />
+            </div>
+          </div>
+        </div>
+
+        {/* CONTENT */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* left */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card title="À propos du jardin">
+              {garden.description ? (
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {garden.description}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-600">Aucune description.</p>
+              )}
+
+              {/* ✅ chips mint (petits détails, pas de grosse plage) */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {!!garden.kind && <Chip>Type : {garden.kind}</Chip>}
+                {!!garden.needs && <Chip>Besoins : {garden.needs}</Chip>}
+                {!!garden.address && (
+                  <Chip tone="gray">Adresse : {garden.address}</Chip>
+                )}
               </div>
             </Card>
-          </section>
 
-          <aside>
-            <Card title="Propriétaire du jardin">
+            {/* ✅ UN SEUL titre Disponibilités */}
+            <section>
+
+              {/* ✅ wrapper responsive / pas collé */}
+              <div className="mt-4">
+                <AvailabilityCalendar
+                  mode="garden"
+                  ownerId={garden.id}
+                  token={getAnyToken()}
+                />
+              </div>
+            </section>
+          </div>
+
+          {/* right */}
+          <aside className="space-y-6">
+            <Card title="Propriétaire">
               {!owner ? (
                 <p className="text-sm text-gray-600">Pas de propriétaire lié.</p>
               ) : (
-                <div className="mt-3 grid grid-cols-1 gap-3 text-sm text-gray-700">
-                  {/* toute la ligne devient un lien si on a un id */}
+                <>
                   {ownerHref ? (
                     <Link
                       href={ownerHref}
-                      className="flex items-center gap-3 rounded-lg hover:bg-white/50 transition p-1 -m-1 cursor-pointer"
+                      className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3 hover:bg-gray-100 transition"
                       aria-label={`Voir le profil de ${owner.firstName} ${owner.lastName}`}
                     >
                       <div
-                        className="h-14 w-14 rounded-full overflow-hidden"
-                        style={{ border: `4px solid rgba(22,163,74,0.35)` }}
+                        className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
+                        style={{ border: "3px solid rgba(22,163,74,0.18)" }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={ownerAvatar}
                           alt={`${owner.firstName} ${owner.lastName}`}
                           className="h-full w-full object-cover"
-                          onError={(e) => { e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName); }}
+                          onError={(e) => {
+                            e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
+                          }}
                         />
                       </div>
-                      <div>
-                        <p className="font-medium">{owner.firstName} {owner.lastName}</p>
-                        <p className="text-gray-500">{owner.address || "—"}</p>
+
+                      <div className="min-w-0">
+                        <div className="font-medium text-gray-900 line-clamp-1">
+                          {owner.firstName} {owner.lastName}
+                        </div>
+                        <div className="text-sm text-gray-600 line-clamp-1">
+                          {owner.address || "Adresse non renseignée"}
+                        </div>
+                        <div className="mt-1 text-sm font-medium text-green-700">
+                          Voir le profil →
+                        </div>
                       </div>
                     </Link>
                   ) : (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3">
                       <div
-                        className="h-14 w-14 rounded-full overflow-hidden"
-                        style={{ border: `4px solid rgba(22,163,74,0.35)` }}
+                        className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
+                        style={{ border: "3px solid rgba(22,163,74,0.18)" }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={ownerAvatar}
                           alt={`${owner.firstName} ${owner.lastName}`}
                           className="h-full w-full object-cover"
-                          onError={(e) => { e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName); }}
+                          onError={(e) => {
+                            e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
+                          }}
                         />
                       </div>
-                      <div>
-                        <p className="font-medium">{owner.firstName} {owner.lastName}</p>
-                        <p className="text-gray-500">{owner.address || "—"}</p>
+                      <div className="min-w-0">
+                        <div className="font-medium text-gray-900 line-clamp-1">
+                          {owner.firstName} {owner.lastName}
+                        </div>
+                        <div className="text-sm text-gray-600 line-clamp-1">
+                          {owner.address || "Adresse non renseignée"}
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* CTA explicite en plus (optionnel) */}
-                  {ownerHref && (
-                    <Link
-                      href={ownerHref}
-                      className="inline-block mt-1 px-4 py-2 rounded-full text-white"
-                      style={{ backgroundColor: BRAND_PINK }}
-                    >
-                      Voir le profil
-                    </Link>
-                  )}
-                </div>
+                  <button
+                    type="button"
+                    className="mt-3 w-full rounded-full px-4 py-2.5 text-white font-medium hover:opacity-95 transition"
+                    style={{ backgroundColor: BRAND_PINK }}
+                    onClick={() => alert("Fonction contact à brancher 🙂")}
+                  >
+                    Contacter
+                  </button>
+                </>
               )}
             </Card>
+
+            {/* ✅ SUPPRIMÉ : la rangée de besoins/infos à droite (ça faisait doublon) */}
           </aside>
         </div>
 
-        {owner?.intro && (
-          <section className="mt-6">
-            <Card title="Introduction du propriétaire">
-              <p className="mt-3 text-gray-700 whitespace-pre-wrap">{owner.intro}</p>
-            </Card>
-          </section>
-        )}
-
-        {/* Booking CTA */}
-        <section className="mt-6">
-          <BookingButton gardenId={garden.id} />
-        </section>
-
-        {/* Availability calendar */}
-        <section className="mt-8">
-          <h2 className="sr-only">Disponibilités du jardin</h2>
-          <div
-            className="rounded-2xl p-6"
-            style={{ backgroundColor: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.15)" }}
-          />
-          <AvailabilityCalendar mode="garden" ownerId={garden.id} token={getAnyToken()} />
-        </section>
+        {/* ✅ responsiveness fix (override sans toucher tes composants) */}
+        <style jsx global>{`
+          /* Le calendrier doit pouvoir scroller sur mobile si besoin */
+          .availabilityShell {
+            overflow-x: auto;
+          }
+          /* Si ton AvailabilityCalendar a une table large, on évite de casser le layout */
+          .availabilityShell > * {
+            min-width: 320px;
+          }
+        `}</style>
       </main>
-    </div>
-  );
-}
-
-function Card({ title, children }) {
-  return (
-    <div
-      className="rounded-2xl p-6"
-      style={{ backgroundColor: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.15)" }}
-    >
-      <h2 className="text-lg font-semibold text-green-800">{title}</h2>
-      {children}
     </div>
   );
 }
