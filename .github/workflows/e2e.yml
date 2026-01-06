@@ -79,13 +79,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      # ✅ Run Playwright from frontend (where deps/config usually live)
       - name: Install Playwright browsers
-        working-directory: frontend
         run: npx playwright install --with-deps
 
       - name: Run E2E tests
-        working-directory: frontend
         run: npx playwright test --config=playwright.config.cjs --reporter=html,line
 
       - name: Upload Playwright report
@@ -93,7 +90,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: frontend/playwright-report
+          path: playwright-report
           if-no-files-found: ignore
 
       - name: Upload raw test-results
@@ -101,5 +98,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: frontend/test-results
+          path: test-results
           if-no-files-found: ignore
