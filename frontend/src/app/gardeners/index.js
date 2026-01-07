@@ -199,7 +199,7 @@ export default function GardenersList() {
     } catch (e) {
       if (isAbort(e)) return;
       console.error('[gardeners] load failed:', e);
-      setErr('Impossible de charger les jardiniers.');
+      setErr('Impossible de charger les jardinier.es.');
       setGardeners([]);
     } finally {
       setLoading(false);
@@ -255,7 +255,7 @@ export default function GardenersList() {
     <main className="min-h-screen bg-white px-6 py-10">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-green-700">Les Jardiniers</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-green-700">Les Jardinier.es</h1>
 
           {isAuthed && (
             <Link
@@ -323,7 +323,7 @@ export default function GardenersList() {
         )}
 
         {!loading && !err && filtered.length === 0 && (
-          <p className="text-center text-gray-600">Aucun jardinier trouvé.</p>
+          <p className="text-center text-gray-600">Aucun.e jardinier.e trouvé.</p>
         )}
 
         {/* ✅ LISTE VERTICALE */}

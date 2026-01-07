@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "JardinSolidaire",
-  description: "Relier propriétaires de jardins et jardiniers bénévoles",
+  description: "Relier propriétaires de jardins et jardinier.es bénévoles",
 };
 
 export default function RootLayout({ children }) {
