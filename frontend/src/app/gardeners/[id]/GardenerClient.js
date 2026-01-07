@@ -5,7 +5,7 @@ import Link from 'next/link';
 import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar';
 import { getAnyToken } from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const BRAND_GREEN = '#16a34a';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
@@ -40,7 +40,6 @@ function greenPlaceholder(first, last) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/* pick best avatar source consistently */
 function pickAvatar(raw) {
   return (
     raw?.avatarUrl ??
@@ -77,18 +76,16 @@ function Chip({ children }) {
   );
 }
 
-export default function GardenerPage({ params }) {
-  const { id } = params || {};
+export default function GardenerClient({ id }) {
   const [gardener, setGardener] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [avatarV, setAvatarV] = useState(0);
 
-console.log('API_BASE runtime:', API_BASE);
-console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
+  console.log('API_BASE runtime:', API_BASE);
+  console.log('ID received:', id);
+  console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
 
-
-  // reload on cross-tab updates
   useEffect(() => {
     const onStorage = (e) => {
       if (e?.key === 'gardenerUpdated' || e?.key === 'userUpdated') {
@@ -102,12 +99,15 @@ console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
   }, []);
 
   async function load() {
+    if (!id) return; // ✅ évite /undefined
     try {
       setLoading(true);
       setError('');
+
       let res = await fetch(`${API_BASE}/api/gardeners/${id}`, { cache: 'no-store' });
       if (!res.ok) res = await fetch(`${API_BASE}/api/jardinier.es/${id}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const data = await res.json();
 
       setGardener({
@@ -120,7 +120,8 @@ console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
         yearsExperience: data.yearsExperience ?? data.experienceAnnees ?? null,
         intro: data.intro || data.presentation || data.description || '—',
       });
-    } catch (_e) {
+    } catch (e) {
+      console.error('Gardener fetch failed:', e);
       setError('Impossible de charger le profil jardinier.e.');
       setGardener(null);
     } finally {
@@ -167,17 +168,19 @@ console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
 
         {gardener && (
           <>
-            {/* ✅ même disposition qu’avant : avatar + nom + chips + pills */}
             <section className="rounded-2xl p-6 mb-6 bg-white border border-gray-100 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden flex-shrink-0"
-                     style={{ border: '4px solid rgba(22,163,74,0.20)' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                <div
+                  className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden flex-shrink-0"
+                  style={{ border: '4px solid rgba(22,163,74,0.20)' }}
+                >
                   <img
                     src={avatarSrc}
                     alt={`${gardener.firstName} ${gardener.lastName}`}
                     className="h-full w-full object-cover"
-                    onError={(e) => { e.currentTarget.src = greenPlaceholder(gardener.firstName, gardener.lastName); }}
+                    onError={(e) => {
+                      e.currentTarget.src = greenPlaceholder(gardener.firstName, gardener.lastName);
+                    }}
                   />
                   {gardener.isOnline && (
                     <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-lime-500 ring-2 ring-white" />
@@ -190,7 +193,9 @@ console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
                   </h1>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {(gardener.skills || []).slice(0, 10).map((s) => <Chip key={s}>{s}</Chip>)}
+                    {(gardener.skills || []).slice(0, 10).map((s) => (
+                      <Chip key={s}>{s}</Chip>
+                    ))}
                     {(gardener.skills || []).length === 0 && (
                       <span className="text-sm text-gray-600">Compétences à venir</span>
                     )}
