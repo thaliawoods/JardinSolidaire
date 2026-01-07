@@ -8,6 +8,8 @@ import { uploadImage } from '@/lib/uploads';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
+export const dynamic = 'force-dynamic';
+
 /* ---------------- utils ---------------- */
 function resolveMedia(u) {
   if (!u) return '';
