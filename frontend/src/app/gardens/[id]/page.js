@@ -1,12 +1,14 @@
-// ✅ OPTION 2 “PARFAITE” : alignement automatique des deux cards (À propos / Propriétaire)
-// -> on strech la rangée en desktop + on met h-full sur les deux Card concernées
+// /Users/thaliawoods/Documents/Ada/JardinSolidaire/JardinSolidaire/frontend/src/app/gardens/[id]/page.js
+// ✅ OPTION 2 “PARFAITE” + swap boutons :
+// - bouton HERO "Réserver ce jardin" -> "Contacter" -> ouvre /messages/[ownerUserId]
+// - bouton card "Contacter" -> "Voir le profil"
+// - enlève le petit "Voir le profil →" dans la mini-card du propriétaire
 
 'use client';
 
 import React, { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import BookingButton from '@/components/booking/BookingButton';
 import { getAnyToken } from '@/lib/api';
 
 const AvailabilityCalendar = dynamic(
@@ -92,6 +94,7 @@ function normalizeGarden(payload) {
       payload.ownerDemoId ??
       payload.proprietaireDemoId ??
       null,
+    // ✅ IMPORTANT: si ton API expose ownerUserId sur le jardin
     ownerUserId:
       payload.ownerUserId ??
       payload.id_proprietaire ??
@@ -201,7 +204,9 @@ export default function GardenDetailPage({ params }) {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
   const owner = garden?.owner;
@@ -211,6 +216,7 @@ export default function GardenDetailPage({ params }) {
     return owner.avatarUrl || greenAvatar(owner.firstName, owner.lastName);
   }, [owner]);
 
+  // ✅ owner profile link
   const ownerProfileIdRaw =
     garden?.demoOwnerId ??
     owner?.ownerId ??
@@ -219,6 +225,18 @@ export default function GardenDetailPage({ params }) {
     null;
 
   const ownerHref = ownerProfileIdRaw ? `/owners/${ownerProfileIdRaw}` : null;
+
+  // ✅ userId for chat thread (messages are by USER id)
+  const ownerUserIdForChat = useMemo(() => {
+    const raw =
+      garden?.ownerUserId ?? // best if you have it on garden
+      (typeof owner?.id !== 'undefined' ? owner.id : null) ?? // often user id
+      owner?.ownerId ?? // fallback
+      null;
+
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [garden?.ownerUserId, owner?.id, owner?.ownerId]);
 
   if (loading) {
     return (
@@ -307,136 +325,155 @@ export default function GardenDetailPage({ params }) {
           {/* CTA row */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-5 md:px-6 py-4 bg-white">
             <p className="text-sm text-gray-600">
-              Choisis un jour dans le calendrier, puis demande un créneau.
+              Écris au propriétaire pour poser une question ou proposer un créneau.
             </p>
 
             <div className="flex items-center gap-3">
-              <BookingButton gardenId={garden.id} />
+              {ownerUserIdForChat ? (
+                <Link
+                  href={`/messages/${ownerUserIdForChat}`}
+                  className="px-6 py-3 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition font-semibold"
+                >
+                  Contacter
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="px-6 py-3 rounded-full bg-pink-500 text-white opacity-60 cursor-not-allowed font-semibold"
+                  title="Propriétaire introuvable"
+                >
+                  Contacter
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* CONTENT */}
-        {/* ✅ IMPORTANT: lg:items-stretch pour que la rangée des cards s’étire en hauteur */}
-        {/* CONTENT */}
-<div className="mt-8 space-y-6">
-  {/* ✅ Rangée 1 : À propos + Propriétaire (alignés parfaitement) */}
-  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch items-start">
-    {/* left (2 colonnes) */}
-    <div className="lg:col-span-2">
-      {/* ✅ h-full ici OK car cette rangée ne contient QUE les cards */}
-      <Card title="À propos du jardin" className="h-full">
-        {garden.description ? (
-          <p className="text-sm text-gray-700 leading-relaxed">
-            {garden.description}
-          </p>
-        ) : (
-          <p className="text-sm text-gray-600">Aucune description.</p>
-        )}
+        <div className="mt-8 space-y-6">
+          {/* ✅ Rangée 1 : À propos + Propriétaire (alignés parfaitement) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch items-start">
+            {/* left (2 colonnes) */}
+            <div className="lg:col-span-2">
+              <Card title="À propos du jardin" className="h-full">
+                {garden.description ? (
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {garden.description}
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-600">Aucune description.</p>
+                )}
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {!!garden.kind && <Chip>Type : {garden.kind}</Chip>}
-          {!!garden.needs && <Chip>Besoins : {garden.needs}</Chip>}
-          {!!garden.address && <Chip tone="gray">Adresse : {garden.address}</Chip>}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {!!garden.kind && <Chip>Type : {garden.kind}</Chip>}
+                  {!!garden.needs && <Chip>Besoins : {garden.needs}</Chip>}
+                  {!!garden.address && <Chip tone="gray">Adresse : {garden.address}</Chip>}
+                </div>
+              </Card>
+            </div>
+
+            {/* right (1 colonne) */}
+            <aside>
+              <Card title="Propriétaire" className="h-full">
+                {!owner ? (
+                  <p className="text-sm text-gray-600">Pas de propriétaire lié.</p>
+                ) : (
+                  <>
+                    {ownerHref ? (
+                      <Link
+                        href={ownerHref}
+                        className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3 hover:bg-gray-100 transition"
+                        aria-label={`Voir le profil de ${owner.firstName} ${owner.lastName}`}
+                      >
+                        <div
+                          className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
+                          style={{ border: '3px solid rgba(22,163,74,0.18)' }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={ownerAvatar}
+                            alt={`${owner.firstName} ${owner.lastName}`}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
+                            }}
+                          />
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 line-clamp-1">
+                            {owner.firstName} {owner.lastName}
+                          </div>
+                          <div className="text-sm text-gray-600 line-clamp-1">
+                            {owner.address || 'Adresse non renseignée'}
+                          </div>
+                          {/* ✅ supprimé : "Voir le profil →" */}
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3">
+                        <div
+                          className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
+                          style={{ border: '3px solid rgba(22,163,74,0.18)' }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={ownerAvatar}
+                            alt={`${owner.firstName} ${owner.lastName}`}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 line-clamp-1">
+                            {owner.firstName} {owner.lastName}
+                          </div>
+                          <div className="text-sm text-gray-600 line-clamp-1">
+                            {owner.address || 'Adresse non renseignée'}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ✅ bouton rose devient "Voir le profil" */}
+                    {ownerHref ? (
+                      <Link
+                        href={ownerHref}
+                        className="mt-3 block w-full text-center rounded-full px-4 py-2.5 text-white font-medium hover:opacity-95 transition"
+                        style={{ backgroundColor: BRAND_PINK }}
+                      >
+                        Voir le profil
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-3 w-full rounded-full px-4 py-2.5 text-white font-medium opacity-60 cursor-not-allowed"
+                        style={{ backgroundColor: BRAND_PINK }}
+                      >
+                        Voir le profil
+                      </button>
+                    )}
+                  </>
+                )}
+              </Card>
+            </aside>
+          </div>
+
+          {/* ✅ Rangée 2 : Calendrier FULL WIDTH (en dessous comme avant) */}
+          <div className="mt-6">
+            <AvailabilityCalendar
+              mode="garden"
+              intent="book"
+              gardenId={garden.id}
+              token={getAnyToken()}
+            />
+          </div>
         </div>
-      </Card>
-    </div>
-
-    {/* right (1 colonne) */}
-    <aside>
-      <Card title="Propriétaire" className="h-full">
-        {!owner ? (
-          <p className="text-sm text-gray-600">Pas de propriétaire lié.</p>
-        ) : (
-          <>
-            {ownerHref ? (
-              <Link
-                href={ownerHref}
-                className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3 hover:bg-gray-100 transition"
-                aria-label={`Voir le profil de ${owner.firstName} ${owner.lastName}`}
-              >
-                <div
-                  className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
-                  style={{ border: '3px solid rgba(22,163,74,0.18)' }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={ownerAvatar}
-                    alt={`${owner.firstName} ${owner.lastName}`}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
-                    }}
-                  />
-                </div>
-
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 line-clamp-1">
-                    {owner.firstName} {owner.lastName}
-                  </div>
-                  <div className="text-sm text-gray-600 line-clamp-1">
-                    {owner.address || 'Adresse non renseignée'}
-                  </div>
-                  <div className="mt-1 text-sm font-medium text-green-700">
-                    Voir le profil →
-                  </div>
-                </div>
-              </Link>
-            ) : (
-              <div className="flex items-center gap-3 rounded-2xl border border-black/5 bg-gray-50 px-4 py-3">
-                <div
-                  className="h-12 w-12 rounded-full overflow-hidden shrink-0 bg-white"
-                  style={{ border: '3px solid rgba(22,163,74,0.18)' }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={ownerAvatar}
-                    alt={`${owner.firstName} ${owner.lastName}`}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = greenAvatar(owner.firstName, owner.lastName);
-                    }}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 line-clamp-1">
-                    {owner.firstName} {owner.lastName}
-                  </div>
-                  <div className="text-sm text-gray-600 line-clamp-1">
-                    {owner.address || 'Adresse non renseignée'}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <button
-              type="button"
-              className="mt-3 w-full rounded-full px-4 py-2.5 text-white font-medium hover:opacity-95 transition"
-              style={{ backgroundColor: BRAND_PINK }}
-              onClick={() => alert('Fonction contact à brancher 🙂')}
-            >
-              Contacter
-            </button>
-          </>
-        )}
-      </Card>
-    </aside>
-  </div>
-
-{/* ✅ Rangée 2 : Calendrier FULL WIDTH */}
-<div className="mt-6">
-  <AvailabilityCalendar
-    mode="garden"
-    intent='book'
-    gardenId={garden.id}
-    token={getAnyToken()}
-  />
-</div>
-
-        {/* colonne vide à droite en desktop (pour garder l'alignement visuel) */}
-        <div className="hidden lg:block" />
-      </div>
-    </main>
+      </main>
     </div>
   );
 }

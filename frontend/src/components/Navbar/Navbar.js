@@ -251,10 +251,10 @@ export default function Navbar() {
             className={`px-3 py-1 rounded-full text-sm transition ${
               role === 'GARDENER' ? 'bg-pink-500 text-white' : 'text-white hover:bg-white/10'
             }`}
-            title="Interface Jardinier"
+            title="Interface Jardinier.e"
             type="button"
           >
-            Jardinier
+            Jardinier.e
           </button>
         </div>
 

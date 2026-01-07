@@ -110,23 +110,6 @@ function shapeOwnerInboxRow(b) {
 }
 
 /* ---------------------------------------
-   Notifications (simple in-app messages)
-----------------------------------------*/
-async function sendMessage({ fromUserId, toUserId, content }) {
-  try {
-    await prisma.message.create({
-      data: {
-        senderUserId: fromUserId != null ? BigInt(fromUserId) : null,
-        targetUserId: toUserId != null ? BigInt(toUserId) : null,
-        content: String(content || '').slice(0, 2000),
-      },
-    });
-  } catch (e) {
-    console.error('sendMessage failed:', e?.message || e);
-  }
-}
-
-/* ---------------------------------------
    ROUTES
 ----------------------------------------*/
 router.get('/inbox', requireAuth, async (req, res) => {
@@ -168,7 +151,7 @@ router.get('/can-book', requireAuth, async (req, res) => {
     const { slotId } = req.query;
     const gardenId = req.query.gardenId ? Number(req.query.gardenId) : null;
     const startsAt = req.query.startsAt ? new Date(String(req.query.startsAt)) : null;
-    const endsAt   = req.query.endsAt ? new Date(String(req.query.endsAt)) : null;
+    const endsAt = req.query.endsAt ? new Date(String(req.query.endsAt)) : null;
 
     const reasons = [];
 
@@ -237,12 +220,7 @@ router.post('/', requireAuth, async (req, res) => {
           include: { slot: true, garden: { select: { id: true, title: true, ownerUserId: true } } },
         });
 
-        if (booking.garden?.ownerUserId) {
-          const { startsAt: s2, endsAt: e2 } = buildRangeFromSlot(booking.slot);
-          const content = `Nouvelle demande de réservation pour "${booking.garden.title || 'Jardin'}" le ${s2?.toLocaleString()} → ${e2?.toLocaleString()}.`;
-          await sendMessage({ fromUserId: req.user.id, toUserId: Number(booking.garden.ownerUserId), content });
-        }
-
+        // ✅ NO MORE "system message" in chat
         return booking;
       });
 
@@ -287,13 +265,7 @@ router.post('/', requireAuth, async (req, res) => {
         include: { slot: true, garden: { select: { id: true, title: true, ownerUserId: true } } },
       });
 
-      // Notify owner
-      if (booking.garden?.ownerUserId) {
-        const { startsAt: s2, endsAt: e2 } = buildRangeFromSlot(booking.slot);
-        const content = `Nouvelle demande de réservation pour "${booking.garden.title || 'Jardin'}" le ${s2?.toLocaleString()} → ${e2?.toLocaleString()}.`;
-        await sendMessage({ fromUserId: req.user.id, toUserId: Number(booking.garden.ownerUserId), content });
-      }
-
+      // ✅ NO MORE "system message" in chat
       return booking;
     });
 
@@ -407,20 +379,18 @@ router.post('/:id/confirm', requireAuth, async (req, res) => {
       const b = await tx.booking.update({
         where: { id },
         data: { status: 'confirmed' },
-        include: { slot: true, garden: { select: { id: true, title: true, address: true, ownerUserId: true } }, user: true },
+        include: {
+          slot: true,
+          garden: { select: { id: true, title: true, address: true, ownerUserId: true } },
+          user: true,
+        },
       });
 
       if (b.slotId) {
         await tx.availabilitySlot.update({ where: { id: b.slotId }, data: { status: 'booked' } });
       }
 
-      // notify gardener
-      const { startsAt, endsAt } = buildRangeFromSlot(b.slot);
-      const content =
-        `Votre réservation sur "${b.garden?.title || 'Jardin'}" a été confirmée ` +
-        `(${startsAt?.toLocaleString()} → ${endsAt?.toLocaleString()}).`;
-      await sendMessage({ fromUserId: Number(ownerId), toUserId: Number(b.userId), content });
-
+      // ✅ NO MORE "system message" in chat
       return b;
     });
 
@@ -463,13 +433,7 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
         await tx.availabilitySlot.update({ where: { id: b.slotId }, data: { status: 'free' } });
       }
 
-      // notify gardener
-      const { startsAt, endsAt } = buildRangeFromSlot(b.slot);
-      const content =
-        `Votre réservation sur "${b.garden?.title || 'Jardin'}" a été annulée ` +
-        `(${startsAt?.toLocaleString()} → ${endsAt?.toLocaleString()}).`;
-      await sendMessage({ fromUserId: Number(ownerId), toUserId: Number(b.userId), content });
-
+      // ✅ NO MORE "system message" in chat
       return b;
     });
 

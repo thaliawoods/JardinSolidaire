@@ -28,7 +28,7 @@ const HomeImage = () => {
             href="/gardeners"
             className="bg-pink-500 hover:bg-pink-600 text-white px-5 py-3 rounded"
           >
-            Les Jardiniers
+            Les Jardinier.es
           </Link>
         </div>
       </div>
