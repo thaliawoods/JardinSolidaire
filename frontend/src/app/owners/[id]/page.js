@@ -1,7 +1,8 @@
+// /frontend/src/app/owners/[id]/page.js
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -59,7 +60,6 @@ function normalizeOwner(raw) {
     base.superficie_m2 ??
     "";
   const gardenType = base.gardenType ?? base.type_jardin ?? base.kind ?? "";
-
   const intro =
     base.intro ??
     base.presentation ??
@@ -67,8 +67,13 @@ function normalizeOwner(raw) {
     base.description ??
     "—";
 
+  // ✅ important pour ouvrir la conversation : côté API owners.js tu renvoies userId
+  const ownerId = base.id != null ? String(base.id) : "";
+  const userId = base.userId != null ? String(base.userId) : "";
+
   return {
-    id: String(base.id ?? base.id_utilisateur ?? base.id_proprietaire ?? ""),
+    id: ownerId,
+    userId, // ✅ celui-ci sert à /messages/[userId]
     firstName,
     lastName,
     avatarUrl,
@@ -95,15 +100,18 @@ function Chip({ children }) {
   );
 }
 
-export default function OwnerDetailPage({ params }) {
-  const { id } = params || {};
+export default function OwnerDetailPage() {
   const router = useRouter();
+  const params = useParams(); // ✅ fix Next.js app router
+  const id = params?.id; // /owners/[id]
 
   const [owner, setOwner] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
   useEffect(() => {
+    if (!id) return;
+
     let alive = true;
     (async () => {
       try {
@@ -126,7 +134,10 @@ export default function OwnerDetailPage({ params }) {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
   const fallback = useMemo(
@@ -165,6 +176,9 @@ export default function OwnerDetailPage({ params }) {
 
   const avatarSrc = owner.avatarUrl || fallback;
 
+  // ✅ la conversation est basée sur l'id user (ex: 238), pas l'id owner (ex: 128)
+  const threadUserId = owner.userId || String(id);
+
   return (
     <main className="min-h-screen bg-white px-6 py-10">
       <div className="max-w-6xl mx-auto">
@@ -177,7 +191,6 @@ export default function OwnerDetailPage({ params }) {
           </button>
         </div>
 
-        {/* ✅ même disposition qu’avant : avatar + nom + chips + pills */}
         <section className="rounded-2xl p-6 mb-6 bg-white border border-gray-100 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             <div
@@ -189,7 +202,9 @@ export default function OwnerDetailPage({ params }) {
                 src={avatarSrc}
                 alt={`${owner.firstName} ${owner.lastName}`}
                 className="h-full w-full object-cover"
-                onError={(e) => { e.currentTarget.src = fallback; }}
+                onError={(e) => {
+                  e.currentTarget.src = fallback;
+                }}
               />
             </div>
 
@@ -213,10 +228,11 @@ export default function OwnerDetailPage({ params }) {
             </div>
           </div>
 
-          {/* CTA rose */}
+          {/* ✅ CTA rose -> ouvre la conversation */}
           <div className="mt-5 flex flex-col sm:flex-row gap-3">
             <button
               type="button"
+              onClick={() => router.push(`/messages/${threadUserId}`)}
               className="px-6 py-3 rounded-full text-white shadow-sm hover:opacity-95 transition w-full sm:w-auto"
               style={{ backgroundColor: BRAND_PINK }}
             >

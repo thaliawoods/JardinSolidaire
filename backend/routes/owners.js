@@ -39,6 +39,27 @@ function toOwnerDTO(o, { withComments = false } = {}) {
   };
 }
 
+/** Build a minimal owner DTO from a User row (fallback when Owner doesn't exist yet) */
+function toOwnerDTOFromUser(u) {
+  return {
+    id: String(u.id),       // we expose the same id so /owners/:id still works
+    userId: String(u.id),
+    firstName: u.firstName ?? null,
+    lastName: u.lastName ?? null,
+    avatarUrl: u.avatarUrl ?? null,
+    isOnline: false,
+    totalReviews: 0,
+    rating: null,
+    district: null,
+    availability: null,
+    area: null,
+    kind: null,
+    intro: null,
+    address: u.address ?? null,
+    comments: [],
+  };
+}
+
 /** GET /api/owners — list */
 router.get('/', async (_req, res) => {
   try {
@@ -62,7 +83,13 @@ router.get('/', async (_req, res) => {
   }
 });
 
-/** GET /api/owners/:id — accepts owner.id OR user.id */
+/**
+ * GET /api/owners/:id
+ * accepts:
+ *  - owner.id
+ *  - owner.userId
+ *  - and if still not found -> fallback to user.id (minimal owner profile)
+ */
 router.get('/:id', async (req, res) => {
   try {
     const n = Number(req.params.id);
@@ -74,7 +101,7 @@ router.get('/:id', async (req, res) => {
     let o = await prisma.owner.findUnique({
       where: { id: n },
       include: {
-        user: { select: { id: true, avatarUrl: true, address: true } },
+        user: { select: { id: true, avatarUrl: true, address: true, firstName: true, lastName: true } },
         comments: true,
       },
     });
@@ -84,13 +111,21 @@ router.get('/:id', async (req, res) => {
       o = await prisma.owner.findUnique({
         where: { userId: BigInt(n) },
         include: {
-          user: { select: { id: true, avatarUrl: true, address: true } },
+          user: { select: { id: true, avatarUrl: true, address: true, firstName: true, lastName: true } },
           comments: true,
         },
       });
     }
 
-    if (!o) return res.status(404).json({ error: 'not_found' });
+    // ✅ 3) fallback to user profile if owner row doesn't exist yet
+    if (!o) {
+      const u = await prisma.user.findUnique({
+        where: { id: BigInt(n) },
+        select: { id: true, firstName: true, lastName: true, avatarUrl: true, address: true },
+      });
+      if (!u) return res.status(404).json({ error: 'not_found' });
+      return res.json(toOwnerDTOFromUser(u));
+    }
 
     res.json(toOwnerDTO(o, { withComments: true }));
   } catch (err) {
