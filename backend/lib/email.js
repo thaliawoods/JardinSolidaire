@@ -1,39 +1,39 @@
-const nodemailer = require('nodemailer');
-
-const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM } = process.env;
-
-function getTransport() {
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
-    throw new Error('SMTP is not configured');
-  }
-
-  return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
-    },
-
-    // ✅ OBLIGATOIRE pour éviter les requêtes bloquées
-    requireTLS: true,
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 8000,
-  });
-}
+// backend/lib/email.js
+const { BREVO_API_KEY, MAIL_FROM, MAIL_FROM_NAME } = process.env;
 
 async function sendMail({ to, subject, text, html }) {
-  const transport = getTransport();
+  if (!BREVO_API_KEY) throw new Error('BREVO_API_KEY is not configured');
+  if (!MAIL_FROM) throw new Error('MAIL_FROM is not configured');
 
-  return transport.sendMail({
-    from: MAIL_FROM || SMTP_USER,
-    to,
+  const payload = {
+    sender: {
+      name: MAIL_FROM_NAME || 'JardinSolidaire',
+      email: MAIL_FROM,
+    },
+    to: [{ email: to }],
     subject,
-    text,
-    html,
+    textContent: text,
+    htmlContent: html,
+  };
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': BREVO_API_KEY,
+      'accept': 'application/json',
+    },
+    body: JSON.stringify(payload),
   });
+
+  // Brevo renvoie souvent 201 + { messageId: ... }
+  const bodyText = await res.text();
+  if (!res.ok) {
+    throw new Error(`Brevo API error ${res.status}: ${bodyText}`);
+  }
+
+  // optionnel: return JSON
+  try { return JSON.parse(bodyText); } catch { return bodyText; }
 }
 
 module.exports = { sendMail };
