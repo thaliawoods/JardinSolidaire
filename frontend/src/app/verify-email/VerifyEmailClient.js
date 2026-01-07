@@ -1,15 +1,91 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 export default function VerifyEmailClient() {
   const sp = useSearchParams();
   const router = useRouter();
 
-  const token = sp.get('token');
-  const email = sp.get('email');
+  const email = sp.get('email') || '';
+  const token = sp.get('token') || '';
+
+  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [message, setMessage] = useState('');
+
+  const canVerify = useMemo(() => Boolean(email && token), [email, token]);
+
+  useEffect(() => {
+    if (!canVerify) {
+      setStatus('error');
+      setMessage("Lien invalide : il manque l'email ou le token.");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function verify() {
+      setStatus('loading');
+      setMessage('On vérifie ton lien de confirmation…');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/verify-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, token }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          const err = data?.error || 'server_error';
+          // petits messages UX
+          if (err === 'token_expired') {
+            setStatus('error');
+            setMessage("Ton lien a expiré. Réinscris-toi pour en recevoir un nouveau.");
+            return;
+          }
+          if (err === 'invalid_token') {
+            setStatus('error');
+            setMessage("Lien invalide (token incorrect).");
+            return;
+          }
+          if (err === 'user_not_found') {
+            setStatus('error');
+            setMessage("Utilisateur introuvable.");
+            return;
+          }
+          setStatus('error');
+          setMessage(`Erreur : ${err}`);
+          return;
+        }
+
+        // OK
+        const msg = data?.message || 'email_verified';
+        setStatus('success');
+        setMessage(
+          msg === 'already_verified'
+            ? 'Email déjà vérifié ✅ Tu peux te connecter.'
+            : 'Email vérifié ✅ Tu peux te connecter.'
+        );
+      } catch (e) {
+        if (cancelled) return;
+        setStatus('error');
+        setMessage('Erreur réseau lors de la vérification.');
+      }
+    }
+
+    verify();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canVerify, email, token]);
 
   return (
     <main className="min-h-screen bg-white px-6 py-10 flex items-center justify-center">
@@ -17,11 +93,12 @@ export default function VerifyEmailClient() {
         <h1 className="text-2xl font-bold text-green-700">Vérification email ✅</h1>
 
         <p className="mt-3 text-sm text-gray-700">
-          {token
-            ? "On vérifie ton lien de confirmation…"
-            : "Lien invalide : il manque le token."}
-          {email ? ` (${email})` : ''}
+          {message} {email ? `(${email})` : ''}
         </p>
+
+        {status === 'loading' && (
+          <div className="mt-4 text-sm text-gray-500">⏳ Patiente une seconde…</div>
+        )}
 
         <div className="mt-6 flex gap-3">
           <Link
