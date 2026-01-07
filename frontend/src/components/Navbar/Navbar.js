@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faTimes, faSeedling } from '@fortawesome/free-solid-svg-icons';
+import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { unreadCount } from '@/lib/messages';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -281,8 +282,15 @@ export default function Navbar() {
         {/* LEFT: logo only (removed quick links) */}
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center">
-            <FontAwesomeIcon icon={faSeedling} size="lg" className="mr-2" />
-            <span className="text-xl font-bold">JardinSolidaire</span>
+            <Image
+              src="/assets/jardin.png"
+              alt="Jardin Solidaire"
+              width={60}
+              height={60}
+              className="mr-2"
+              priority
+            />
+            <span className="text-xl font-bold">Jardin Solidaire</span>
           </Link>
         </div>
 
@@ -313,11 +321,7 @@ export default function Navbar() {
             aria-label="Menu"
             type="button"
           >
-            {menuOpen ? (
-              <FontAwesomeIcon icon={faTimes} size="lg" />
-            ) : (
-              <FontAwesomeIcon icon={faBars} size="lg" />
-            )}
+            {menuOpen ? <FontAwesomeIcon icon={faTimes} size="lg" /> : <FontAwesomeIcon icon={faBars} size="lg" />}
           </button>
         </div>
       </div>
@@ -356,7 +360,11 @@ export default function Navbar() {
                     </li>
 
                     <li className="relative">
-                      <Link href="/messages" onClick={() => setMenuOpen(false)} className="inline-flex items-center gap-2">
+                      <Link
+                        href="/messages"
+                        onClick={() => setMenuOpen(false)}
+                        className="inline-flex items-center gap-2"
+                      >
                         <span>Messagerie</span>
                         {unread > 0 && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white">
@@ -389,7 +397,11 @@ export default function Navbar() {
                 {role === 'GARDENER' && (
                   <>
                     <li className="relative">
-                      <Link href="/messages" onClick={() => setMenuOpen(false)} className="inline-flex items-center gap-2">
+                      <Link
+                        href="/messages"
+                        onClick={() => setMenuOpen(false)}
+                        className="inline-flex items-center gap-2"
+                      >
                         <span>Messagerie</span>
                         {unread > 0 && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white">
