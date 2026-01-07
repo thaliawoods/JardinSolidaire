@@ -253,7 +253,7 @@ export default function Dashboard() {
 
   function normalizeUser(u) {
     if (!u) return null;
-    const gardenerRaw = u.gardener ?? u.jardinier ?? null;
+    const gardenerRaw = u.gardener ?? u.jardinier.e ?? null;
     const ownerRaw = u.owner ?? u.proprietaire ?? null;
     return {
       ...u,
@@ -334,7 +334,7 @@ export default function Dashboard() {
       await apiFetch('/api/me/role', { method: 'PUT', body: { role: next } });
       setRole(next);
       broadcastRoleChange(next);
-      setMsg(`Mode : ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier'}`);
+      setMsg(`Mode : ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier.e'}`);
     } catch {
       setMsg("Impossible de changer d’interface.");
     }
@@ -361,7 +361,7 @@ export default function Dashboard() {
 
       tasks.push(apiFetch('/api/me/profile', { method: 'POST', body: { avatarUrl: path } }));
 
-      if (user?.gardener || user?.jardinier) {
+      if (user?.gardener || user?.jardinier.e) {
         tasks.push(apiFetch('/api/me/gardener', { method: 'POST', body: { avatarUrl: path } }));
       }
       if (user?.owner || user?.proprietaire) {
@@ -533,7 +533,7 @@ export default function Dashboard() {
                       role === 'GARDENER' ? 'bg-pink-500 text-white' : 'hover:bg-gray-50 text-gray-800'
                     }`}
                   >
-                    Jardinier
+                    Jardinier.e
                   </button>
                 </div>
               </div>
@@ -579,7 +579,7 @@ export default function Dashboard() {
                         <div className="sm:col-span-2">
                           <div className="mt-1 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
                             Ajoute ton <b>prénom</b> et ton <b>nom</b> une seule fois ici : ensuite on les réutilise
-                            automatiquement pour Propriétaire / Jardinier.
+                            automatiquement pour Propriétaire / Jardinier.e.
                           </div>
                         </div>
                       )}
@@ -675,7 +675,7 @@ export default function Dashboard() {
             {/* GARDENER CARD */}
             <Card className="mb-6">
               <div className="flex items-center justify-between gap-3">
-                <SoftTitle>Profil Jardinier</SoftTitle>
+                <SoftTitle>Profil Jardinier.e</SoftTitle>
                 <div className="flex items-center gap-2">
                   {me?.gardener ? (
                     me.gardener.published ? <Pill>Publié</Pill> : <MutedPill>Non publié</MutedPill>
@@ -716,12 +716,12 @@ export default function Dashboard() {
                   </InfoGrid>
                 ) : (
                   <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex items-center justify-between gap-3">
-                    <div className="text-gray-700">Pas de profil jardinier encore.</div>
+                    <div className="text-gray-700">Pas de profil jardinier.e encore.</div>
                     <Link
                       href="/edit-gardener"
                       className="px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 transition text-sm shadow-sm"
                     >
-                      Créer mon profil jardinier
+                      Créer mon profil jardinier.e
                     </Link>
                   </div>
                 )}

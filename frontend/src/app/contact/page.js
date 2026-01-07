@@ -102,7 +102,7 @@ export default function ContactPage() {
                 className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="À propos d'un jardin ou d'un jardinier…"
+                placeholder="À propos d'un jardin ou d'un jardinier.e…"
                 required
               />
             </div>
