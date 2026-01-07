@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar';
 import { getAnyToken } from '@/lib/api';
 
@@ -40,6 +41,7 @@ function greenPlaceholder(first, last) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+/* pick best avatar source consistently */
 function pickAvatar(raw) {
   return (
     raw?.avatarUrl ??
@@ -76,16 +78,26 @@ function Chip({ children }) {
   );
 }
 
-export default function GardenerClient({ id }) {
+export default function GardenerClient({ id: idProp }) {
+  const pathname = usePathname();
+
+  // ✅ fallback ultime : /gardeners/33 -> "33"
+  const idFromPath = (pathname || '').split('/').filter(Boolean).pop();
+  const id = idProp ?? idFromPath;
+
   const [gardener, setGardener] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [avatarV, setAvatarV] = useState(0);
 
   console.log('API_BASE runtime:', API_BASE);
-  console.log('ID received:', id);
+  console.log('pathname:', pathname);
+  console.log('ID prop:', idProp);
+  console.log('ID from path:', idFromPath);
+  console.log('ID used:', id);
   console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
 
+  // reload on cross-tab updates
   useEffect(() => {
     const onStorage = (e) => {
       if (e?.key === 'gardenerUpdated' || e?.key === 'userUpdated') {
@@ -99,7 +111,7 @@ export default function GardenerClient({ id }) {
   }, []);
 
   async function load() {
-    if (!id) return; // ✅ évite /undefined
+    if (!id || !API_BASE) return; // ✅ évite /undefined + évite base vide
     try {
       setLoading(true);
       setError('');
@@ -168,12 +180,14 @@ export default function GardenerClient({ id }) {
 
         {gardener && (
           <>
+            {/* ✅ avatar + nom + chips + pills */}
             <section className="rounded-2xl p-6 mb-6 bg-white border border-gray-100 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center gap-5">
                 <div
                   className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden flex-shrink-0"
                   style={{ border: '4px solid rgba(22,163,74,0.20)' }}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={avatarSrc}
                     alt={`${gardener.firstName} ${gardener.lastName}`}
