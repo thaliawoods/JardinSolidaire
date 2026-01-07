@@ -62,7 +62,7 @@ function greenPlaceholder(first, last) {
 function unwrapGardeners(raw) {
   if (Array.isArray(raw)) return raw;
   if (!raw || typeof raw !== 'object') return [];
-  return raw.gardeners ?? raw.gardener ?? raw.jardinier.es ?? raw.jardinier.e ?? raw.data ?? [];
+  return raw.gardeners ?? raw.gardener ?? raw.jardiniers ?? raw.jardinier ?? raw.data ?? [];
 }
 
 function normalizeSkills(maybeSkills) {
@@ -112,9 +112,9 @@ async function fetchGardeners(params) {
   const { search, skill, signal } = params || {};
   const candidates = [
     `${API_BASE}/api/gardeners`,
-    `${API_BASE}/api/jardinier.es`,
+    `${API_BASE}/api/jardiniers`,
     `${API_BASE}/gardeners`,
-    `${API_BASE}/jardinier.es`,
+    `${API_BASE}/jardiniers`,
   ];
 
   let lastErr;
@@ -199,7 +199,7 @@ export default function GardenersList() {
     } catch (e) {
       if (isAbort(e)) return;
       console.error('[gardeners] load failed:', e);
-      setErr('Impossible de charger les jardinier.e.s.');
+      setErr('Impossible de charger les jardiniers.');
       setGardeners([]);
     } finally {
       setLoading(false);
@@ -255,7 +255,7 @@ export default function GardenersList() {
     <main className="min-h-screen bg-white px-6 py-10">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-green-700">Les Jardinier.es</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-green-700">Les Jardiniers</h1>
 
           {isAuthed && (
             <Link
@@ -323,7 +323,7 @@ export default function GardenersList() {
         )}
 
         {!loading && !err && filtered.length === 0 && (
-          <p className="text-center text-gray-600">Aucun jardinier.e trouvé.e.</p>
+          <p className="text-center text-gray-600">Aucun jardinier trouvé.</p>
         )}
 
         {/* ✅ LISTE VERTICALE */}

@@ -60,7 +60,7 @@ export default function EditGardenerPage() {
 
         const me = await apiFetch('/api/me');
         const user = me?.user || me || {};
-        const g = user?.jardinier.e || user?.gardener || null;
+        const g = user?.jardinier || user?.gardener || null;
 
         setMeName({
           firstName: user?.firstName || '',
@@ -193,10 +193,10 @@ export default function EditGardenerPage() {
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-green-700">
-              Profil Jardinier.e
+              Profil Jardinier
             </h1>
             <p className="text-gray-600 mt-1">
-              Mets à jour ton profil jardinier.e (sans ressaisir ton identité).
+              Mets à jour ton profil jardinier (sans ressaisir ton identité).
             </p>
           </div>
 
@@ -226,7 +226,7 @@ export default function EditGardenerPage() {
                   <div className="text-gray-900 font-semibold">{fullName}</div>
                 </div>
                 <span className="rounded-full px-3 py-1 text-xs font-medium bg-green-50 text-green-800 ring-1 ring-green-200">
-                  Jardinier.e
+                  Jardinier
                 </span>
               </div>
             </div>
