@@ -84,6 +84,10 @@ export default function GardenerPage({ params }) {
   const [error, setError] = useState('');
   const [avatarV, setAvatarV] = useState(0);
 
+console.log('API_BASE runtime:', API_BASE);
+console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
+
+
   // reload on cross-tab updates
   useEffect(() => {
     const onStorage = (e) => {
