@@ -249,6 +249,10 @@ export default function Dashboard() {
     avatarUrl: '',
   });
 
+console.log('token (getAnyToken):', getAnyToken());
+console.log('ls token:', typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+
+
   const roleSectionRef = useRef(null);
 
   function normalizeUser(u) {
