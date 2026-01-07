@@ -26,7 +26,7 @@ const seed = [
     tags: 'garden create listing owner',
   },
   {
-    q: 'Comment contacter un jardinier / propriétaire ?',
+    q: 'Comment contacter un.e jardinier.e / propriétaire ?',
     a: 'Ouvrez une page de jardin ou de profil et utilisez “Envoyer un message” ou “Réserver”. Vous devez être connecté.',
     links: [{ href: '/gardens', label: 'Parcourir les jardins' }],
     tags: 'contact message booking chat',
@@ -75,7 +75,7 @@ export default function Page() {
           <QuickLink href="/register">Créer un compte</QuickLink>
           <QuickLink href="/login">Se connecter</QuickLink>
           <QuickLink href="/gardens">Parcourir les jardins</QuickLink>
-          <QuickLink href="/gardeners">Nos jardiniers</QuickLink>
+          <QuickLink href="/gardeners">Nos jardinier.es</QuickLink>
         </div>
 
         {/* FAQ */}
