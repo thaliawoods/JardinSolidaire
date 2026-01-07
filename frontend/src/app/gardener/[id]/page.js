@@ -160,7 +160,7 @@ export default function GardenerPage({ params }) {
 
             {/* Personal availability calendar for the gardener */}
             <section className="mt-8">
-              <Card title="Disponibilités de la.le jardinier.e">
+              <Card title="Disponibilités du jardinier">
                 <div className="rounded-2xl p-2" />
               </Card>
               <AvailabilityCalendar

@@ -46,7 +46,7 @@ async function fetchOtherByUserId(userId) {
     `${API_BASE}/api/users/${userId}`,
     `${API_BASE}/api/owners/${userId}`,
     `${API_BASE}/api/gardeners/${userId}`,
-    `${API_BASE}/api/jardinier.es/${userId}`,
+    `${API_BASE}/api/jardiniers/${userId}`,
     `${API_BASE}/api/proprietaires/${userId}`,
   ];
 
