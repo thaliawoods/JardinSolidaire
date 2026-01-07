@@ -3,18 +3,21 @@
   "version": "1.0.0",
   "description": "Projet RNCP",
   "main": "index.js",
-  "scripts": {
-    "dev": "next dev -p 3000",
-    "build": "next build",
-    "start": "next start -p 3000",
-    "test": "npm --prefix backend test",
-    "test:api": "npm --prefix backend test",
-    "test:api:watch": "npm --prefix backend run test:watch",
-    "test:api:cov": "npm --prefix backend run test:cov",
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui",
-    "e2e:headed": "playwright test --headed"
-  },
+"scripts": {
+  "dev:frontend": "npm --prefix frontend run dev",
+  "build:frontend": "npm --prefix frontend run build",
+  "start:frontend": "npm --prefix frontend run start",
+
+  "dev:backend": "npm --prefix backend run dev",
+  "test:api": "npm --prefix backend test",
+
+  "build": "npm run build:frontend",
+
+  "e2e": "npm --prefix frontend exec playwright test",
+  "e2e:ui": "npm --prefix frontend exec playwright test --ui",
+  "e2e:headed": "npm --prefix frontend exec playwright test --headed"
+}
+,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Hanaevernon/JardinSolidaire.git"
