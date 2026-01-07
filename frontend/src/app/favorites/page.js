@@ -238,7 +238,7 @@ export default function FavoritesPage() {
                   : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50',
               ].join(' ')}
             >
-              Jardinier.es <span className="ml-2 opacity-90">({gardeners.length})</span>
+              Jardiniers <span className="ml-2 opacity-90">({gardeners.length})</span>
             </button>
           </div>
         </div>
@@ -321,15 +321,15 @@ export default function FavoritesPage() {
           <section>
             {gardeners.length === 0 ? (
               <EmptyCard
-                title="Aucun jardinier.e en favoris"
+                title="Aucun jardinier en favoris"
                 subtitle="Ajoute des profils pour les recontacter facilement."
                 href="/gardeners"
-                linkText="Explorer les jardinier.es"
+                linkText="Explorer les jardiniers"
               />
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {gardeners.map((p) => {
-                  const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || `Jardinier.e #${p.id}`;
+                  const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || `Jardinier #${p.id}`;
                   const avatarFallback = greenAvatarPlaceholder(p.firstName, p.lastName);
                   const src = p.avatarUrl || avatarFallback;
 

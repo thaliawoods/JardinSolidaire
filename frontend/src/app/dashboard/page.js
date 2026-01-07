@@ -257,7 +257,7 @@ console.log('ls token:', typeof window !== 'undefined' ? localStorage.getItem('t
 
   function normalizeUser(u) {
     if (!u) return null;
-    const gardenerRaw = u.gardener ?? u.jardinier.e ?? null;
+    const gardenerRaw = u.gardener ?? u.jardinier ?? null;
     const ownerRaw = u.owner ?? u.proprietaire ?? null;
     return {
       ...u,
@@ -338,7 +338,7 @@ console.log('ls token:', typeof window !== 'undefined' ? localStorage.getItem('t
       await apiFetch('/api/me/role', { method: 'PUT', body: { role: next } });
       setRole(next);
       broadcastRoleChange(next);
-      setMsg(`Mode : ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier.e'}`);
+      setMsg(`Mode : ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier'}`);
     } catch {
       setMsg("Impossible de changer d’interface.");
     }
@@ -365,7 +365,7 @@ console.log('ls token:', typeof window !== 'undefined' ? localStorage.getItem('t
 
       tasks.push(apiFetch('/api/me/profile', { method: 'POST', body: { avatarUrl: path } }));
 
-      if (user?.gardener || user?.jardinier.e) {
+      if (user?.gardener || user?.jardinier) {
         tasks.push(apiFetch('/api/me/gardener', { method: 'POST', body: { avatarUrl: path } }));
       }
       if (user?.owner || user?.proprietaire) {
@@ -537,7 +537,7 @@ console.log('ls token:', typeof window !== 'undefined' ? localStorage.getItem('t
                       role === 'GARDENER' ? 'bg-pink-500 text-white' : 'hover:bg-gray-50 text-gray-800'
                     }`}
                   >
-                    Jardinier.e
+                    Jardinier
                   </button>
                 </div>
               </div>
@@ -583,7 +583,7 @@ console.log('ls token:', typeof window !== 'undefined' ? localStorage.getItem('t
                         <div className="sm:col-span-2">
                           <div className="mt-1 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
                             Ajoute ton <b>prénom</b> et ton <b>nom</b> une seule fois ici : ensuite on les réutilise
-                            automatiquement pour Propriétaire / Jardinier.e.
+                            automatiquement pour Propriétaire / Jardinier.
                           </div>
                         </div>
                       )}
@@ -679,7 +679,7 @@ console.log('ls token:', typeof window !== 'undefined' ? localStorage.getItem('t
             {/* GARDENER CARD */}
             <Card className="mb-6">
               <div className="flex items-center justify-between gap-3">
-                <SoftTitle>Profil Jardinier.e</SoftTitle>
+                <SoftTitle>Profil Jardinier</SoftTitle>
                 <div className="flex items-center gap-2">
                   {me?.gardener ? (
                     me.gardener.published ? <Pill>Publié</Pill> : <MutedPill>Non publié</MutedPill>
@@ -720,12 +720,12 @@ console.log('ls token:', typeof window !== 'undefined' ? localStorage.getItem('t
                   </InfoGrid>
                 ) : (
                   <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex items-center justify-between gap-3">
-                    <div className="text-gray-700">Pas de profil jardinier.e encore.</div>
+                    <div className="text-gray-700">Pas de profil jardinier encore.</div>
                     <Link
                       href="/edit-gardener"
                       className="px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 transition text-sm shadow-sm"
                     >
-                      Créer mon profil jardinier.e
+                      Créer mon profil jardinier
                     </Link>
                   </div>
                 )}
