@@ -1,4 +1,3 @@
-// backend/routes/register.js
 const express = require('express');
 const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
@@ -9,17 +8,12 @@ const { randomToken, hashToken, addMinutes } = require('../lib/tokens');
 const prisma = new PrismaClient();
 const router = express.Router();
 
+/* -------------------- ping -------------------- */
 router.get('/_ping', (_req, res) =>
-  res.json({ ok: true, where: 'routes/register.js' })
+  res.json({ ok: true, route: 'register' })
 );
 
-/* ---------- password rules ---------- */
-/**
- * Règles simples (à adapter si tu veux) :
- * - min 8 caractères
- * - au moins 1 minuscule, 1 majuscule, 1 chiffre
- * - pas d'espaces
- */
+/* ---------------- password rules -------------- */
 function isStrongPassword(pw) {
   const s = String(pw || '');
   if (s.length < 8) return false;
@@ -30,23 +24,19 @@ function isStrongPassword(pw) {
   return true;
 }
 
-/**
- * POST /api/register
- * body: { email, password }
- *
- * ✅ crée un compte NON vérifié + envoie un email de vérification
- * ❌ ne renvoie PAS de JWT tant que l’email n’est pas confirmé
- */
+/* ---------------- POST /api/register ----------- */
 router.post('/', async (req, res) => {
   try {
     const { email, password } = req.body || {};
+
     if (!email || !password) {
-      return res.status(400).json({ error: 'email_and_password_required' });
+      return res.status(400).json({
+        error: 'email_and_password_required',
+      });
     }
 
     const normalized = String(email).trim().toLowerCase();
 
-    // ✅ validation mot de passe côté serveur
     if (!isStrongPassword(password)) {
       return res.status(400).json({
         error: 'password_too_weak',
@@ -60,60 +50,67 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const exists = await prisma.user.findUnique({ where: { email: normalized } });
-    if (exists) return res.status(409).json({ error: 'email_taken' });
+    const exists = await prisma.user.findUnique({
+      where: { email: normalized },
+    });
+    if (exists) {
+      return res.status(409).json({ error: 'email_taken' });
+    }
 
-    const hash = await bcrypt.hash(String(password), 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    // ✅ token de vérification (on stocke un hash)
-    const rawVerifyToken = randomToken();
-    const verifyTokenHash = hashToken(rawVerifyToken);
-    const expiresAt = addMinutes(new Date(), 60); // 1h
+    const rawToken = randomToken();
+    const tokenHash = hashToken(rawToken);
+    const expiresAt = addMinutes(new Date(), 60);
 
     const user = await prisma.user.create({
       data: {
         email: normalized,
-        passwordHash: hash,
+        passwordHash,
         role: null,
         emailVerifiedAt: null,
-        emailVerifyTokenHash: verifyTokenHash,
+        emailVerifyTokenHash: tokenHash,
         emailVerifyExpiresAt: expiresAt,
       },
       select: { id: true, email: true },
     });
 
-    const APP_URL = process.env.APP_URL || 'http://localhost:3000';
-    const verifyLink = `${APP_URL}/verify-email?email=${encodeURIComponent(
-      normalized
-    )}&token=${rawVerifyToken}`;
+    const APP_URL =
+      process.env.APP_URL || 'http://localhost:3000';
 
+    const verifyLink =
+      `${APP_URL}/verify-email?email=${encodeURIComponent(normalized)}&token=${rawToken}`;
+
+    // 👉 ENVOI EMAIL BREVO
     await sendMail({
       to: normalized,
       subject: 'Confirme ton email — JardinSolidaire',
       text:
         `Bienvenue sur JardinSolidaire 🌿\n\n` +
-        `Pour activer ton compte, confirme ton email :\n${verifyLink}\n\n` +
-        `Ce lien expire dans 1 heure.`,
+        `Confirme ton email :\n${verifyLink}\n\n` +
+        `Lien valable 1 heure.`,
       html: `
         <p>Bienvenue sur <b>JardinSolidaire</b> 🌿</p>
-        <p>Pour activer ton compte, confirme ton email :</p>
+        <p>Pour activer ton compte :</p>
         <p><a href="${verifyLink}">Confirmer mon email</a></p>
-        <p><small>Ce lien expire dans 1 heure.</small></p>
+        <p><small>Lien valable 1 heure.</small></p>
       `,
     });
 
     return res.status(201).json({
       ok: true,
       message: 'verification_email_sent',
-      user: { id: user.id.toString(), email: user.email },
+      user: {
+        id: user.id.toString(),
+        email: user.email,
+      },
     });
-  } catch (e) {
-    console.error('POST /api/register failed:', e?.stack || e);
+  } catch (err) {
+    console.error('❌ REGISTER ERROR:', err);
 
-    // ✅ TEMP DEBUG: expose exact error (remove later if you want)
     return res.status(500).json({
       error: 'server_error',
-      message: String(e?.message || e),
+      message: err.message || String(err),
     });
   }
 });
