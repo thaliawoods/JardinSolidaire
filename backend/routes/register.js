@@ -1,3 +1,4 @@
+// backend/routes/register.js
 const express = require('express');
 const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
@@ -8,7 +9,9 @@ const { randomToken, hashToken, addMinutes } = require('../lib/tokens');
 const prisma = new PrismaClient();
 const router = express.Router();
 
-router.get('/_ping', (_req, res) => res.json({ ok: true, where: 'routes/register.js' }));
+router.get('/_ping', (_req, res) =>
+  res.json({ ok: true, where: 'routes/register.js' })
+);
 
 /* ---------- password rules ---------- */
 /**
@@ -80,8 +83,9 @@ router.post('/', async (req, res) => {
     });
 
     const APP_URL = process.env.APP_URL || 'http://localhost:3000';
-    const verifyLink =
-      `${APP_URL}/verify-email?email=${encodeURIComponent(normalized)}&token=${rawVerifyToken}`;
+    const verifyLink = `${APP_URL}/verify-email?email=${encodeURIComponent(
+      normalized
+    )}&token=${rawVerifyToken}`;
 
     await sendMail({
       to: normalized,
@@ -106,11 +110,11 @@ router.post('/', async (req, res) => {
   } catch (e) {
     console.error('POST /api/register failed:', e?.stack || e);
 
-    if (String(e.message || '').includes('SMTP')) {
-      return res.status(500).json({ error: 'server_misconfigured', detail: 'SMTP not configured' });
-    }
-
-    return res.status(500).json({ error: 'server_error' });
+    // ✅ TEMP DEBUG: expose exact error (remove later if you want)
+    return res.status(500).json({
+      error: 'server_error',
+      message: String(e?.message || e),
+    });
   }
 });
 
