@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { listConversations, listInbox, markAllRead } from '@/lib/messages';
 
 const BRAND_GREEN = '#16a34a';
@@ -27,6 +28,18 @@ function EmptyCard({ title, desc, icon = '💬' }) {
 }
 
 export default function Page() {
+  const router = useRouter();
+  const sp = useSearchParams();
+
+  // ✅ if /messages?with=239 -> open thread /messages/239
+  useEffect(() => {
+    const withId = sp.get('with');
+    if (withId && String(withId).trim() !== '') {
+      router.replace(`/messages/${withId}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [convos, setConvos] = useState([]);
   const [inbox, setInbox] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,11 +137,7 @@ export default function Page() {
               </div>
 
               {inbox.length === 0 ? (
-                <EmptyCard
-                  icon="✅"
-                  title="Aucun message non lu"
-                  desc="Quand vous recevrez un nouveau message, il apparaîtra ici."
-                />
+                <EmptyCard icon="✅" title="Aucun message non lu" desc="Quand vous recevrez un nouveau message, il apparaîtra ici." />
               ) : (
                 <div className="space-y-3">
                   {inbox.map((m) => (
@@ -166,11 +175,7 @@ export default function Page() {
               </div>
 
               {convos.length === 0 ? (
-                <EmptyCard
-                  icon="💬"
-                  title="Aucune conversation"
-                  desc="Dès que vous envoyez ou recevez un message, la conversation apparaîtra ici."
-                />
+                <EmptyCard icon="💬" title="Aucune conversation" desc="Dès que vous envoyez ou recevez un message, la conversation apparaîtra ici." />
               ) : (
                 <div className="space-y-3">
                   {convos.map((c) => {
