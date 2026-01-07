@@ -102,7 +102,7 @@ export default function GardenerPage({ params }) {
       setLoading(true);
       setError('');
       let res = await fetch(`${API_BASE}/api/gardeners/${id}`, { cache: 'no-store' });
-      if (!res.ok) res = await fetch(`${API_BASE}/api/jardiniers/${id}`, { cache: 'no-store' });
+      if (!res.ok) res = await fetch(`${API_BASE}/api/jardinier.es/${id}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
@@ -117,7 +117,7 @@ export default function GardenerPage({ params }) {
         intro: data.intro || data.presentation || data.description || '—',
       });
     } catch (_e) {
-      setError('Impossible de charger le profil jardinier.');
+      setError('Impossible de charger le profil jardinier.e.');
       setGardener(null);
     } finally {
       setLoading(false);
@@ -143,7 +143,7 @@ export default function GardenerPage({ params }) {
             href="/gardeners"
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition"
           >
-            <span aria-hidden>←</span> Retour aux jardiniers
+            <span aria-hidden>←</span> Retour aux jardinier.es
           </Link>
         </div>
 
