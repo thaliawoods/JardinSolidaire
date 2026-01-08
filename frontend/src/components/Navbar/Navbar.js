@@ -289,7 +289,8 @@ export default function Navbar() {
   /* ---------- small UI helpers ---------- */
   const RoleSwitcher = () =>
     user ? (
-      <div className="hidden md:flex items-center gap-2">
+      // ✅ gap-4 au lieu de gap-2
+      <div className="hidden md:flex items-center gap-4">
         {/* Name (no rounded/pill) */}
         {displayName && (
           <span className="text-sm font-medium whitespace-nowrap" title={displayName}>
@@ -431,7 +432,6 @@ export default function Navbar() {
                     </>
                   ) : (
                     <>
-                      {/* optional: show name in the menu too */}
                       {displayName && (
                         <li className="opacity-95 text-sm pb-2 border-b border-white/15">
                           Connecté·e : <span className="font-semibold">{displayName}</span>
