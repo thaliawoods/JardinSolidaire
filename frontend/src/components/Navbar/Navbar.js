@@ -28,13 +28,14 @@ export default function Navbar() {
   const [unread, setUnread] = useState(0); // messages unread
   const [inboxUnread, setInboxUnread] = useState(0); // booking requests pending (owner inbox)
 
+  // hover handling so the menu stays open while you can click inside
+  const [burgerHover, setBurgerHover] = useState(false);
+  const [panelHover, setPanelHover] = useState(false);
+  const [closeTimer, setCloseTimer] = useState(null);
+
   const user = me?.user ?? null;
 
-  // IMPORTANT: on évite de mettre token dans les deps (sinon ça peut être instable)
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-  /* ---------- user display name ---------- */
+  /* ---------- display name (adapt to your API fields) ---------- */
   const displayName = useMemo(() => {
     if (!user) return '';
     const first =
@@ -53,14 +54,40 @@ export default function Navbar() {
     return full || user.username || user.email || '';
   }, [user]);
 
+  /* ---------- helpers for hover open/close ---------- */
+  function clearCloseTimer() {
+    if (closeTimer) {
+      clearTimeout(closeTimer);
+      setCloseTimer(null);
+    }
+  }
+
+  function openMenu() {
+    clearCloseTimer();
+    setMenuOpen(true);
+  }
+
+  function scheduleClose() {
+    clearCloseTimer();
+    const t = setTimeout(() => setMenuOpen(false), 180); // anti-flicker
+    setCloseTimer(t);
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    if (burgerHover || panelHover) return;
+    scheduleClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [burgerHover, panelHover, menuOpen]);
+
   /* ---------- session hydration ---------- */
   useEffect(() => {
     let alive = true;
 
     async function hydrate() {
-      const t = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-      if (!t) {
+      if (!token) {
         setLoadingMe(false);
         setMe(null);
         setRole(null);
@@ -71,7 +98,7 @@ export default function Navbar() {
 
       try {
         const res = await fetch(`${API_BASE}/api/me`, {
-          headers: { Authorization: `Bearer ${t}` },
+          headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
         });
         const data = await res.json().catch(() => null);
@@ -104,7 +131,6 @@ export default function Navbar() {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* Listen for role changes */
@@ -138,10 +164,11 @@ export default function Navbar() {
   }, []);
 
   async function refreshMe() {
-    const t = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (!t) return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+
     const r2 = await fetch(`${API_BASE}/api/me`, {
-      headers: { Authorization: `Bearer ${t}` },
+      headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
     if (r2.ok) setMe(await r2.json());
@@ -149,12 +176,12 @@ export default function Navbar() {
 
   async function switchRole(nextRole) {
     try {
-      const t = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!t) return;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) return;
 
       const res = await fetch(`${API_BASE}/api/me/role`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ role: nextRole }),
       });
 
@@ -216,14 +243,14 @@ export default function Navbar() {
   /* ---------- owner inbox pending count ---------- */
   const loadInboxUnread = useCallback(async () => {
     try {
-      const t = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!t || !user || role !== 'OWNER') {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token || !user || role !== 'OWNER') {
         setInboxUnread(0);
         return;
       }
 
       const res = await fetch(`${API_BASE}/api/bookings/inbox?status=pending`, {
-        headers: { Authorization: `Bearer ${t}` },
+        headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       });
 
@@ -263,14 +290,11 @@ export default function Navbar() {
   const RoleSwitcher = () =>
     user ? (
       <div className="hidden md:flex items-center gap-2">
-        {/* ✅ Nom/prénom à gauche du switch */}
+        {/* Name (no rounded/pill) */}
         {displayName && (
-          <div
-            className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-sm whitespace-nowrap"
-            title={displayName}
-          >
+          <span className="text-sm font-medium whitespace-nowrap" title={displayName}>
             {displayName}
-          </div>
+          </span>
         )}
 
         {/* Switch */}
@@ -278,9 +302,7 @@ export default function Navbar() {
           <button
             onClick={() => switchRole('OWNER')}
             className={`px-3 py-1 rounded-full text-sm transition ${
-              role === 'OWNER'
-                ? 'bg-pink-500 text-white'
-                : 'text-white hover:bg-white/10'
+              role === 'OWNER' ? 'bg-pink-500 text-white' : 'text-white hover:bg-white/10'
             }`}
             title="Interface Propriétaire"
             type="button"
@@ -290,9 +312,7 @@ export default function Navbar() {
           <button
             onClick={() => switchRole('GARDENER')}
             className={`px-3 py-1 rounded-full text-sm transition ${
-              role === 'GARDENER'
-                ? 'bg-pink-500 text-white'
-                : 'text-white hover:bg-white/10'
+              role === 'GARDENER' ? 'bg-pink-500 text-white' : 'text-white hover:bg-white/10'
             }`}
             title="Interface Jardinier.e"
             type="button"
@@ -356,28 +376,45 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* ✅ Burger : s’ouvre au survol, se ferme quand on sort (desktop), et reste cliquable */}
-          <div
-            className="relative"
-            onMouseEnter={() => setMenuOpen(true)}
-            onMouseLeave={() => setMenuOpen(false)}
-          >
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="cursor-pointer ml-1"
-              aria-label="Menu"
-              type="button"
+          {/* Burger (stays open while hovering inside panel) */}
+          <div className="relative">
+            <div
+              onMouseEnter={() => {
+                setBurgerHover(true);
+                openMenu();
+              }}
+              onMouseLeave={() => {
+                setBurgerHover(false);
+                scheduleClose();
+              }}
             >
-              {menuOpen ? (
-                <FontAwesomeIcon icon={faTimes} size="lg" />
-              ) : (
-                <FontAwesomeIcon icon={faBars} size="lg" />
-              )}
-            </button>
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="cursor-pointer ml-1"
+                aria-label="Menu"
+                type="button"
+              >
+                {menuOpen ? (
+                  <FontAwesomeIcon icon={faTimes} size="lg" />
+                ) : (
+                  <FontAwesomeIcon icon={faBars} size="lg" />
+                )}
+              </button>
+            </div>
 
-            {/* Mobile/Dropdown menu (positionné sous la navbar) */}
+            {/* Menu panel */}
             {menuOpen && (
-              <div className="bg-green-600 w-screen absolute top-[44px] right-[-16px] md:right-0 md:w-[320px] border-t border-white/20 shadow-lg">
+              <div
+                onMouseEnter={() => {
+                  setPanelHover(true);
+                  openMenu();
+                }}
+                onMouseLeave={() => {
+                  setPanelHover(false);
+                  scheduleClose();
+                }}
+                className="bg-green-600 w-screen absolute top-[44px] right-[-16px] md:right-0 md:w-[320px] border-t border-white/20 shadow-lg z-50"
+              >
                 <ul className="flex flex-col space-y-2 p-4 text-white">
                   {!user ? (
                     <>
@@ -394,7 +431,7 @@ export default function Navbar() {
                     </>
                   ) : (
                     <>
-                      {/* Nom en mobile aussi (optionnel) */}
+                      {/* optional: show name in the menu too */}
                       {displayName && (
                         <li className="opacity-95 text-sm pb-2 border-b border-white/15">
                           Connecté·e : <span className="font-semibold">{displayName}</span>
@@ -482,11 +519,7 @@ export default function Navbar() {
                       </li>
 
                       <li>
-                        <button
-                          onClick={handleLogout}
-                          className="block text-left w-full"
-                          type="button"
-                        >
+                        <button onClick={handleLogout} className="block text-left w-full" type="button">
                           Déconnexion
                         </button>
                       </li>
