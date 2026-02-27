@@ -180,3 +180,5 @@ JardinSolidaire/
 ## Autrice
 
 **Thalia Woods** — Projet RNCP (Concepteur·trice Développeur·se d’Applications)
+
+en collaboration avec **Hanaë Vernon** et **Médina Bouillart**
