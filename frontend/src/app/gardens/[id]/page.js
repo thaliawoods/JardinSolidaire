@@ -244,34 +244,18 @@ export default function GardenDetailPage({ params }) {
             <Link
               href={`/messages/${ownerUserIdForChat}`}
               style={{
-                padding: '0.625rem 1.5rem',
-                background: 'var(--green)',
-                color: '#fff',
                 fontSize: '0.875rem',
-                textDecoration: 'none',
-                border: 'none',
-                display: 'inline-block',
+                color: 'var(--foreground)',
+                textDecoration: 'underline',
+                textUnderlineOffset: '3px',
               }}
             >
               Contacter →
             </Link>
           ) : (
-            <button
-              type="button"
-              disabled
-              style={{
-                padding: '0.625rem 1.5rem',
-                background: 'var(--green)',
-                color: '#fff',
-                fontSize: '0.875rem',
-                border: 'none',
-                opacity: 0.5,
-                cursor: 'not-allowed',
-              }}
-              title="Propriétaire introuvable"
-            >
+            <span style={{ fontSize: '0.875rem', color: 'var(--muted)', cursor: 'not-allowed' }}>
               Contacter →
-            </button>
+            </span>
           )}
         </div>
 
