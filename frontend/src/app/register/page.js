@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const BRAND_PINK = '#E3107D';
+
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const LABEL = { display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: '0.4rem' };
+const BTN_PRIMARY = { display: 'inline-block', width: '100%', padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', letterSpacing: '0.01em', opacity: 1 };
 
 function checkPassword(pw) {
   const s = String(pw || '');
@@ -83,102 +86,106 @@ export default function RegisterPage() {
     err === 'network_error' ? 'Erreur réseau. Réessaie.' :
     err ? 'Création de compte impossible.' : '';
 
-  const passwordHelp = (
-    <div className="mt-2 text-xs text-gray-600">
-      <div className="font-medium text-gray-700">Le mot de passe doit contenir :</div>
-      <ul className="mt-1 space-y-1">
-        <li className={pwd.rules.minLength ? 'text-green-700' : 'text-gray-600'}>• 8 caractères minimum</li>
-        <li className={pwd.rules.upper ? 'text-green-700' : 'text-gray-600'}>• 1 majuscule</li>
-        <li className={pwd.rules.lower ? 'text-green-700' : 'text-gray-600'}>• 1 minuscule</li>
-        <li className={pwd.rules.number ? 'text-green-700' : 'text-gray-600'}>• 1 chiffre</li>
-        <li className={pwd.rules.noSpaces ? 'text-green-700' : 'text-gray-600'}>• pas d’espace</li>
-      </ul>
-    </div>
-  );
+  const rules = [
+    { key: 'minLength', label: '8 caractères minimum' },
+    { key: 'upper',     label: '1 majuscule' },
+    { key: 'lower',     label: '1 minuscule' },
+    { key: 'number',    label: '1 chiffre' },
+    { key: 'noSpaces',  label: "pas d'espace" },
+  ];
 
   return (
-    <div className="min-h-screen bg-white px-6 py-10 flex items-center justify-center">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-green-700">Créer un compte</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Rejoins JardinSolidaire en quelques secondes.
-          </p>
-        </div>
+    <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '4rem 2rem' }}>
 
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
-          <form onSubmit={submit} className="space-y-4">
-            <Field label="Email">
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                required
-                autoComplete="email"
-              />
-            </Field>
+        <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', marginBottom: '1.25rem' }}>
+          Compte
+        </p>
 
-            <Field label="Mot de passe">
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                required
-                autoComplete="new-password"
-              />
-              {passwordHelp}
-            </Field>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--foreground)', margin: '0 0 0.5rem' }}>
+          Créer un compte
+        </h1>
 
-            <div className="flex items-center justify-end -mt-1">
-              <Link href="/login" className="text-sm text-[#e3107d] hover:underline">
-                Déjà un compte ?
-              </Link>
+        <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>
+          Rejoins JardinSolidaire en quelques secondes.
+        </p>
+
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+          <div>
+            <label style={LABEL} htmlFor="reg-email">Email</label>
+            <input
+              id="reg-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={INPUT}
+              required
+              autoComplete="email"
+            />
+          </div>
+
+          <div>
+            <label style={LABEL} htmlFor="reg-password">Mot de passe</label>
+            <input
+              id="reg-password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={INPUT}
+              required
+              autoComplete="new-password"
+            />
+            <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              {rules.map(({ key, label }) => (
+                <span key={key} style={{ fontSize: '0.75rem', color: pwd.rules[key] ? 'var(--green)' : 'var(--muted)' }}>
+                  {pwd.rules[key] ? '✓' : '—'} {label}
+                </span>
+              ))}
             </div>
-
-            {errMsg && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {errMsg}
-              </div>
-            )}
-
-            <button
-              className="w-full rounded-full px-5 py-3 text-white shadow-sm transition disabled:opacity-60 hover:opacity-95"
-              style={{ backgroundColor: BRAND_PINK }}
-              disabled={!canSubmit}
-              title={!pwd.ok ? 'Mot de passe trop faible' : undefined}
-            >
-              {submitting ? 'Création…' : 'Créer mon compte'}
-            </button>
-          </form>
-
-          <div className="mt-5 text-center text-sm text-gray-700">
-            En créant un compte, tu acceptes nos règles de bon usage.
           </div>
 
-          <div className="mt-4 text-center">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition text-sm"
-              aria-label="Retour à l’accueil"
-            >
-              <span aria-hidden>←</span> Retour à l’accueil
-            </Link>
-          </div>
-        </div>
+          {errMsg && (
+            <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626' }}>
+              {errMsg}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            style={{ ...BTN_PRIMARY, opacity: !canSubmit ? 0.5 : 1, cursor: !canSubmit ? 'not-allowed' : 'pointer' }}
+            disabled={!canSubmit}
+            title={!pwd.ok ? 'Mot de passe trop faible' : undefined}
+          >
+            {submitting ? 'Création…' : 'Créer mon compte'}
+          </button>
+
+        </form>
+
+        <p style={{ marginTop: '2rem', fontSize: '0.8125rem', color: 'var(--muted)' }}>
+          En créant un compte, tu acceptes nos règles de bon usage.
+        </p>
+
+        <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
+          Déjà un compte ?{' '}
+          <Link href="/login" style={{ color: 'var(--foreground)', textDecoration: 'underline' }}>
+            Se connecter →
+          </Link>
+        </p>
+
+        <p style={{ marginTop: '0.75rem' }}>
+          <Link
+            href="/"
+            style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'none' }}
+            aria-label="Retour à l'accueil"
+          >
+            ← Retour à l'accueil
+          </Link>
+        </p>
+
       </div>
     </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-medium text-gray-800 mb-2">{label}</span>
-      {children}
-    </label>
   );
 }

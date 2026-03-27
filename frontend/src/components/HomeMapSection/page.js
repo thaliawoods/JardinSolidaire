@@ -5,17 +5,34 @@ import GardensMap from '@/components/Map/GardensMap';
 
 export default function HomeMapSection() {
   return (
-    <section className="mx-auto max-w-5xl px-6 pb-10">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-2xl font-semibold text-green-700">Les Jardins sur la carte</h3>
-        <Link
-          href="/map"
-          className="text-sm bg-pink-500 hover:bg-pink-600 text-white px-3 py-1.5 rounded"
-        >
-          Ouvrir la carte
-        </Link>
+    <section>
+      <div className="max-w-5xl mx-auto px-6 md:px-10 py-14">
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.85rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--green)',
+            }}
+          >
+            Carte
+          </span>
+          <Link
+            href="/map"
+            style={{
+              fontSize: '0.875rem',
+              color: 'var(--muted)',
+              textDecoration: 'underline',
+              textUnderlineOffset: '3px',
+            }}
+          >
+            Ouvrir en plein écran →
+          </Link>
+        </div>
+        <GardensMap height="420px" />
       </div>
-      <GardensMap height="360px" />
     </section>
   );
 }

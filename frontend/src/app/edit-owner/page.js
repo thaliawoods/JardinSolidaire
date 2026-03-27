@@ -4,6 +4,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const LABEL = { display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: '0.4rem' };
+const BTN_PRIMARY = { padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', letterSpacing: '0.01em' };
+const BTN_SECONDARY = { padding: '0.65rem 1.5rem', background: 'none', color: 'var(--foreground)', border: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', letterSpacing: '0.01em', textDecoration: 'none', display: 'inline-block' };
+
 export default function EditOwnerPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -20,22 +25,15 @@ export default function EditOwnerPage() {
     description: '',
   });
 
-  // Prefill with existing owner + identity from user
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
         setErr('');
-
         const me = await apiFetch('/api/me');
         const user = me?.user || me || {};
         const owner = user?.proprietaire || user?.owner || null;
-
-        setMeName({
-          firstName: user?.firstName || '',
-          lastName: user?.lastName || '',
-        });
-
+        setMeName({ firstName: user?.firstName || '', lastName: user?.lastName || '' });
         if (owner) {
           setForm({
             district: owner.district || owner.quartier || '',
@@ -67,25 +65,16 @@ export default function EditOwnerPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-
-    const areaInt =
-      form.area === '' || form.area == null ? null : Number.parseInt(form.area, 10);
-
-    // ✅ payload compat (UI + alias backend possibles)
+    const areaInt = form.area === '' || form.area == null ? null : Number.parseInt(form.area, 10);
     const payload = {
-      // identité → on prend celle du compte
       firstName: (meName.firstName || '').trim(),
       lastName: (meName.lastName || '').trim(),
-
-      // UI fields
       district: (form.district || '').trim(),
       availability: (form.availability || '').trim(),
       area: Number.isFinite(areaInt) ? areaInt : null,
       kind: (form.kind || '').trim(),
       intro: (form.intro || '').trim(),
       description: (form.description || '').trim(),
-
-      // aliases backend (au cas où)
       quartier: (form.district || '').trim(),
       disponibilite: (form.availability || '').trim(),
       surface: Number.isFinite(areaInt) ? areaInt : null,
@@ -93,17 +82,13 @@ export default function EditOwnerPage() {
       presentation: (form.intro || '').trim(),
       details: (form.description || '').trim(),
     };
-
-    // Petit garde-fou
     if (!payload.firstName || !payload.lastName) {
       alert("Ton compte n'a pas de prénom/nom. Va sur Dashboard > Mon profil.");
       return;
     }
-
     try {
       setSubmitting(true);
       await apiFetch('/api/me/owner', { method: 'POST', body: payload });
-
       localStorage.setItem('ownerUpdated', String(Date.now()));
       window.location.href = '/dashboard';
     } catch (e) {
@@ -116,154 +101,79 @@ export default function EditOwnerPage() {
   };
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-green-700">
-              Profil Propriétaire
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Mets à jour ton profil propriétaire (sans ressaisir ton identité).
-            </p>
-          </div>
+    <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '2.5rem 2rem' }}>
 
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-          >
-            ← Dashboard
-          </Link>
+        {/* Header */}
+        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem' }}>
+          <div>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)', marginBottom: '0.3rem' }}>Profil</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 400, color: 'var(--foreground)', margin: 0 }}>Profil Propriétaire</h1>
+          </div>
+          <Link href="/dashboard" style={{ ...BTN_SECONDARY, fontSize: '0.8rem' }}>← Dashboard</Link>
         </div>
 
         {err && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
-            Error: {err}
-          </div>
+          <p style={{ color: '#c0392b', fontSize: '0.875rem', marginBottom: '1.25rem', borderLeft: '2px solid #c0392b', paddingLeft: '0.75rem' }}>Erreur : {err}</p>
         )}
 
         {loading ? (
-          <Skeleton />
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
         ) : (
-          <form onSubmit={onSubmit} className="space-y-5">
-            {/* Identity card */}
-            <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-gray-500">Identité (depuis le compte)</div>
-                  <div className="text-gray-900 font-semibold">{fullName}</div>
-                </div>
-                <span className="rounded-full px-3 py-1 text-xs font-medium bg-green-50 text-green-800 ring-1 ring-green-200">
-                  Propriétaire
-                </span>
+          <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+            {/* Identity */}
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--muted)', margin: '0 0 0.2rem' }}>Identité (depuis le compte)</p>
+                <p style={{ fontSize: '0.95rem', color: 'var(--foreground)', margin: 0 }}>{fullName}</p>
+              </div>
+              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)' }}>Propriétaire</span>
+            </div>
+
+            {/* Fields grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+              <div>
+                <label style={LABEL}>Quartier</label>
+                <input name="district" value={form.district} onChange={onChange} style={INPUT} placeholder="Ex : Belleville" />
+              </div>
+
+              <div>
+                <label style={LABEL}>Disponibilité</label>
+                <input name="availability" value={form.availability} onChange={onChange} style={INPUT} placeholder="Ex : soirs + weekends" />
+              </div>
+
+              <div>
+                <label style={LABEL}>Surface (m²)</label>
+                <input name="area" type="number" min="0" value={form.area} onChange={onChange} style={INPUT} placeholder="Ex : 50" />
+              </div>
+
+              <div>
+                <label style={LABEL}>Type de jardin</label>
+                <input name="kind" value={form.kind} onChange={onChange} style={INPUT} placeholder="cour intérieure, potager…" />
+              </div>
+
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={LABEL}>Introduction</label>
+                <input name="intro" value={form.intro} onChange={onChange} style={INPUT} placeholder="En 1 phrase : qui tu es / ton jardin…" />
+              </div>
+
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={LABEL}>Description</label>
+                <textarea name="description" value={form.description} onChange={onChange} rows={5} style={{ ...INPUT, resize: 'vertical' }} placeholder="Accès, outils, attentes, règles…" />
               </div>
             </div>
 
-            {/* Form card */}
-            <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Quartier">
-                  <input
-                    name="district"
-                    value={form.district}
-                    onChange={onChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="Ex : Belleville"
-                  />
-                </Field>
-
-                <Field label="Disponibilité">
-                  <input
-                    name="availability"
-                    value={form.availability}
-                    onChange={onChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="Ex : soirs + weekends"
-                  />
-                </Field>
-
-                <Field label="Surface (m²)">
-                  <input
-                    name="area"
-                    type="number"
-                    min="0"
-                    value={form.area}
-                    onChange={onChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="Ex : 50"
-                  />
-                </Field>
-
-                <Field label="Type de jardin">
-                  <input
-                    name="kind"
-                    value={form.kind}
-                    onChange={onChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="cour intérieure, potager…"
-                  />
-                </Field>
-
-                <Field label="Introduction" full>
-                  <input
-                    name="intro"
-                    value={form.intro}
-                    onChange={onChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="En 1 phrase : qui tu es / ton jardin…"
-                  />
-                </Field>
-
-                <Field label="Description" full>
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={onChange}
-                    rows={5}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="Accès, outils, attentes, règles…"
-                  />
-                </Field>
-              </div>
-
-              <div className="mt-6 flex items-center gap-3">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-6 py-3 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition disabled:opacity-60"
-                >
-                  {submitting ? 'Enregistrement…' : 'Enregistrer'}
-                </button>
-
-                <Link
-                  href="/dashboard"
-                  className="px-6 py-3 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition"
-                >
-                  Annuler
-                </Link>
-              </div>
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <button type="submit" disabled={submitting} style={{ ...BTN_PRIMARY, opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}>
+                {submitting ? 'Enregistrement…' : 'Enregistrer'}
+              </button>
+              <Link href="/dashboard" style={BTN_SECONDARY}>Annuler</Link>
             </div>
           </form>
         )}
       </div>
-    </div>
-  );
-}
-
-function Field({ label, children, full = false }) {
-  return (
-    <div className={full ? 'sm:col-span-2 space-y-2' : 'space-y-2'}>
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="animate-pulse space-y-4">
-      <div className="h-20 bg-gray-100 rounded-2xl" />
-      <div className="h-72 bg-gray-100 rounded-2xl" />
     </div>
   );
 }

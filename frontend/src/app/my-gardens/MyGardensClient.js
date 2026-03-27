@@ -9,47 +9,6 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import AvailabilityCalendar from "@/components/availability/AvailabilityCalendar";
 
-const BRAND_GREEN = "#16a34a";
-
-function Tab({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`text-sm px-3 py-1.5 rounded-full border transition ${
-        active
-          ? "bg-pink-500 text-white border-pink-500"
-          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-      }`}
-      type="button"
-    >
-      {children}
-    </button>
-  );
-}
-
-function Pill({ ok }) {
-  return (
-    <span
-      className={`text-xs px-2 py-0.5 rounded-full border ${
-        ok
-          ? "bg-green-50 text-green-700 border-green-200"
-          : "bg-gray-100 text-gray-700 border-gray-200"
-      }`}
-    >
-      {ok ? "Publié" : "Brouillon"}
-    </span>
-  );
-}
-
-function CardLine({ label, value }) {
-  return (
-    <div className="text-sm text-gray-600">
-      <span className="text-gray-500">{label}</span>{" "}
-      <span className="text-gray-800">{value || "—"}</span>
-    </div>
-  );
-}
-
 export default function MyGardensClient() {
   const router = useRouter();
   const search = useSearchParams();
@@ -198,8 +157,14 @@ export default function MyGardensClient() {
     }
   }
 
+  const tabs = [
+    { key: "published", label: "Publiés" },
+    { key: "drafts", label: "Brouillons" },
+    { key: "all", label: "Tous" },
+  ];
+
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <main style={{ maxWidth: 960, margin: "0 auto", padding: "2rem 1.5rem" }}>
       {/* Modal global */}
       <ConfirmModal
         open={confirmState.open}
@@ -218,12 +183,28 @@ export default function MyGardensClient() {
       />
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+        }}
+      >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-green-800">
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 400,
+              fontSize: "2rem",
+              color: "var(--foreground)",
+              margin: 0,
+            }}
+          >
             Mes jardins
           </h1>
-          <div className="text-sm text-gray-600 mt-1">
+          <div style={{ fontSize: "0.8125rem", color: "var(--muted)", marginTop: "0.375rem" }}>
             {stats.total} au total · {stats.published} publié
             {stats.published > 1 ? "s" : ""} · {stats.drafts} brouillon
             {stats.drafts > 1 ? "s" : ""}
@@ -232,70 +213,111 @@ export default function MyGardensClient() {
 
         <Link
           href="/add-garden"
-          className="shrink-0 px-4 py-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold shadow-sm"
+          style={{
+            flexShrink: 0,
+            background: "var(--green)",
+            color: "#fff",
+            border: "none",
+            padding: "0.6rem 1.25rem",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            fontSize: "0.875rem",
+            textDecoration: "none",
+            display: "inline-block",
+          }}
         >
           + Ajouter un jardin
         </Link>
       </div>
 
       {toast && (
-        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div
+          style={{
+            marginBottom: "1rem",
+            borderLeft: "3px solid var(--green)",
+            paddingLeft: "0.75rem",
+            fontSize: "0.875rem",
+            color: "var(--foreground)",
+          }}
+        >
           {toast}
         </div>
       )}
 
       {errorMsg && (
-        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <p style={{ marginBottom: "1rem", fontSize: "0.875rem", color: "var(--muted)" }}>
           {errorMsg}
-        </div>
+        </p>
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 mb-4">
-        <Tab
-          active={tab === "published"}
-          onClick={() => setTabAndUrl("published")}
-        >
-          Publiés
-        </Tab>
-        <Tab active={tab === "drafts"} onClick={() => setTabAndUrl("drafts")}>
-          Brouillons
-        </Tab>
-        <Tab active={tab === "all"} onClick={() => setTabAndUrl("all")}>
-          Tous
-        </Tab>
+      <div
+        style={{
+          display: "flex",
+          gap: "1.5rem",
+          borderBottom: "1px solid var(--border)",
+          marginBottom: "1.5rem",
+        }}
+      >
+        {tabs.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setTabAndUrl(key)}
+            type="button"
+            style={{
+              background: "none",
+              border: "none",
+              borderBottom: tab === key ? "2px solid var(--foreground)" : "2px solid transparent",
+              padding: "0.5rem 0",
+              marginBottom: "-1px",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: "0.875rem",
+              color: tab === key ? "var(--foreground)" : "var(--muted)",
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {loading && (
-        <div className="rounded-2xl border p-6 bg-white text-gray-500">
-          Chargement…
-        </div>
+        <p style={{ fontSize: "0.875rem", color: "var(--muted)" }}>Chargement…</p>
       )}
 
       {!loading && rows.length === 0 && (
-        <div className="rounded-2xl border p-10 bg-white text-center">
-          <div className="text-gray-800 font-semibold">
+        <div style={{ padding: "2.5rem 0" }}>
+          <p style={{ fontSize: "0.9375rem", color: "var(--foreground)" }}>
             {tab === "published"
               ? "Aucun jardin publié pour le moment."
               : tab === "drafts"
               ? "Aucun brouillon."
               : "Aucun jardin."}
-          </div>
-          <div className="text-sm mt-2 text-gray-600">
+          </p>
+          <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginTop: "0.375rem" }}>
             Crée un jardin, puis publie-le pour le rendre visible.
-          </div>
-          <div className="mt-4">
-            <Link
-              href="/add-garden"
-              className="inline-flex px-5 py-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold"
-            >
-              + Ajouter un jardin
-            </Link>
-          </div>
+          </p>
+          <Link
+            href="/add-garden"
+            style={{
+              display: "inline-block",
+              marginTop: "1rem",
+              background: "var(--green)",
+              color: "#fff",
+              border: "none",
+              padding: "0.6rem 1.25rem",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: "0.875rem",
+              textDecoration: "none",
+            }}
+          >
+            + Ajouter un jardin
+          </Link>
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "1rem" }}>
         {rows.map((g) => {
           const isBusy = busyId === g.id;
           const isPublished = !!g.publishedAt;
@@ -304,44 +326,96 @@ export default function MyGardensClient() {
           return (
             <div
               key={g.id}
-              className="rounded-2xl border bg-white p-5 shadow-sm hover:shadow-md transition"
+              style={{ border: "1px solid var(--border)", background: "#fff", padding: "1.25rem" }}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="font-semibold text-gray-900 truncate">
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                    <span
+                      style={{
+                        fontSize: "0.9375rem",
+                        fontWeight: 500,
+                        color: "var(--foreground)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {g.title || "Sans titre"}
-                    </div>
-                    <Pill ok={isPublished} />
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        color: isPublished ? "var(--green)" : "var(--muted)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {isPublished ? "Publié" : "Brouillon"}
+                    </span>
                   </div>
-                  <div className="mt-2 space-y-1">
-                    <CardLine label="Adresse :" value={g.address} />
-                    <CardLine label="Besoins :" value={g.needs} />
+                  <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    <div style={{ fontSize: "0.8125rem", color: "var(--muted)" }}>
+                      <span>Adresse :</span>{" "}
+                      <span style={{ color: "var(--foreground)" }}>{g.address || "—"}</span>
+                    </div>
+                    <div style={{ fontSize: "0.8125rem", color: "var(--muted)" }}>
+                      <span>Besoins :</span>{" "}
+                      <span style={{ color: "var(--foreground)" }}>{g.needs || "—"}</span>
+                    </div>
                   </div>
                 </div>
 
                 <Link
                   href={`/garden/${g.id}`}
-                  className="text-sm px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50"
+                  style={{
+                    flexShrink: 0,
+                    background: "none",
+                    color: "var(--foreground)",
+                    border: "1px solid var(--border)",
+                    padding: "0.6rem 1.25rem",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    fontSize: "0.875rem",
+                    textDecoration: "none",
+                    display: "inline-block",
+                  }}
                 >
                   Voir
                 </Link>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                 <button
                   onClick={() => onEdit(g.id)}
                   type="button"
-                  className="px-3 py-1.5 rounded-full border border-[rgba(22,163,74,0.28)] hover:bg-[rgba(22,163,74,0.06)] font-medium disabled:opacity-60"
-                  style={{ color: BRAND_GREEN }}
                   disabled={isBusy}
+                  style={{
+                    background: "none",
+                    color: "var(--foreground)",
+                    border: "1px solid var(--border)",
+                    padding: "0.6rem 1.25rem",
+                    cursor: isBusy ? "default" : "pointer",
+                    fontFamily: "inherit",
+                    fontSize: "0.875rem",
+                    opacity: isBusy ? 0.6 : 1,
+                  }}
                 >
                   Modifier
                 </button>
 
                 <Link
                   href={`/my-gardens/${g.id}/slots`}
-                  className="px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm"
+                  style={{
+                    background: "none",
+                    color: "var(--foreground)",
+                    border: "1px solid var(--border)",
+                    padding: "0.6rem 1.25rem",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    fontSize: "0.875rem",
+                    textDecoration: "none",
+                    display: "inline-block",
+                  }}
                 >
                   Gérer créneaux
                 </Link>
@@ -360,7 +434,16 @@ export default function MyGardensClient() {
                       })
                     }
                     type="button"
-                    className="px-3 py-1.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white disabled:opacity-60 font-semibold"
+                    style={{
+                      background: "var(--green)",
+                      color: "#fff",
+                      border: "none",
+                      padding: "0.6rem 1.25rem",
+                      cursor: isBusy ? "default" : "pointer",
+                      fontFamily: "inherit",
+                      fontSize: "0.875rem",
+                      opacity: isBusy ? 0.6 : 1,
+                    }}
                   >
                     {isBusy ? "…" : "Retirer"}
                   </button>
@@ -369,7 +452,16 @@ export default function MyGardensClient() {
                     disabled={isBusy}
                     onClick={() => doPublish(g.id)}
                     type="button"
-                    className="px-3 py-1.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white disabled:opacity-60 font-semibold"
+                    style={{
+                      background: "var(--green)",
+                      color: "#fff",
+                      border: "none",
+                      padding: "0.6rem 1.25rem",
+                      cursor: isBusy ? "default" : "pointer",
+                      fontFamily: "inherit",
+                      fontSize: "0.875rem",
+                      opacity: isBusy ? 0.6 : 1,
+                    }}
                   >
                     {isBusy ? "…" : "Publier"}
                   </button>
@@ -388,14 +480,23 @@ export default function MyGardensClient() {
                     })
                   }
                   type="button"
-                  className="px-3 py-1.5 rounded-full bg-white text-rose-700 border border-rose-200 hover:bg-rose-50 shadow-sm transition disabled:opacity-60 font-semibold"
+                  style={{
+                    background: "none",
+                    color: "#c0392b",
+                    border: "1px solid #c0392b",
+                    padding: "0.6rem 1.25rem",
+                    cursor: isBusy ? "default" : "pointer",
+                    fontFamily: "inherit",
+                    fontSize: "0.875rem",
+                    opacity: isBusy ? 0.6 : 1,
+                  }}
                 >
                   {isBusy ? "…" : "Supprimer"}
                 </button>
               </div>
 
               {isOpen && (
-                <div className="mt-5">
+                <div style={{ marginTop: "1.25rem" }}>
                   <AvailabilityCalendar
                     mode="garden"
                     intent="form"
@@ -406,9 +507,8 @@ export default function MyGardensClient() {
                 </div>
               )}
 
-              <div className="mt-3 text-xs text-gray-500">
-                Astuce : garde en brouillon tant que tu n’as pas ajouté toutes
-                les infos.
+              <div style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "var(--muted)" }}>
+                Astuce : garde en brouillon tant que tu n&apos;as pas ajouté toutes les infos.
               </div>
             </div>
           );

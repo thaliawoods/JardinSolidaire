@@ -1,5 +1,6 @@
 import GardenerClient from './GardenerClient';
 
-export default function Page({ params }) {
-  return <GardenerClient id={params?.id} />;
+export default async function Page({ params }) {
+  const { id } = await params;
+  return <GardenerClient id={id} />;
 }

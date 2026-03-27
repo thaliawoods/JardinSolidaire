@@ -63,14 +63,16 @@ router.post('/', async (req, res) => {
     const tokenHash = hashToken(rawToken);
     const expiresAt = addMinutes(new Date(), 60);
 
+    const skipEmail = !process.env.BREVO_API_KEY;
+
     const user = await prisma.user.create({
       data: {
         email: normalized,
         passwordHash,
         role: null,
-        emailVerifiedAt: null,
-        emailVerifyTokenHash: tokenHash,
-        emailVerifyExpiresAt: expiresAt,
+        emailVerifiedAt: skipEmail ? new Date() : null,
+        emailVerifyTokenHash: skipEmail ? null : tokenHash,
+        emailVerifyExpiresAt: skipEmail ? null : expiresAt,
       },
       select: { id: true, email: true },
     });
@@ -81,21 +83,25 @@ router.post('/', async (req, res) => {
     const verifyLink =
       `${APP_URL}/verify-email?email=${encodeURIComponent(normalized)}&token=${rawToken}`;
 
-    // 👉 ENVOI EMAIL BREVO
-    await sendMail({
-      to: normalized,
-      subject: 'Confirme ton email — JardinSolidaire',
-      text:
-        `Bienvenue sur JardinSolidaire 🌿\n\n` +
-        `Confirme ton email :\n${verifyLink}\n\n` +
-        `Lien valable 1 heure.`,
-      html: `
-        <p>Bienvenue sur <b>JardinSolidaire</b> 🌿</p>
-        <p>Pour activer ton compte :</p>
-        <p><a href="${verifyLink}">Confirmer mon email</a></p>
-        <p><small>Lien valable 1 heure.</small></p>
-      `,
-    });
+    // 👉 ENVOI EMAIL BREVO (optionnel en dev si BREVO_API_KEY absent)
+    if (process.env.BREVO_API_KEY) {
+      await sendMail({
+        to: normalized,
+        subject: 'Confirme ton email — JardinSolidaire',
+        text:
+          `Bienvenue sur JardinSolidaire 🌿\n\n` +
+          `Confirme ton email :\n${verifyLink}\n\n` +
+          `Lien valable 1 heure.`,
+        html: `
+          <p>Bienvenue sur <b>JardinSolidaire</b> 🌿</p>
+          <p>Pour activer ton compte :</p>
+          <p><a href="${verifyLink}">Confirmer mon email</a></p>
+          <p><small>Lien valable 1 heure.</small></p>
+        `,
+      });
+    } else {
+      console.warn('⚠️  BREVO_API_KEY not set — skipping verification email. Verify link:', verifyLink);
+    }
 
     return res.status(201).json({
       ok: true,
