@@ -114,7 +114,7 @@ export default function GardensList() {
 
         if (alive) setGardens(normalizeGardens(list || []));
       } catch (e) {
-        console.error("Failed to load gardens", e);
+        if (e?.name === 'AbortError') return;
         if (alive) {
           setErr("Couldn't load gardens.");
           setGardens([]);
@@ -275,6 +275,7 @@ export default function GardensList() {
               {/* Image area */}
               <div style={{ position: "relative", height: "200px", overflow: "hidden", flexShrink: 0 }}>
                 {g.photos.length > 0 ? (
+                  <div style={{ height: "200px", overflow: "hidden" }}>
                   <Slider
                     dots
                     arrows={false}
@@ -284,14 +285,16 @@ export default function GardensList() {
                     slidesToScroll={1}
                   >
                     {g.photos.map((photo, index) => (
-                      <img
-                        key={index}
-                        src={photo}
-                        alt={`Photo ${index + 1} de ${g.title}`}
-                        style={{ height: "200px", width: "100%", objectFit: "cover", display: "block" }}
-                      />
+                      <div key={index} style={{ height: "200px", overflow: "hidden" }}>
+                        <img
+                          src={photo}
+                          alt={`Photo ${index + 1} de ${g.title}`}
+                          style={{ height: "200px", width: "100%", objectFit: "cover", display: "block" }}
+                        />
+                      </div>
                     ))}
                   </Slider>
+                  </div>
                 ) : (
                   <img
                     src="/assets/default.jpg"
