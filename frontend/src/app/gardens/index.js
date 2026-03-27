@@ -170,184 +170,193 @@ export default function GardensList() {
   }, [gardens, search]);
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-green-700">
-          Les Jardins
+    <div style={{ minHeight: "100vh", padding: "2.5rem 1.5rem", background: "#fff" }}>
+
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "1rem", marginBottom: "2rem" }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2.25rem", fontWeight: 400, color: "var(--foreground)", margin: 0, lineHeight: 1.1 }}>
+          Les jardins
         </h1>
 
         {isAuthed && (
           <Link
             href="/favorites"
-            className="px-4 py-2 rounded-full bg-green-600 text-white hover:bg-green-700 transition"
+            style={{ color: "var(--foreground)", fontSize: "0.875rem", textDecoration: "underline", textUnderlineOffset: "3px" }}
             title="Voir mes favoris"
           >
-            Favoris ({favorites.length})
+            Mes favoris →
           </Link>
         )}
       </div>
 
-      <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
-        <label className="relative w-full lg:w-[32%]">
-          <span className="sr-only">Rechercher un jardin</span>
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            🔍
-          </span>
-          <input
-            type="text"
-            placeholder="Rechercher un jardin…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-          />
-        </label>
+      {/* Filters */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "2.5rem", alignItems: "center" }}>
+        <input
+          type="text"
+          placeholder="Rechercher un jardin…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            flex: "1 1 260px",
+            padding: "0.6rem 0.875rem",
+            border: "1px solid var(--border)",
+            borderRadius: 0,
+            background: "#fff",
+            fontSize: "0.875rem",
+            color: "var(--foreground)",
+            outline: "none",
+            boxShadow: "none",
+          }}
+        />
 
-        <label className="w-full lg:w-[24%]">
-          <span className="sr-only">Type de jardin</span>
-          <select
-            value={kind}
-            onChange={(e) => setKind(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-full border border-gray-200 shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-          >
-            <option value="">Tout les types de jardin</option>
-            <option value="vegetable">Jardin potager</option>
-            <option value="greenhouse">Serre</option>
-            <option value="flowers">Fleurs</option>
-            <option value="mowing">Tonte</option>
-          </select>
-        </label>
+        <select
+          value={kind}
+          onChange={(e) => setKind(e.target.value)}
+          style={{
+            flex: "0 1 220px",
+            padding: "0.6rem 0.875rem",
+            border: "1px solid var(--border)",
+            borderRadius: 0,
+            background: "#fff",
+            fontSize: "0.875rem",
+            color: "var(--foreground)",
+            outline: "none",
+            boxShadow: "none",
+            appearance: "none",
+            cursor: "pointer",
+          }}
+        >
+          <option value="">Tous les types</option>
+          <option value="vegetable">Jardin potager</option>
+          <option value="greenhouse">Serre</option>
+          <option value="flowers">Fleurs</option>
+          <option value="mowing">Tonte</option>
+        </select>
 
         <button
           onClick={reset}
-          className="px-6 py-2.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition w-full lg:w-auto"
+          style={{
+            padding: "0.6rem 1.25rem",
+            border: "1px solid var(--border)",
+            borderRadius: 0,
+            background: "#fff",
+            fontSize: "0.875rem",
+            color: "var(--foreground)",
+            cursor: "pointer",
+          }}
         >
           Réinitialiser
         </button>
       </div>
 
+      {/* States */}
       {loading && (
-        <p className="text-center text-gray-500" aria-live="polite">
-          Loading…
+        <p style={{ color: "var(--muted)", fontSize: "0.875rem" }} aria-live="polite">
+          Chargement…
         </p>
       )}
       {!!err && (
-        <p className="text-center text-red-600 mb-4" role="alert">
+        <p style={{ color: "var(--muted)", fontSize: "0.875rem", marginBottom: "1rem" }} role="alert">
           {err}
         </p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+      {/* Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
         {filtered.map((g) => {
           const favbed = favorites.includes(String(g.id));
           const kLabel = kindLabel(g.kind);
 
           return (
-            <Link
+            <div
               key={g.id}
-              href={`/gardens/${g.id}`}
-              className="block group h-full"
+              style={{ border: "1px solid var(--border)", background: "#fff", display: "flex", flexDirection: "column" }}
             >
-              <div className="rounded-2xl overflow-hidden shadow-md ring-1 ring-black/5 hover:shadow-lg transition bg-white h-full flex flex-col">
-                {/* image */}
-                <div className="relative h-48 overflow-hidden shrink-0">
-                  {g.photos.length > 0 ? (
-                    <Slider
-                      dots
-                      arrows={false}
-                      infinite
-                      speed={400}
-                      slidesToShow={1}
-                      slidesToScroll={1}
-                    >
-                      {g.photos.map((photo, index) => (
-                        <img
-                          key={index}
-                          src={photo}
-                          alt={`Photo ${index + 1} de ${g.title}`}
-                          className="h-48 w-full object-cover"
-                        />
-                      ))}
-                    </Slider>
-                  ) : (
-                    <img
-                      src="/assets/default.jpg"
-                      alt="Image par défaut"
-                      className="h-48 w-full object-cover"
-                    />
-                  )}
+              {/* Image area */}
+              <div style={{ position: "relative", height: "200px", overflow: "hidden", flexShrink: 0 }}>
+                {g.photos.length > 0 ? (
+                  <Slider
+                    dots
+                    arrows={false}
+                    infinite
+                    speed={400}
+                    slidesToShow={1}
+                    slidesToScroll={1}
+                  >
+                    {g.photos.map((photo, index) => (
+                      <img
+                        key={index}
+                        src={photo}
+                        alt={`Photo ${index + 1} de ${g.title}`}
+                        style={{ height: "200px", width: "100%", objectFit: "cover", display: "block" }}
+                      />
+                    ))}
+                  </Slider>
+                ) : (
+                  <img
+                    src="/assets/default.jpg"
+                    alt="Image par défaut"
+                    style={{ height: "200px", width: "100%", objectFit: "cover", display: "block" }}
+                  />
+                )}
 
-                  {/* subtle gradient for readability */}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
+                {/* Favorite button */}
+                {isAuthed && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleFavorite(g);
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "0.625rem",
+                      right: "0.625rem",
+                      background: "none",
+                      border: "none",
+                      padding: "0.25rem",
+                      cursor: "pointer",
+                      fontSize: "1.25rem",
+                      lineHeight: 1,
+                      color: favbed ? "var(--green)" : "var(--muted)",
+                    }}
+                    aria-label={favbed ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    title={favbed ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  >
+                    {favbed ? "♥" : "♡"}
+                  </button>
+                )}
+              </div>
 
-                  {/* heart */}
-                  {isAuthed && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleFavorite(g);
-                      }}
-                      className="absolute top-3 right-3 h-10 w-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow hover:scale-105 transition"
-                      aria-label={
-                        favbed ? "Retirer des favoris" : "Ajouter aux favoris"
-                      }
-                      title={
-                        favbed ? "Retirer des favoris" : "Ajouter aux favoris"
-                      }
-                    >
-                      {favbed ? (
-                        <span className="text-pink-500 text-xl leading-none">
-                          ♥
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xl leading-none">
-                          ♡
-                        </span>
-                      )}
-                    </button>
-                  )}
-                </div>
+              {/* Card body */}
+              <div style={{ padding: "1rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 400, color: "var(--foreground)", margin: 0, lineHeight: 1.2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                  {g.title}
+                </h2>
 
-                {/* footer */}
-                <div className="p-4 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="font-semibold text-[17px] text-gray-900 leading-snug line-clamp-1">
-                        {g.title}
-                      </h2>
+                <p style={{ fontSize: "0.75rem", color: "var(--muted)", margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                  {g.address || "Adresse non renseignée"}
+                </p>
 
-                      <div className="mt-1 flex items-center gap-2 text-sm text-gray-600 min-w-0">
-                        <span className="shrink-0">📍</span>
-                        <span className="line-clamp-1">
-                          {g.address || "Adresse non renseignée"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {!!kLabel && (
-                      <span className="shrink-0 rounded-full px-3 py-1 text-xs font-medium bg-green-50 text-green-800 ring-1 ring-green-200">
-                        {kLabel}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* reserve always 2 lines so bottoms align */}
-                  <p className="mt-3 text-sm text-gray-600 leading-snug line-clamp-2 min-h-[2.6rem]">
-                    {g.description || " "}
+                {!!kLabel && (
+                  <p style={{ fontSize: "0.6875rem", color: "var(--muted)", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    {kLabel}
                   </p>
+                )}
 
-                  {/* bottom bar always at bottom */}
-                  <div className="mt-auto pt-4 flex items-center justify-between text-xs text-gray-500">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-green-500" />
-                      Disponible
-                    </span>
-                    <span className="text-green-700 font-medium group-hover:underline">
-                      Voir le détail →
-                    </span>
-                  </div>
+                <p style={{ fontSize: "0.8125rem", color: "var(--foreground)", margin: "0.25rem 0 0", lineHeight: 1.5, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minHeight: "2.4rem" }}>
+                  {g.description || "\u00a0"}
+                </p>
+
+                <div style={{ marginTop: "auto", paddingTop: "0.75rem" }}>
+                  <Link
+                    href={`/gardens/${g.id}`}
+                    style={{ fontSize: "0.8125rem", color: "var(--muted)", textDecoration: "none" }}
+                  >
+                    Voir le détail →
+                  </Link>
                 </div>
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>

@@ -6,7 +6,10 @@ import { useRouter } from 'next/navigation';
 import { persistAuth } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const BRAND_PINK = '#E3107D';
+
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const LABEL = { display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: '0.4rem' };
+const BTN_PRIMARY = { display: 'inline-block', width: '100%', padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', letterSpacing: '0.01em', opacity: 1 };
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,94 +53,94 @@ export default function LoginPage() {
     error ? 'Connexion impossible.' : '';
 
   return (
-    <div className="min-h-screen bg-white px-6 py-10 flex items-center justify-center">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-green-700">Connexion</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Accède à ton tableau de bord JardinSolidaire.
-          </p>
-        </div>
+    <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '4rem 2rem' }}>
 
-        {/* Card */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Field label="Email">
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                required
-                autoComplete="email"
-              />
-            </Field>
+        <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', marginBottom: '1.25rem' }}>
+          Compte
+        </p>
 
-            <Field label="Mot de passe">
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                required
-                autoComplete="current-password"
-              />
-            </Field>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--foreground)', margin: '0 0 0.5rem' }}>
+          Connexion
+        </h1>
 
-            <div className="flex items-center justify-end -mt-1">
-              <Link
-                href="/forgot-password"
-                className="text-sm text-[#e3107d] hover:underline"
-              >
-                Mot de passe oublié ?
-              </Link>
-            </div>
+        <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>
+          Accède à ton tableau de bord JardinSolidaire.
+        </p>
 
-            {errorMsg && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {errorMsg}
-              </div>
-            )}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-            <button
-              className="w-full rounded-full px-5 py-3 text-white shadow-sm transition disabled:opacity-60 hover:opacity-95"
-              style={{ backgroundColor: BRAND_PINK }}
-              disabled={submitting}
-            >
-              {submitting ? 'Connexion en cours…' : 'Se connecter'}
-            </button>
-          </form>
-
-          <div className="mt-5 text-center text-sm text-gray-700">
-            Pas encore de compte ?{' '}
-            <Link href="/register" className="text-[#e3107d] hover:underline">
-              Créer un compte
-            </Link>
+          <div>
+            <label style={LABEL} htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={INPUT}
+              required
+              autoComplete="email"
+            />
           </div>
 
-          <div className="mt-4 text-center">
+          <div>
+            <label style={LABEL} htmlFor="login-password">Mot de passe</label>
+            <input
+              id="login-password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={INPUT}
+              required
+              autoComplete="current-password"
+            />
+          </div>
+
+          <div style={{ textAlign: 'right', marginTop: '-0.5rem' }}>
             <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition text-sm"
-              aria-label="Retour à l’accueil"
+              href="/forgot-password"
+              style={{ fontSize: '0.8125rem', color: 'var(--muted)', textDecoration: 'underline' }}
             >
-              <span aria-hidden>←</span> Retour à l’accueil
+              Mot de passe oublié ?
             </Link>
           </div>
-        </div>
+
+          {errorMsg && (
+            <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626' }}>
+              {errorMsg}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            style={{ ...BTN_PRIMARY, opacity: submitting ? 0.6 : 1 }}
+            disabled={submitting}
+          >
+            {submitting ? 'Connexion en cours…' : 'Se connecter'}
+          </button>
+
+        </form>
+
+        <p style={{ marginTop: '2rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
+          Pas encore de compte ?{' '}
+          <Link href="/register" style={{ color: 'var(--foreground)', textDecoration: 'underline' }}>
+            Créer un compte →
+          </Link>
+        </p>
+
+        <p style={{ marginTop: '1rem' }}>
+          <Link
+            href="/"
+            style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'none' }}
+            aria-label="Retour à l'accueil"
+          >
+            ← Retour à l'accueil
+          </Link>
+        </p>
+
       </div>
     </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-medium text-gray-800 mb-2">{label}</span>
-      {children}
-    </label>
   );
 }

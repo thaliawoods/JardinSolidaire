@@ -2,7 +2,9 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { clearAuth } from '@/lib/auth';
 import { uploadImage } from '@/lib/uploads';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -166,50 +168,10 @@ function Skeleton() {
 }
 
 /* ---------------- helpers to qualify profiles ---------------- */
-function normalizeProfile(p, kind) {
+function normalizeProfile(p) {
+  // A profile is real if it came back as an object from the API (it has an id)
   if (!p || typeof p !== 'object') return null;
-
-  if (kind === 'gardener') {
-    const gardenerKeys = [
-      'intro',
-      'location',
-      'yearsExperience',
-      'skills',
-      // ❌ rating removed
-      'avatarUrl',
-      'photo_profil',
-      'avatar',
-      'published',
-    ];
-    const meaningful =
-      gardenerKeys.some((k) => {
-        const v = p[k];
-        if (Array.isArray(v)) return v.length > 0;
-        return v !== undefined && v !== null && String(v).trim() !== '';
-      }) ||
-      !!((p.firstName && p.firstName.trim()) || (p.lastName && p.lastName.trim()));
-    return meaningful ? p : null;
-  }
-
-  const ownerKeys = [
-    'district',
-    'availability',
-    'area',
-    'kind',
-    'intro',
-    'description',
-    // ❌ rating removed
-    'avatarUrl',
-    'photo_profil',
-    'avatar',
-    'published',
-  ];
-  const meaningful = ownerKeys.some((k) => {
-    const v = p[k];
-    if (Array.isArray(v)) return v.length > 0;
-    return v !== undefined && v !== null && String(v).trim() !== '';
-  });
-  return meaningful ? p : null;
+  return p;
 }
 
 /* ---------------- validators ---------------- */
@@ -230,11 +192,13 @@ function clampText(s, max) {
 
 /* ---------------- page ---------------- */
 export default function Dashboard() {
+  const router = useRouter();
   const [me, setMe] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [msg, setMsg] = useState('');
+  const [msgType, setMsgType] = useState('success'); // 'success' | 'error'
   const [busy, setBusy] = useState(false);
 
   const [showUserForm, setShowUserForm] = useState(false);
@@ -259,13 +223,28 @@ export default function Dashboard() {
     const ownerRaw = u.owner ?? u.proprietaire ?? null;
     return {
       ...u,
-      gardener: normalizeProfile(gardenerRaw, 'gardener'),
-      owner: normalizeProfile(ownerRaw, 'owner'),
+      gardener: normalizeProfile(gardenerRaw),
+      owner: normalizeProfile(ownerRaw),
     };
   }
 
+  function flash(message, type = 'success') {
+    setMsg(message);
+    setMsgType(type);
+    setTimeout(() => setMsg(''), 4000);
+  }
+
   const loadMe = useCallback(async () => {
-    const r = await apiFetch('/api/me');
+    let r;
+    try {
+      r = await apiFetch('/api/me');
+    } catch (e) {
+      if (e?.status === 401) {
+        router.replace('/login');
+        return;
+      }
+      throw e;
+    }
     const uRaw = r?.user || r;
     const u = normalizeUser(uRaw);
 
@@ -336,9 +315,10 @@ export default function Dashboard() {
       await apiFetch('/api/me/role', { method: 'PUT', body: { role: next } });
       setRole(next);
       broadcastRoleChange(next);
-      setMsg(`Mode : ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier'}`);
+      await loadMe();
+      flash(`Mode : ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier.e'} activé`);
     } catch {
-      setMsg("Impossible de changer d’interface.");
+      flash("Impossible de changer d'interface.", 'error');
     }
   }
 
@@ -391,7 +371,7 @@ export default function Dashboard() {
     if (!file) return;
 
     if (/\.heic$/i.test(file.name)) {
-      setMsg("Ton fichier est au format HEIC (iPhone). Convertis-le en JPG/PNG/WebP avant l’upload.");
+      flash("Ton fichier est au format HEIC (iPhone). Convertis-le en JPG/PNG/WebP avant l'upload.", 'error');
       return;
     }
 
@@ -417,10 +397,10 @@ export default function Dashboard() {
       await propagateAvatar(path);
       await loadMe();
 
-      setMsg('Avatar mis à jour ✔');
+      flash('Avatar mis à jour ✔');
     } catch (e2) {
       console.error(e2);
-      setMsg("Échec de l’upload. Utilise JPG/PNG/WebP et vérifie /api/uploads.");
+      flash("Échec de l'upload. Utilise JPG/PNG/WebP et vérifie /api/uploads.", 'error');
     } finally {
       setUploading(false);
     }
@@ -428,18 +408,17 @@ export default function Dashboard() {
 
   async function saveUser(e) {
     e.preventDefault();
-    setMsg('');
 
     const fn = (form.firstName || '').trim();
     const ln = (form.lastName || '').trim();
     const phone = (form.phone || '').trim();
 
     if (!fn || !ln) {
-      setMsg('Prénom et nom sont requis.');
+      flash('Prénom et nom sont requis.', 'error');
       return;
     }
     if (!isValidPhone(phone)) {
-      setMsg("Téléphone invalide. Utilise uniquement chiffres, espaces, +, (), - et au moins 6 chiffres.");
+      flash("Téléphone invalide. Utilise uniquement chiffres, espaces, +, (), - et au moins 6 chiffres.", 'error');
       return;
     }
 
@@ -466,6 +445,7 @@ export default function Dashboard() {
       broadcastUserUpdated();
 
       setShowUserForm(false);
+      flash('Profil enregistré ✔');
 
       setTimeout(() => {
         roleSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -503,11 +483,23 @@ export default function Dashboard() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-6">
           <h1 className="text-3xl md:text-4xl font-bold text-green-700">Mon tableau de bord</h1>
-          <TextBtn href="/">Accueil</TextBtn>
+          <div className="flex items-center gap-2">
+            <TextBtn href="/">Accueil</TextBtn>
+            <button
+              onClick={() => { clearAuth(); router.replace('/login'); }}
+              className="px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition text-sm shadow-sm"
+            >
+              Déconnexion
+            </button>
+          </div>
         </div>
 
         {msg && (
-          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 whitespace-pre-wrap">
+          <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm whitespace-pre-wrap ${
+            msgType === 'error'
+              ? 'border-red-200 bg-red-50 text-red-800'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          }`}>
             {msg}
           </div>
         )}
@@ -742,7 +734,7 @@ export default function Dashboard() {
                     type="button"
                     disabled={busy || !hasIdentity}
                     onClick={() => togglePublish('gardener', !me.gardener.published)}
-                    title={!hasIdentity ? 'Ajoute prénom/nom dans le profil compte d’abord' : ''}
+                    title={!hasIdentity ? "Ajoute prénom/nom dans le profil compte d'abord" : ''}
                   >
                     {me.gardener.published ? 'Retirer' : 'Publier'}
                   </PrimaryBtn>
@@ -810,7 +802,7 @@ export default function Dashboard() {
                     type="button"
                     disabled={busy || !hasIdentity}
                     onClick={() => togglePublish('owner', !me.owner.published)}
-                    title={!hasIdentity ? 'Ajoute prénom/nom dans le profil compte d’abord' : ''}
+                    title={!hasIdentity ? "Ajoute prénom/nom dans le profil compte d'abord" : ''}
                   >
                     {me.owner.published ? 'Retirer' : 'Publier'}
                   </PrimaryBtn>

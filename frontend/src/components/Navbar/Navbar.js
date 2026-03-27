@@ -1,15 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { unreadCount } from '@/lib/messages';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
-/** Broadcast role to the whole app (same tab) */
 function broadcastRoleChange(role) {
   try {
     window.dispatchEvent(new CustomEvent('role:changed', { detail: role }));
@@ -19,83 +15,82 @@ function broadcastRoleChange(role) {
   } catch {}
 }
 
+const NAV_STYLE = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 50,
+  background: '#fff',
+  borderBottom: '1px solid var(--border)',
+  height: 56,
+  display: 'flex',
+  alignItems: 'center',
+};
+
+const INNER = {
+  width: '100%',
+  maxWidth: 1280,
+  margin: '0 auto',
+  padding: '0 2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '1.5rem',
+};
+
+const LINK = {
+  fontSize: '0.875rem',
+  color: 'var(--foreground)',
+  textDecoration: 'none',
+  cursor: 'pointer',
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  fontFamily: 'inherit',
+  letterSpacing: '0.01em',
+};
+
+const LINK_MUTED = { ...LINK, color: 'var(--muted)' };
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [me, setMe] = useState(null);
   const [loadingMe, setLoadingMe] = useState(true);
   const [role, setRole] = useState(null);
-
-  const [unread, setUnread] = useState(0); // messages unread
-  const [inboxUnread, setInboxUnread] = useState(0); // booking requests pending (owner inbox)
-
-  // hover handling so the menu stays open while you can click inside
-  const [burgerHover, setBurgerHover] = useState(false);
-  const [panelHover, setPanelHover] = useState(false);
-  const [closeTimer, setCloseTimer] = useState(null);
+  const [unread, setUnread] = useState(0);
+  const [inboxUnread, setInboxUnread] = useState(0);
+  const menuRef = useRef(null);
+  const menuRefMobile = useRef(null);
 
   const user = me?.user ?? null;
 
-  /* ---------- display name (adapt to your API fields) ---------- */
   const displayName = useMemo(() => {
     if (!user) return '';
-    const first =
-      user.prenom ||
-      user.firstName ||
-      user.firstname ||
-      user.given_name ||
-      '';
-    const last =
-      user.nom ||
-      user.lastName ||
-      user.lastname ||
-      user.family_name ||
-      '';
-    const full = `${String(first).trim()} ${String(last).trim()}`.trim();
-    return full || user.username || user.email || '';
+    const first = user.firstName || user.prenom || '';
+    const last = user.lastName || user.nom || '';
+    const full = `${first} ${last}`.trim();
+    return full || user.email || '';
   }, [user]);
 
-  /* ---------- helpers for hover open/close ---------- */
-  function clearCloseTimer() {
-    if (closeTimer) {
-      clearTimeout(closeTimer);
-      setCloseTimer(null);
-    }
-  }
-
-  function openMenu() {
-    clearCloseTimer();
-    setMenuOpen(true);
-  }
-
-  function scheduleClose() {
-    clearCloseTimer();
-    const t = setTimeout(() => setMenuOpen(false), 180); // anti-flicker
-    setCloseTimer(t);
-  }
-
+  /* ── close on outside click ── */
   useEffect(() => {
     if (!menuOpen) return;
-    if (burgerHover || panelHover) return;
-    scheduleClose();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [burgerHover, panelHover, menuOpen]);
+    function handle(e) {
+      const inDesktop = menuRef.current && menuRef.current.contains(e.target);
+      const inMobile = menuRefMobile.current && menuRefMobile.current.contains(e.target);
+      if (!inDesktop && !inMobile) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [menuOpen]);
 
-  /* ---------- session hydration ---------- */
+  /* ── session hydration ── */
   useEffect(() => {
     let alive = true;
-
     async function hydrate() {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-      if (!token) {
-        setLoadingMe(false);
-        setMe(null);
-        setRole(null);
-        setUnread(0);
-        setInboxUnread(0);
-        return;
-      }
-
+      const token = localStorage.getItem('token');
+      if (!token) { setLoadingMe(false); return; }
       try {
         const res = await fetch(`${API_BASE}/api/me`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -103,434 +98,309 @@ export default function Navbar() {
         });
         const data = await res.json().catch(() => null);
         if (!alive) return;
-
         if (res.ok && data?.user) {
           setMe(data);
           setRole(data.user.role || localStorage.getItem('role') || null);
         } else {
           localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setMe(null);
-          setRole(null);
-          setUnread(0);
-          setInboxUnread(0);
+          setMe(null); setRole(null);
         }
       } catch {
-        if (alive) {
-          setMe(null);
-          setRole(null);
-          setUnread(0);
-          setInboxUnread(0);
-        }
+        if (alive) { setMe(null); setRole(null); }
       } finally {
         if (alive) setLoadingMe(false);
       }
     }
-
     hydrate();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, []);
 
-  /* Listen for role changes */
+  /* ── role change events ── */
   useEffect(() => {
     const cached = sessionStorage.getItem('role') || localStorage.getItem('role');
     if (cached && !role) setRole(cached);
 
-    function onCustom(e) {
-      const next = e?.detail || null;
-      if (next) {
-        setRole(next);
-        refreshMe();
-      }
-    }
-
-    function onMessage(e) {
-      if (e?.data?.type === 'role:changed') {
-        setRole(e.data.role);
-        refreshMe();
-      }
-    }
+    function onCustom(e) { if (e?.detail) { setRole(e.detail); refreshMe(); } }
+    function onMsg(e) { if (e?.data?.type === 'role:changed') { setRole(e.data.role); refreshMe(); } }
 
     window.addEventListener('role:changed', onCustom);
-    window.addEventListener('message', onMessage);
-
+    window.addEventListener('message', onMsg);
     return () => {
       window.removeEventListener('role:changed', onCustom);
-      window.removeEventListener('message', onMessage);
+      window.removeEventListener('message', onMsg);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function refreshMe() {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = localStorage.getItem('token');
     if (!token) return;
-
-    const r2 = await fetch(`${API_BASE}/api/me`, {
+    const r = await fetch(`${API_BASE}/api/me`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     });
-    if (r2.ok) setMe(await r2.json());
+    if (r.ok) setMe(await r.json());
   }
 
-  async function switchRole(nextRole) {
+  async function switchRole(next) {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const token = localStorage.getItem('token');
       if (!token) return;
-
       const res = await fetch(`${API_BASE}/api/me/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ role: nextRole }),
+        body: JSON.stringify({ role: next }),
       });
-
       if (!res.ok) return;
-
       const updated = await res.json().catch(() => ({}));
-      const newRole = updated.role || nextRole || null;
-
+      const newRole = updated.role || next;
       setRole(newRole);
       broadcastRoleChange(newRole);
       await refreshMe();
-    } catch (e) {
-      console.error('switchRole failed', e);
-    }
+    } catch {}
   }
 
   function handleLogout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setMe(null);
-    setRole(null);
-    setUnread(0);
-    setInboxUnread(0);
+    setMe(null); setRole(null);
+    setUnread(0); setInboxUnread(0);
     setMenuOpen(false);
     window.location.href = '/';
   }
 
-  /* ---------- unread messages ---------- */
+  /* ── unread messages ── */
   useEffect(() => {
     let alive = true;
-
-    async function loadUnread() {
+    async function load() {
       try {
-        if (!user) {
-          if (alive) setUnread(0);
-          return;
-        }
+        if (!user) { if (alive) setUnread(0); return; }
         const r = await unreadCount();
         if (alive) setUnread(Number(r?.count || 0));
-      } catch {
-        if (alive) setUnread(0);
-      }
+      } catch { if (alive) setUnread(0); }
     }
-
-    loadUnread();
-
-    function onStorage(e) {
-      if (e.key === 'token') loadUnread();
-      if (e.key === 'messagesChanged') loadUnread();
-    }
-
+    load();
+    function onStorage(e) { if (e.key === 'token' || e.key === 'messagesChanged') load(); }
     window.addEventListener('storage', onStorage);
-    return () => {
-      alive = false;
-      window.removeEventListener('storage', onStorage);
-    };
+    return () => { alive = false; window.removeEventListener('storage', onStorage); };
   }, [user, role]);
 
-  /* ---------- owner inbox pending count ---------- */
+  /* ── owner inbox ── */
   const loadInboxUnread = useCallback(async () => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!token || !user || role !== 'OWNER') {
-        setInboxUnread(0);
-        return;
-      }
-
+      const token = localStorage.getItem('token');
+      if (!token || !user || role !== 'OWNER') { setInboxUnread(0); return; }
       const res = await fetch(`${API_BASE}/api/bookings/inbox?status=pending`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       });
-
-      if (!res.ok) {
-        setInboxUnread(0);
-        return;
-      }
-
       const data = await res.json().catch(() => []);
       setInboxUnread(Array.isArray(data) ? data.length : 0);
-    } catch (e) {
-      console.error('loadInboxUnread failed', e);
-      setInboxUnread(0);
-    }
+    } catch { setInboxUnread(0); }
   }, [user, role]);
 
   useEffect(() => {
     loadInboxUnread();
-
     function onStorage(e) {
-      if (e.key === 'bookingRequestsChanged') loadInboxUnread();
-      if (e.key === 'token') loadInboxUnread();
-      if (e.key === 'role') loadInboxUnread();
+      if (['bookingRequestsChanged', 'token', 'role'].includes(e.key)) loadInboxUnread();
     }
-
     window.addEventListener('storage', onStorage);
-
     const t = setInterval(loadInboxUnread, 20000);
-
-    return () => {
-      clearInterval(t);
-      window.removeEventListener('storage', onStorage);
-    };
+    return () => { clearInterval(t); window.removeEventListener('storage', onStorage); };
   }, [loadInboxUnread]);
 
-  /* ---------- small UI helpers ---------- */
-  const RoleSwitcher = () =>
-    user ? (
-      // ✅ gap-4 au lieu de gap-2
-      <div className="hidden md:flex items-center gap-4">
-        {/* Name (no rounded/pill) */}
-        {displayName && (
-          <span className="text-sm font-medium whitespace-nowrap" title={displayName}>
-            {displayName}
-          </span>
-        )}
-
-        {/* Switch */}
-        <div className="flex items-center bg-white/20 rounded-full p-1">
-          <button
-            onClick={() => switchRole('OWNER')}
-            className={`px-3 py-1 rounded-full text-sm transition ${
-              role === 'OWNER' ? 'bg-pink-500 text-white' : 'text-white hover:bg-white/10'
-            }`}
-            title="Interface Propriétaire"
-            type="button"
-          >
-            Propriétaire
-          </button>
-          <button
-            onClick={() => switchRole('GARDENER')}
-            className={`px-3 py-1 rounded-full text-sm transition ${
-              role === 'GARDENER' ? 'bg-pink-500 text-white' : 'text-white hover:bg-white/10'
-            }`}
-            title="Interface Jardinier.e"
-            type="button"
-          >
-            Jardinier.e
-          </button>
-        </div>
-
-        {/* 💌 icon always visible (desktop). badge = pending owner requests */}
-        <Link
-          href="/owner/inbox"
-          className="relative inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/20 hover:bg-white/25 transition"
-          title="Demandes de réservation"
-          aria-label="Demandes de réservation"
-        >
-          <span className="text-base leading-none">💌</span>
-          {role === 'OWNER' && inboxUnread > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-pink-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
-              {inboxUnread > 9 ? '9+' : inboxUnread}
-            </span>
-          )}
-        </Link>
-      </div>
-    ) : null;
-
+  /* ── render ── */
   return (
-    <nav className="w-full bg-green-600 text-white fixed top-0 left-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* LEFT: logo */}
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/assets/jardin.png"
-              alt="Jardin Solidaire"
-              width={60}
-              height={60}
-              className="mr-2"
-              priority
-            />
-            <span className="text-xl font-bold">Jardin Solidaire</span>
-          </Link>
-        </div>
+    <nav style={NAV_STYLE} role="navigation" aria-label="Navigation principale">
+      <div style={INNER}>
 
-        {/* RIGHT: role switcher + auth buttons + burger */}
-        <div className="flex items-center gap-2">
-          <RoleSwitcher />
+        {/* Wordmark */}
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <span style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '1.15rem',
+            fontWeight: 400,
+            color: 'var(--green)',
+            letterSpacing: '0.01em',
+            whiteSpace: 'nowrap',
+          }}>
+            Jardin Solidaire
+          </span>
+        </Link>
 
-          {/* Auth CTAs (desktop) */}
-          {!loadingMe && !user && (
-            <div className="hidden md:flex items-center space-x-3">
-              <Link href="/login">
-                <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full">
-                  Se connecter
-                </button>
-              </Link>
-              <Link href="/register">
-                <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full">
-                  S’inscrire
-                </button>
-              </Link>
-            </div>
-          )}
+        {/* Desktop right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }} className="hidden md:flex">
 
-          {/* Burger (stays open while hovering inside panel) */}
-          <div className="relative">
-            <div
-              onMouseEnter={() => {
-                setBurgerHover(true);
-                openMenu();
-              }}
-              onMouseLeave={() => {
-                setBurgerHover(false);
-                scheduleClose();
-              }}
-            >
+          {/* Role switcher */}
+          {user && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
               <button
-                onClick={() => setMenuOpen((v) => !v)}
-                className="cursor-pointer ml-1"
-                aria-label="Menu"
+                onClick={() => switchRole('OWNER')}
                 type="button"
+                style={{
+                  ...LINK,
+                  textDecoration: role === 'OWNER' ? 'underline' : 'none',
+                  textUnderlineOffset: '3px',
+                  color: role === 'OWNER' ? 'var(--foreground)' : 'var(--muted)',
+                }}
               >
-                {menuOpen ? (
-                  <FontAwesomeIcon icon={faTimes} size="lg" />
-                ) : (
-                  <FontAwesomeIcon icon={faBars} size="lg" />
-                )}
+                Propriétaire
+              </button>
+              <span style={{ color: 'var(--border)', userSelect: 'none' }}>/</span>
+              <button
+                onClick={() => switchRole('GARDENER')}
+                type="button"
+                style={{
+                  ...LINK,
+                  textDecoration: role === 'GARDENER' ? 'underline' : 'none',
+                  textUnderlineOffset: '3px',
+                  color: role === 'GARDENER' ? 'var(--foreground)' : 'var(--muted)',
+                }}
+              >
+                Jardinier·e
               </button>
             </div>
+          )}
 
-            {/* Menu panel */}
-            {menuOpen && (
-              <div
-                onMouseEnter={() => {
-                  setPanelHover(true);
-                  openMenu();
-                }}
-                onMouseLeave={() => {
-                  setPanelHover(false);
-                  scheduleClose();
-                }}
-                className="bg-green-600 w-screen absolute top-[44px] right-[-16px] md:right-0 md:w-[320px] border-t border-white/20 shadow-lg z-50"
-              >
-                <ul className="flex flex-col space-y-2 p-4 text-white">
-                  {!user ? (
-                    <>
-                      <li>
-                        <Link href="/login" onClick={() => setMenuOpen(false)}>
-                          Se connecter
-                        </Link>
-                      </li>
-                      <li>
-                        <Link href="/register" onClick={() => setMenuOpen(false)}>
-                          S’inscrire
-                        </Link>
-                      </li>
-                    </>
-                  ) : (
-                    <>
-                      {displayName && (
-                        <li className="opacity-95 text-sm pb-2 border-b border-white/15">
-                          Connecté·e : <span className="font-semibold">{displayName}</span>
-                        </li>
-                      )}
+          {/* Auth links (guest) */}
+          {!loadingMe && !user && (
+            <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+              <Link href="/login" style={LINK}>Se connecter</Link>
+              <Link href="/register" style={{ ...LINK, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                S&apos;inscrire
+              </Link>
+            </div>
+          )}
 
-                      <li>
-                        <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-                          Dashboard
-                        </Link>
-                      </li>
+          {/* Inbox badge */}
+          {user && role === 'OWNER' && (
+            <Link href="/owner/inbox" style={{ ...LINK, position: 'relative' }}>
+              Demandes
+              {inboxUnread > 0 && (
+                <sup style={{ fontSize: '0.65rem', color: 'var(--green)', marginLeft: 2 }}>
+                  {inboxUnread > 9 ? '9+' : inboxUnread}
+                </sup>
+              )}
+            </Link>
+          )}
 
-                      {role === 'OWNER' && (
-                        <>
-                          <li>
-                            <Link href="/my-gardens" onClick={() => setMenuOpen(false)}>
-                              Mes jardins
-                            </Link>
-                          </li>
+          {/* Menu toggle */}
+          <div style={{ position: 'relative' }} ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              type="button"
+              style={{ ...LINK, letterSpacing: '0.05em', fontSize: '0.8rem', textTransform: 'uppercase' }}
+              aria-expanded={menuOpen}
+              aria-label="Menu"
+            >
+              {menuOpen ? 'Fermer' : 'Menu'}
+            </button>
 
-                          <li className="relative">
-                            <Link
-                              href="/messages"
-                              onClick={() => setMenuOpen(false)}
-                              className="inline-flex items-center gap-2"
-                            >
-                              <span>Messagerie</span>
-                              {unread > 0 && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white">
-                                  {unread > 9 ? '9+' : unread}
-                                </span>
-                              )}
-                            </Link>
-                          </li>
-
-                          <li className="relative">
-                            <Link
-                              href="/owner/inbox"
-                              onClick={() => setMenuOpen(false)}
-                              className="inline-flex items-center gap-2"
-                            >
-                              <span>Demandes</span>
-                              <span aria-hidden className="opacity-90">
-                                💌
-                              </span>
-                              {inboxUnread > 0 && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white">
-                                  {inboxUnread > 9 ? '9+' : inboxUnread}
-                                </span>
-                              )}
-                            </Link>
-                          </li>
-                        </>
-                      )}
-
-                      {role === 'GARDENER' && (
-                        <>
-                          <li className="relative">
-                            <Link
-                              href="/messages"
-                              onClick={() => setMenuOpen(false)}
-                              className="inline-flex items-center gap-2"
-                            >
-                              <span>Messagerie</span>
-                              {unread > 0 && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500 text-white">
-                                  {unread > 9 ? '9+' : unread}
-                                </span>
-                              )}
-                            </Link>
-                          </li>
-
-                          <li>
-                            <Link href="/bookings" onClick={() => setMenuOpen(false)}>
-                              Mes réservations
-                            </Link>
-                          </li>
-                        </>
-                      )}
-
-                      <li>
-                        <Link href="/favorites" onClick={() => setMenuOpen(false)}>
-                          Mes Favoris
-                        </Link>
-                      </li>
-
-                      <li>
-                        <button onClick={handleLogout} className="block text-left w-full" type="button">
-                          Déconnexion
-                        </button>
-                      </li>
-                    </>
-                  )}
-                </ul>
-              </div>
-            )}
+            {menuOpen && <DropdownMenu
+              user={user}
+              displayName={displayName}
+              role={role}
+              unread={unread}
+              inboxUnread={inboxUnread}
+              onClose={() => setMenuOpen(false)}
+              onLogout={handleLogout}
+            />}
           </div>
         </div>
+
+        {/* Mobile: menu toggle only */}
+        <div className="flex md:hidden" ref={menuRefMobile} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            type="button"
+            style={{ ...LINK, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? 'Fermer' : 'Menu'}
+          </button>
+
+          {menuOpen && <DropdownMenu
+            user={user}
+            displayName={displayName}
+            role={role}
+            unread={unread}
+            inboxUnread={inboxUnread}
+            onClose={() => setMenuOpen(false)}
+            onLogout={handleLogout}
+            mobile
+          />}
+        </div>
+
       </div>
     </nav>
+  );
+}
+
+function DropdownMenu({ user, displayName, role, unread, inboxUnread, onClose, onLogout, mobile }) {
+  const panelStyle = {
+    position: 'absolute',
+    top: 'calc(100% + 12px)',
+    right: mobile ? -16 : 0,
+    width: mobile ? '100vw' : 240,
+    background: '#fff',
+    border: '1px solid var(--border)',
+    borderTop: 'none',
+    zIndex: 100,
+  };
+
+  const itemStyle = {
+    display: 'block',
+    padding: '0.6rem 1.25rem',
+    fontSize: '0.875rem',
+    color: 'var(--foreground)',
+    textDecoration: 'none',
+    background: 'none',
+    border: 'none',
+    width: '100%',
+    textAlign: 'left',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    letterSpacing: '0.01em',
+    borderBottom: '1px solid var(--border)',
+  };
+
+  const muted = { ...itemStyle, color: 'var(--muted)' };
+
+  return (
+    <div style={panelStyle} role="menu">
+      {!user ? (
+        <>
+          <Link href="/login" style={itemStyle} onClick={onClose}>Se connecter</Link>
+          <Link href="/register" style={itemStyle} onClick={onClose}>S&apos;inscrire</Link>
+          <Link href="/gardens" style={itemStyle} onClick={onClose}>Les jardins</Link>
+          <Link href="/gardeners" style={itemStyle} onClick={onClose}>Les jardinier·es</Link>
+        </>
+      ) : (
+        <>
+          {displayName && (
+            <div style={{ ...muted, cursor: 'default' }}>{displayName}</div>
+          )}
+          <Link href="/dashboard" style={itemStyle} onClick={onClose}>Tableau de bord</Link>
+          <Link href="/gardens" style={itemStyle} onClick={onClose}>Les jardins</Link>
+          <Link href="/gardeners" style={itemStyle} onClick={onClose}>Les jardinier·es</Link>
+          {role === 'OWNER' && (
+            <>
+              <Link href="/my-gardens" style={itemStyle} onClick={onClose}>Mes jardins</Link>
+              <Link href="/owner/inbox" style={itemStyle} onClick={onClose}>
+                Demandes{inboxUnread > 0 ? ` (${inboxUnread})` : ''}
+              </Link>
+            </>
+          )}
+          <Link href="/messages" style={itemStyle} onClick={onClose}>
+            Messagerie{unread > 0 ? ` (${unread})` : ''}
+          </Link>
+          {role === 'GARDENER' && (
+            <Link href="/bookings" style={itemStyle} onClick={onClose}>Mes réservations</Link>
+          )}
+          <Link href="/favorites" style={itemStyle} onClick={onClose}>Favoris</Link>
+          <button onClick={onLogout} style={muted}>Déconnexion</button>
+        </>
+      )}
+    </div>
   );
 }
