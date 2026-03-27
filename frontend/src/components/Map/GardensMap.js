@@ -86,7 +86,7 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
 
   // ✅ wrapper anti overflow horizontal (important)
   const frameClass =
-    'relative w-full max-w-full min-w-0 overflow-hidden rounded-2xl border border-gray-200';
+    'relative w-full max-w-full min-w-0 overflow-hidden border border-gray-200';
 
   if (!ready) {
     return (

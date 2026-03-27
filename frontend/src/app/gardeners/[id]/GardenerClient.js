@@ -63,21 +63,6 @@ function normalizeSkills(maybeSkills) {
     .filter(Boolean);
 }
 
-function Chip({ children }) {
-  return (
-    <span
-      className="px-3 py-1 rounded-full text-xs font-medium"
-      style={{
-        backgroundColor: 'rgba(22,163,74,0.06)',
-        border: '1px solid rgba(22,163,74,0.18)',
-        color: '#14532d',
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 export default function GardenerClient({ id: idProp }) {
   const pathname = usePathname();
 
@@ -153,116 +138,103 @@ export default function GardenerClient({ id: idProp }) {
   }, [gardener, avatarV]);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col">
-      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
-        <div className="mb-6">
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
+      <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px' }}>
+
+        {/* Back link */}
+        <div style={{ marginBottom: 32 }}>
           <Link
             href="/gardeners"
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition"
+            style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: 3 }}
           >
-            <span aria-hidden>←</span> Retour aux jardinier.es
+            ← Retour aux jardinier·es
           </Link>
         </div>
 
+        {/* Loading */}
         {loading && (
-          <div className="animate-pulse space-y-4">
-            <div className="h-24 bg-gray-100 rounded-2xl" />
-            <div className="h-36 bg-gray-100 rounded-2xl" />
-            <div className="h-56 bg-gray-100 rounded-2xl" />
-          </div>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
         )}
 
+        {/* Error */}
         {!!error && !loading && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
-            {error}
-          </div>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{error}</p>
         )}
 
         {gardener && (
           <>
-            {/* ✅ avatar + nom + chips + pills */}
-            <section className="rounded-2xl p-6 mb-6 bg-white border border-gray-100 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                <div
-                  className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden flex-shrink-0"
-                  style={{ border: '4px solid rgba(22,163,74,0.20)' }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={avatarSrc}
-                    alt={`${gardener.firstName} ${gardener.lastName}`}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = greenPlaceholder(gardener.firstName, gardener.lastName);
-                    }}
-                  />
-                  {gardener.isOnline && (
-                    <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-lime-500 ring-2 ring-white" />
+            {/* Avatar + name + skills */}
+            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', marginBottom: 32 }}>
+              <div style={{ flexShrink: 0, width: 80, height: 80, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={avatarSrc}
+                  alt={`${gardener.firstName} ${gardener.lastName}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => {
+                    e.currentTarget.src = greenPlaceholder(gardener.firstName, gardener.lastName);
+                  }}
+                />
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+                  {gardener.firstName} {gardener.lastName}
+                </h1>
+
+                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {(gardener.skills || []).slice(0, 10).map((s) => (
+                    <span
+                      key={s}
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--foreground)',
+                        border: '1px solid var(--border)',
+                        padding: '2px 8px',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {s}
+                    </span>
+                  ))}
+                  {(gardener.skills || []).length === 0 && (
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>Compétences à venir</span>
                   )}
                 </div>
-
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl font-semibold text-green-900 leading-tight">
-                    {gardener.firstName} {gardener.lastName}
-                  </h1>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(gardener.skills || []).slice(0, 10).map((s) => (
-                      <Chip key={s}>{s}</Chip>
-                    ))}
-                    {(gardener.skills || []).length === 0 && (
-                      <span className="text-sm text-gray-600">Compétences à venir</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <MetaPill label="Localisation" value={gardener.location} />
-                  <MetaPill
-                    label="Expérience"
-                    value={gardener.yearsExperience != null ? `${gardener.yearsExperience} an(s)` : '—'}
-                  />
-                </div>
               </div>
+            </div>
+
+            {/* Meta */}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, marginBottom: 32, display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+              <div style={{ fontSize: '0.875rem' }}>
+                <span style={{ color: 'var(--muted)', marginRight: 6 }}>Localisation :</span>
+                <span style={{ color: 'var(--foreground)' }}>{gardener.location}</span>
+              </div>
+              <div style={{ fontSize: '0.875rem' }}>
+                <span style={{ color: 'var(--muted)', marginRight: 6 }}>Expérience :</span>
+                <span style={{ color: 'var(--foreground)' }}>
+                  {gardener.yearsExperience != null ? `${gardener.yearsExperience} an(s)` : '—'}
+                </span>
+              </div>
+            </div>
+
+            {/* Présentation */}
+            <section style={{ marginBottom: 40 }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--green)', marginBottom: 10, margin: '0 0 10px 0' }}>
+                Présentation
+              </p>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--foreground)', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 }}>
+                {gardener.intro || '—'}
+              </p>
             </section>
 
-            <section className="mb-6">
-              <Card title="Présentation">
-                <p className="mt-3 text-gray-700 whitespace-pre-wrap">{gardener.intro || '—'}</p>
-              </Card>
-            </section>
-
-            <section className="mt-6">
+            {/* Availability */}
+            <section>
               <AvailabilityCalendar mode="gardener" ownerId={id} token={getAnyToken()} />
             </section>
           </>
         )}
       </main>
-    </div>
-  );
-}
-
-function Card({ title, children }) {
-  return (
-    <div className="rounded-2xl p-6 bg-white border border-gray-100 shadow-sm">
-      <h2 className="text-lg font-semibold text-green-800">{title}</h2>
-      {children}
-    </div>
-  );
-}
-
-function MetaPill({ label, value }) {
-  return (
-    <div
-      className="rounded-full px-4 py-2 text-sm"
-      style={{
-        backgroundColor: 'rgba(22,163,74,0.06)',
-        border: '1px solid rgba(22,163,74,0.18)',
-        color: '#14532d',
-      }}
-      title={label}
-    >
-      <span className="opacity-80">{label} :</span> <span className="font-medium">{value}</span>
     </div>
   );
 }

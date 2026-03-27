@@ -8,36 +8,41 @@ export default function CheckEmailClient() {
   const email = sp.get('email');
 
   return (
-    <main className="min-h-screen bg-white px-6 py-10 flex items-center justify-center">
-      <div className="w-full max-w-md rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
-        <h1 className="text-2xl font-bold text-green-700">Vérifie ta boîte mail 📩</h1>
+    <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '4rem 2rem' }}>
 
-        <p className="mt-3 text-sm text-gray-700">
-          On t’a envoyé un lien de confirmation{email ? ` à ${email}` : ''}.
+        <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)', marginBottom: '0.75rem' }}>
+          Inscription
+        </p>
+
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, color: 'var(--foreground)', marginBottom: '1.25rem', lineHeight: 1.1 }}>
+          Vérifie ta boîte mail
+        </h1>
+
+        <p style={{ fontSize: '1rem', color: 'var(--foreground)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+          Un lien de confirmation t&apos;a été envoyé{email ? ` à ${email}` : ''}.
           Clique dessus pour activer ton compte.
         </p>
 
-        <p className="mt-2 text-xs text-gray-500">
-          Pense à vérifier tes spams / promotions si tu ne le vois pas.
+        <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>
+          Vérifie tes spams si tu ne le vois pas.
         </p>
 
-        <div className="mt-6 flex gap-3">
+        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center rounded-full px-5 py-3 text-white shadow-sm hover:opacity-95"
-            style={{ backgroundColor: '#EC4899' }}
+            style={{ padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', fontFamily: 'inherit', fontSize: '0.875rem', textDecoration: 'none', display: 'inline-block' }}
           >
             Se connecter
           </Link>
-
           <Link
             href="/"
-            className="inline-flex items-center justify-center rounded-full px-5 py-3 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition"
+            style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
           >
-            Accueil
+            ← Accueil
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

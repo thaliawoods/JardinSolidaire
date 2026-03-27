@@ -1,28 +1,31 @@
-'use client';
-
 import Link from 'next/link';
 
-const Footer = () => {
+export default function Footer() {
   return (
-    <footer className="w-full bg-green-600 text-white" role="contentinfo">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-center">
-        <nav aria-label="Footer">
-          <ul className="flex space-x-8">
-            <li>
-              <Link href="/contact" className="hover:underline focus:underline">
-                Contact
-              </Link>
-            </li>
-            <li>
-              <Link href="/help" className="hover:underline focus:underline">
-                Centre d&#39;aide
-              </Link>
-            </li>
-          </ul>
+    <footer style={{ borderTop: '1px solid var(--border)' }} role="contentinfo">
+      <div style={{
+        maxWidth: 1280,
+        margin: '0 auto',
+        padding: '1.25rem 2rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '0.75rem',
+      }}>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.875rem', color: 'var(--green)' }}>
+          Jardin Solidaire
+        </span>
+
+        <nav style={{ display: 'flex', gap: '1.5rem' }} aria-label="Footer">
+          <Link href="/contact" style={{ fontSize: '0.8rem', color: 'var(--muted)', textDecoration: 'none', letterSpacing: '0.01em' }}>
+            Contact
+          </Link>
+          <Link href="/help" style={{ fontSize: '0.8rem', color: 'var(--muted)', textDecoration: 'none', letterSpacing: '0.01em' }}>
+            Aide
+          </Link>
         </nav>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

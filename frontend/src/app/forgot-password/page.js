@@ -4,6 +4,9 @@ import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const BTN_PRIMARY = { display: 'inline-block', width: '100%', padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', letterSpacing: '0.01em', opacity: 1 };
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [msg, setMsg] = useState('');
@@ -19,7 +22,7 @@ export default function ForgotPasswordPage() {
 
     if (!isValidEmail(email)) {
       setInvalid(true);
-      setMsg('Please enter a valid email address.');
+      setMsg('Adresse email invalide.');
       return;
     }
 
@@ -39,70 +42,80 @@ export default function ForgotPasswordPage() {
       }
 
       setInvalid(true);
-      setMsg("We don't recognize this email. Create an account to join JardinSolidaire.");
+      setMsg('Adresse email non trouvée.');
     } catch (err) {
       console.error('Network error:', err);
-      setMsg('Something went wrong. Please try again.');
+      setMsg('Une erreur est survenue.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ backgroundColor: '#f5f5f5', minHeight: '100vh', paddingTop: '100px' }}>
-      <div style={{ maxWidth: 500, margin: '0 auto', padding: '40px 20px' }}>
-        <h2 style={{ textAlign: 'center', color: '#021904', marginBottom: 20, fontSize: 28 }}>
-          Forgot your password?
-        </h2>
-        <p style={{ textAlign: 'center', color: '#4e784f', fontSize: 18, marginBottom: 30 }}>
-          No worries 🌱<br />
-          Enter your email and we’ll guide you to create a new one.
+    <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '4rem 2rem' }}>
+
+        <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', marginBottom: '1.25rem' }}>
+          Compte
         </p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
-          <input
-            type="email"
-            name="email"
-            value={email}
-            placeholder="Email address"
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            style={{ padding: 12, borderRadius: 10, border: '1px solid #ddd' }}
-            required
-            autoComplete="email"
-          />
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--foreground)', margin: '0 0 0.5rem' }}>
+          Mot de passe oublié ?
+        </h1>
+
+        <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>
+          Saisis ton adresse email et nous t'enverrons un lien pour en créer un nouveau.
+        </p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+          <div>
+            <input
+              type="email"
+              name="email"
+              value={email}
+              placeholder="Adresse email"
+              onChange={(e) => setEmail(e.target.value)}
+              style={INPUT}
+              required
+              autoComplete="email"
+            />
+          </div>
+
+          {msg && (
+            <p style={{ fontSize: '0.875rem', color: invalid ? '#dc2626' : 'var(--foreground)', margin: 0 }}>
+              {msg}
+              {invalid && (
+                <>
+                  {' '}
+                  <Link href="/register" style={{ color: 'var(--foreground)', textDecoration: 'underline' }}>
+                    Créer un compte →
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
+
           <button
             type="submit"
             disabled={submitting}
-            style={{
-              padding: 14,
-              backgroundColor: '#6ec173',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 10,
-              cursor: 'pointer',
-              fontSize: 18,
-              marginTop: 20,
-              opacity: submitting ? 0.7 : 1,
-            }}
+            style={{ ...BTN_PRIMARY, opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}
           >
-            {submitting ? 'Sending…' : 'Reset password'}
+            {submitting ? 'Envoi en cours…' : 'Réinitialiser'}
           </button>
 
-          {msg && (
-            <p style={{ color: invalid ? '#e3107d' : '#021904', fontSize: 16, marginTop: 20, textAlign: 'center' }}>
-              {msg}
-            </p>
-          )}
-
-          {invalid && (
-            <p style={{ textAlign: 'center', marginTop: 10 }}>
-              <Link href="/register" className="text-[#6ec173] underline">
-                Create an account
-              </Link>
-            </p>
-          )}
         </form>
+
+        <p style={{ marginTop: '2rem' }}>
+          <Link
+            href="/"
+            style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'none' }}
+            aria-label="Retour à l'accueil"
+          >
+            ← Retour à l'accueil
+          </Link>
+        </p>
+
       </div>
     </div>
   );

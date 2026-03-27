@@ -141,21 +141,6 @@ async function fetchGardeners(params) {
   throw lastErr || new Error('All endpoints failed');
 }
 
-function Chip({ children }) {
-  return (
-    <span
-      className="px-3 py-1 rounded-full text-xs font-medium"
-      style={{
-        backgroundColor: 'rgba(22,163,74,0.06)',
-        border: '1px solid rgba(22,163,74,0.18)',
-        color: '#14532d',
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 export default function GardenersList() {
   const [gardeners, setGardeners] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -252,82 +237,97 @@ export default function GardenersList() {
   };
 
   return (
-    <main className="min-h-screen bg-white px-6 py-10">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-green-700">Les Jardinier.es</h1>
+    <main style={{ minHeight: '100vh', background: '#fff', padding: '48px 24px' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 32 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+            Les jardinier·es
+          </h1>
 
           {isAuthed && (
             <Link
               href="/favorites"
-              className="px-4 py-2 rounded-full text-white shadow-sm hover:opacity-95 transition"
-              style={{ backgroundColor: BRAND_GREEN }}
+              style={{ color: 'var(--foreground)', fontSize: '0.875rem', textDecoration: 'underline', textUnderlineOffset: 3 }}
             >
-              Favoris ({favorites.length})
+              Mes favoris →
             </Link>
           )}
         </div>
 
-        {/* filtres (même style que gardens) */}
-        <div className="mb-8 flex flex-col lg:flex-row items-center gap-4 flex-wrap">
-          <label className="relative w-full lg:w-[38%]">
-            <span className="sr-only">Rechercher un·e jardinier·e</span>
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden>
-              🔍
-            </span>
-            <input
-              type="text"
-              placeholder="Rechercher un·e jardinier·e…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-            />
-          </label>
+        {/* Filters */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 40 }}>
+          <input
+            type="text"
+            placeholder="Rechercher un·e jardinier·e…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              flex: '1 1 220px',
+              padding: '8px 12px',
+              border: '1px solid var(--border)',
+              background: '#fff',
+              color: 'var(--foreground)',
+              fontSize: '0.875rem',
+              outline: 'none',
+              borderRadius: 0,
+            }}
+          />
 
-          <label className="w-full lg:w-[26%]">
-            <span className="sr-only">Compétence</span>
-            <select
-              value={skill}
-              onChange={(e) => setSkill(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-full border border-gray-200 shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-            >
-              <option value="">Toutes les compétences</option>
-              {allSkills.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
+          <select
+            value={skill}
+            onChange={(e) => setSkill(e.target.value)}
+            style={{
+              flex: '1 1 160px',
+              padding: '8px 12px',
+              border: '1px solid var(--border)',
+              background: '#fff',
+              color: 'var(--foreground)',
+              fontSize: '0.875rem',
+              outline: 'none',
+              borderRadius: 0,
+            }}
+          >
+            <option value="">Toutes les compétences</option>
+            {allSkills.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
 
           <button
             onClick={resetFilters}
-            className="px-6 py-2.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition w-full lg:w-auto"
+            style={{
+              padding: '8px 16px',
+              border: '1px solid var(--border)',
+              background: '#fff',
+              color: 'var(--foreground)',
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              borderRadius: 0,
+            }}
           >
             Réinitialiser
           </button>
         </div>
 
+        {/* Loading */}
         {loading && (
-          <div className="space-y-4">
-            <div className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
-            <div className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
-            <div className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
-          </div>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
         )}
 
+        {/* Error */}
         {!!err && !loading && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
-            {err}
-          </div>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{err}</p>
         )}
 
+        {/* Empty */}
         {!loading && !err && filtered.length === 0 && (
-          <p className="text-center text-gray-600">Aucun.e jardinier.e trouvé.</p>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Aucun·e jardinier·e trouvé·e.</p>
         )}
 
-        {/* ✅ LISTE VERTICALE */}
-        <div className="space-y-4">
+        {/* List */}
+        <div>
           {filtered.map((g) => {
             const fallback = greenPlaceholder(g.firstName, g.lastName);
             const baseSrc = g.avatarUrl || fallback;
@@ -336,60 +336,80 @@ export default function GardenersList() {
             const favbed = favorites.includes(String(g.id));
 
             return (
-              <Link key={g.id} href={`/gardeners/${g.id}`} className="block">
-                <article
-                  className="rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition bg-white border border-gray-100"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="h-16 w-16 sm:h-18 sm:w-18 rounded-2xl overflow-hidden shrink-0"
-                      style={{ border: '3px solid rgba(22,163,74,0.20)' }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={src}
-                        alt={`${g.firstName} ${g.lastName}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { e.currentTarget.src = fallback; }}
-                      />
-                    </div>
+              <article
+                key={g.id}
+                style={{
+                  borderBottom: '1px solid var(--border)',
+                  padding: '16px 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                }}
+              >
+                {/* Avatar */}
+                <div style={{ flexShrink: 0, width: 50, height: 50, overflow: 'hidden', borderRadius: 2 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt={`${g.firstName} ${g.lastName}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    onError={(e) => { e.currentTarget.src = fallback; }}
+                  />
+                </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <h2 className="text-lg font-semibold text-green-900 leading-tight truncate">
-                          {g.firstName} {g.lastName}
-                        </h2>
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--foreground)', fontWeight: 400 }}>
+                      {g.firstName} {g.lastName}
+                    </span>
 
-                        {isAuthed && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
-                            className="text-xl transition-transform hover:scale-110"
-                            aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                            title={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                          >
-                            {favbed ? <span className="text-pink-500">♥</span> : <span className="text-gray-300">♡</span>}
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {(g.skills || []).slice(0, 8).map((s) => <Chip key={s}>{s}</Chip>)}
-                        {(g.skills || []).length === 0 && (
-                          <span className="text-sm text-gray-500">Compétences à venir</span>
-                        )}
-                      </div>
-
-                      <div className="mt-3 text-sm text-green-700">
-                        Voir le profil →
-                      </div>
-                    </div>
+                    {isAuthed && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', padding: 0, color: favbed ? 'var(--green)' : 'var(--muted)', lineHeight: 1 }}
+                        aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                        title={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                      >
+                        {favbed ? '♥' : '♡'}
+                      </button>
+                    )}
                   </div>
-                </article>
-              </Link>
+
+                  <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                    {(g.skills || []).slice(0, 8).map((s) => (
+                      <span
+                        key={s}
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--foreground)',
+                          border: '1px solid var(--border)',
+                          padding: '1px 6px',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {s}
+                      </span>
+                    ))}
+                    {(g.skills || []).length === 0 && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Compétences à venir</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Link */}
+                <Link
+                  href={`/gardeners/${g.id}`}
+                  style={{ flexShrink: 0, fontSize: '0.8125rem', color: 'var(--muted)', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                >
+                  Voir le profil →
+                </Link>
+              </article>
             );
           })}
         </div>
+
       </div>
     </main>
   );
