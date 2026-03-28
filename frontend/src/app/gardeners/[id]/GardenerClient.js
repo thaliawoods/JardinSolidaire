@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar';
 import { getAnyToken } from '@/lib/api';
+import { getFavGardeners, addFavGardener, removeFavGardener } from '@/lib/favorites';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const BRAND_GREEN = '#16a34a';
@@ -32,9 +33,8 @@ function initials(a = '', b = '') {
 
 function greenPlaceholder(first, last) {
   const txt = initials(first, last);
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="24" fill="${BRAND_GREEN}"/>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" fill="#111111"/>
   <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
         font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
 </svg>`;
@@ -74,6 +74,19 @@ export default function GardenerClient({ id: idProp }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [avatarV, setAvatarV] = useState(0);
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [isFav, setIsFav] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setIsAuthed(!!getAnyToken());
+    sync();
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
+
+  useEffect(() => {
+    if (id) setIsFav(getFavGardeners().some((g) => String(g.id) === String(id)));
+  }, [id, isAuthed]);
 
   console.log('API_BASE runtime:', API_BASE);
   console.log('pathname:', pathname);
@@ -102,7 +115,7 @@ export default function GardenerClient({ id: idProp }) {
       setError('');
 
       let res = await fetch(`${API_BASE}/api/gardeners/${id}`, { cache: 'no-store' });
-      if (!res.ok) res = await fetch(`${API_BASE}/api/jardinier.es/${id}`, { cache: 'no-store' });
+      if (!res.ok) res = await fetch(`${API_BASE}/api/jardiniers/${id}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
@@ -119,7 +132,7 @@ export default function GardenerClient({ id: idProp }) {
       });
     } catch (e) {
       console.error('Gardener fetch failed:', e);
-      setError('Impossible de charger le profil jardinier.e.');
+      setError('Impossible de charger le profil jardinier·e.');
       setGardener(null);
     } finally {
       setLoading(false);
@@ -178,9 +191,29 @@ export default function GardenerClient({ id: idProp }) {
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
-                  {gardener.firstName} {gardener.lastName}
-                </h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+                    {gardener.firstName} {gardener.lastName}
+                  </h1>
+                  {isAuthed && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isFav) {
+                          removeFavGardener(String(id));
+                          setIsFav(false);
+                        } else {
+                          addFavGardener({ id, firstName: gardener.firstName, lastName: gardener.lastName, avatarUrl: gardener.avatarUrl });
+                          setIsFav(true);
+                        }
+                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', padding: 0, color: isFav ? '#ec4899' : 'var(--border)', lineHeight: 1, flexShrink: 0 }}
+                      aria-label={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                    >
+                      ♥
+                    </button>
+                  )}
+                </div>
 
                 <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {(gardener.skills || []).slice(0, 10).map((s) => (

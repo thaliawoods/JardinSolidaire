@@ -52,7 +52,7 @@ function greenPlaceholder(first, last) {
   const txt = initials(first, last);
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="24" fill="${BRAND_GREEN}"/>
+  <rect width="256" height="256" fill="#111111"/>
   <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
         font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
 </svg>`;
@@ -184,7 +184,7 @@ export default function GardenersList() {
     } catch (e) {
       if (isAbort(e)) return;
       console.error('[gardeners] load failed:', e);
-      setErr('Impossible de charger les jardinier.es.');
+      setErr('Impossible de charger les jardinier·es.');
       setGardeners([]);
     } finally {
       setLoading(false);
@@ -368,11 +368,11 @@ export default function GardenersList() {
                       <button
                         type="button"
                         onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: 0, color: favbed ? '#ec4899' : 'var(--border)', lineHeight: 1 }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', padding: 0, color: favbed ? '#ec4899' : '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.4)', lineHeight: 1 }}
                         aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                         title={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                       >
-                        {favbed ? '♥' : '♡'}
+                        ♥
                       </button>
                     )}
                   </div>

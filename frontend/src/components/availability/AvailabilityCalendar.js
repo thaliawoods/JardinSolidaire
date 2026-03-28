@@ -141,6 +141,17 @@ export default function AvailabilityCalendar({
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
 
+  function translateErr(msg) {
+    const map = {
+      slot_in_past: 'Ce créneau est dans le passé.',
+      slot_overlap: 'Ce créneau chevauche une réservation existante.',
+      slot_unavailable: 'Ce créneau n\'est pas disponible.',
+      create_failed: 'Impossible de créer la demande.',
+      request_failed: 'Une erreur est survenue.',
+    };
+    return map[msg] || msg;
+  }
+
   function showToast(type, text) {
     setToast({ type, text });
     window.clearTimeout(window.__avail_toast__);
@@ -203,7 +214,7 @@ export default function AvailabilityCalendar({
       showToast('success', 'Demande envoyée — en attente de validation');
       await reload();
     } catch (e) {
-      showToast('error', e?.message || 'Erreur lors de l\'envoi');
+      showToast('error', translateErr(e?.message || 'request_failed'));
     } finally {
       setBusy(false);
     }

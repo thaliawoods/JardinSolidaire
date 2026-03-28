@@ -243,9 +243,9 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Nav links — always visible */}
-          <Link href="/gardens" style={{ ...LINK_MUTED, whiteSpace: 'nowrap', ...(pathname?.startsWith('/gardens') ? { color: 'var(--green)', fontWeight: 600 } : {}) }}>Les jardins</Link>
-          <Link href="/gardeners" style={{ ...LINK_MUTED, whiteSpace: 'nowrap', ...(pathname?.startsWith('/gardeners') ? { color: 'var(--green)', fontWeight: 600 } : {}) }}>Les jardinier·es</Link>
+          {/* Nav links — desktop only */}
+          <Link href="/gardens" className="hidden md:inline" style={{ ...LINK_MUTED, whiteSpace: 'nowrap', ...(pathname?.startsWith('/gardens') ? { color: 'var(--green)', fontWeight: 600 } : {}) }}>Les jardins</Link>
+          <Link href="/gardeners" className="hidden md:inline" style={{ ...LINK_MUTED, whiteSpace: 'nowrap', ...(pathname?.startsWith('/gardeners') ? { color: 'var(--green)', fontWeight: 600 } : {}) }}>Les jardinier·es</Link>
 
           {/* Auth links (guest) — desktop only */}
           {!loadingMe && !user && (
@@ -260,9 +260,22 @@ export default function Navbar() {
             <span className="hidden md:inline" style={{ fontSize: '0.875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{displayName}</span>
           )}
 
+          {/* Role switcher — mobile only, compact P / J */}
+          {user && (
+            <div className="flex md:hidden" style={{ alignItems: 'center', gap: '0.375rem', fontSize: '0.8rem' }}>
+              <button onClick={() => switchRole('OWNER')} type="button" style={{ ...LINK, fontSize: '0.8rem', letterSpacing: '0.04em', textDecoration: role === 'OWNER' ? 'underline' : 'none', textUnderlineOffset: '3px', color: role === 'OWNER' ? 'var(--foreground)' : 'var(--muted)' }}>
+                P
+              </button>
+              <span style={{ color: 'var(--border)', userSelect: 'none' }}>/</span>
+              <button onClick={() => switchRole('GARDENER')} type="button" style={{ ...LINK, fontSize: '0.8rem', letterSpacing: '0.04em', textDecoration: role === 'GARDENER' ? 'underline' : 'none', textUnderlineOffset: '3px', color: role === 'GARDENER' ? 'var(--foreground)' : 'var(--muted)' }}>
+                J
+              </button>
+            </div>
+          )}
+
           {/* Messages icon — always visible when logged in */}
           {user && (
-            <Link href="/messages" style={{ ...LINK, position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }} title="Messagerie">
+            <Link href="/messages" style={{ ...LINK, position: 'relative', zIndex: 200, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }} title="Messagerie">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/assets/envelope-heart.jpg" alt="Messagerie" style={{ width: '1.75rem', height: 'auto', display: 'block' }} />
               {unread > 0 && (
@@ -342,6 +355,10 @@ function DropdownMenu({ user, displayName, role, unread, inboxUnread, onClose, o
 
   return (
     <div style={panelStyle} role="menu">
+      {/* Nav links — mobile only */}
+      <Link href="/gardens" className="md:hidden" style={itemStyle} onClick={onClose}>Les jardins</Link>
+      <Link href="/gardeners" className="md:hidden" style={itemStyle} onClick={onClose}>Les jardinier·es</Link>
+
       {!user ? (
         <>
           <Link href="/login" style={itemStyle} onClick={onClose}>Se connecter</Link>

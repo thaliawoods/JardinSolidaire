@@ -40,7 +40,7 @@ function initials(a = '', b = '') {
 function greenAvatar(first, last) {
   const txt = initials(first, last);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-    <rect width="256" height="256" rx="24" fill="#2d6a4f"/>
+    <rect width="256" height="256" fill="#111111"/>
     <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
       font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
   </svg>`;
@@ -248,7 +248,7 @@ export default function GardenDetailPage({ params }) {
               style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1, color: isFav ? '#ec4899' : '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.4)', padding: 0 }}
               aria-label={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             >
-              {isFav ? '♥' : '♡'}
+              ♥
             </button>
           )}
 
