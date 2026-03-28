@@ -98,7 +98,6 @@ export default function BookingDetailPage() {
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
       <main style={{ maxWidth: '48rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, margin: 0, lineHeight: 1.1 }}>
@@ -117,7 +116,6 @@ export default function BookingDetailPage() {
           </button>
         </div>
 
-        {/* Status */}
         <section style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
             <div>
@@ -133,7 +131,6 @@ export default function BookingDetailPage() {
           </div>
         </section>
 
-        {/* Details */}
         <section style={{ border: '1px solid var(--border)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ fontSize: '0.8125rem' }}>
             <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '0.6875rem', color: 'var(--green)' }}>Jardin</span>
@@ -152,7 +149,6 @@ export default function BookingDetailPage() {
             <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>Aucune note ajoutée.</p>
           )}
 
-          {/* Actions */}
           {actions.length > 0 && (
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
               <p style={{ fontSize: '0.6875rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.75rem' }}>Actions</p>

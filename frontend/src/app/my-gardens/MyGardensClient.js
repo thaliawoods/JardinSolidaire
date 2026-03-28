@@ -28,7 +28,6 @@ export default function MyGardensClient() {
   const [toast, setToast] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ✅ Option 2: un seul calendrier, pour le jardin sélectionné
   const [openAvailId, setOpenAvailId] = useState(null);
 
   const { confirm, confirmState, closeConfirm } = useConfirm();
@@ -70,7 +69,6 @@ export default function MyGardensClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
-  // ✅ si le jardin ouvert n'existe plus après reload, on ferme
   useEffect(() => {
     if (!openAvailId) return;
     const exists = rows.some((r) => r.id === openAvailId);
@@ -146,7 +144,6 @@ export default function MyGardensClient() {
       setBusyId(id);
       await apiFetch(`/api/gardens/${id}`, { method: "DELETE" });
       pushToast("Jardin supprimé.");
-      // ✅ si on supprime le jardin ouvert, on ferme le calendrier
       setOpenAvailId((prev) => (prev === id ? null : prev));
       await load();
     } catch (e) {
@@ -165,7 +162,6 @@ export default function MyGardensClient() {
 
   return (
     <main style={{ maxWidth: 960, margin: "0 auto", padding: "2rem 1.5rem" }}>
-      {/* Modal global */}
       <ConfirmModal
         open={confirmState.open}
         title={confirmState.title}
@@ -182,7 +178,6 @@ export default function MyGardensClient() {
         }}
       />
 
-      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -250,7 +245,6 @@ export default function MyGardensClient() {
         </p>
       )}
 
-      {/* Tabs */}
       <div
         style={{
           display: "flex",
@@ -502,7 +496,7 @@ export default function MyGardensClient() {
                     intent="form"
                     gardenId={gardenId}
                     title="Calendrier"
-                    onDateSelect={(iso) => setDate(iso)} // ✅ clic jour => remplit la date du form
+                    onDateSelect={(iso) => setDate(iso)}
                   />
                 </div>
               )}

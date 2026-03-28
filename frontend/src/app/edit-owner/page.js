@@ -104,7 +104,6 @@ export default function EditOwnerPage() {
     <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '2.5rem 2rem' }}>
 
-        {/* Header */}
         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
             <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)', marginBottom: '0.3rem' }}>Profil</p>
@@ -122,7 +121,6 @@ export default function EditOwnerPage() {
         ) : (
           <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-            {/* Identity */}
             <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--muted)', margin: '0 0 0.2rem' }}>Identité (depuis le compte)</p>
@@ -131,7 +129,6 @@ export default function EditOwnerPage() {
               <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)' }}>Propriétaire</span>
             </div>
 
-            {/* Fields grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
               <div>
                 <label style={LABEL}>Quartier</label>
@@ -164,7 +161,6 @@ export default function EditOwnerPage() {
               </div>
             </div>
 
-            {/* Actions */}
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <button type="submit" disabled={submitting} style={{ ...BTN_PRIMARY, opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}>
                 {submitting ? 'Enregistrement…' : 'Enregistrer'}

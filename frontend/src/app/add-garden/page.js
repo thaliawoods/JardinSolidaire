@@ -146,7 +146,6 @@ export default function AddGardenPage() {
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)', padding: '48px 24px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
           <div>
             <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', margin: '0 0 0.75rem' }}>
@@ -164,7 +163,6 @@ export default function AddGardenPage() {
           </Link>
         </div>
 
-        {/* Banner */}
         {!loadingMine && mine && mine.length > 0 && (
           <div style={{ border: '1px solid var(--border)', padding: '1rem 1.25rem', margin: '1.5rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
             <div>
@@ -178,7 +176,6 @@ export default function AddGardenPage() {
           </div>
         )}
 
-        {/* Feedback */}
         {err && (
           <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626', margin: '1rem 0' }}>
             {err}
@@ -190,7 +187,6 @@ export default function AddGardenPage() {
           </div>
         )}
 
-        {/* Form */}
         {!loadingMine && (
           <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '2rem' }}>
 
@@ -229,7 +225,6 @@ export default function AddGardenPage() {
                 />
               </div>
 
-              {/* Photos */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                   <label style={{ ...LABEL, marginBottom: 0 }}>Photos</label>
@@ -287,7 +282,6 @@ export default function AddGardenPage() {
               </div>
             </div>
 
-            {/* Conseil */}
             <div style={{ border: '1px solid var(--border)', padding: '1.25rem' }}>
               <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', margin: '0 0 0.5rem' }}>Conseil</p>
               <p style={{ fontSize: '0.875rem', color: 'var(--foreground)', margin: 0 }}>

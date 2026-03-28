@@ -3,15 +3,7 @@
 import React, { useMemo } from 'react';
 import clsx from 'clsx';
 
-/**
- * Props:
- *  - week: { days: [{ iso, label }], ... }
- *  - events: [{ id, date:"YYYY-MM-DD", start:"HH:mm", end:"HH:mm", status:"free|booked|unavailable" }]
- *  - onAdd({ date, hour }) -> create 1h "free" slot
- *  - onDelete(event)       -> delete clicked slot
- */
 export default function WeekGrid({ week, events = [], onAdd, onDelete }) {
-  // fast lookup: key = `${date}-${HH}`
   const indexed = useMemo(() => {
     const map = new Map();
     for (const ev of Array.isArray(events) ? events : []) {
@@ -22,7 +14,6 @@ export default function WeekGrid({ week, events = [], onAdd, onDelete }) {
   }, [events]);
 
   const hours = useMemo(() => {
-    // 07:00 → 20:00 for a compact day; tweak as you like
     const list = [];
     for (let h = 7; h <= 20; h++) list.push(String(h).padStart(2, '0'));
     return list;
@@ -39,7 +30,6 @@ export default function WeekGrid({ week, events = [], onAdd, onDelete }) {
 
   return (
     <div className="border rounded-xl overflow-hidden">
-      {/* header row */}
       <div className="grid" style={{ gridTemplateColumns: `80px repeat(${week.days.length}, 1fr)` }}>
         <div className="bg-gray-50 px-3 py-2 text-xs font-semibold">Heure</div>
         {week.days.map((d) => (
@@ -50,17 +40,14 @@ export default function WeekGrid({ week, events = [], onAdd, onDelete }) {
         ))}
       </div>
 
-      {/* body */}
       {hours.map((hh) => (
         <div
           key={hh}
           className="grid border-t"
           style={{ gridTemplateColumns: `80px repeat(${week.days.length}, 1fr)` }}
         >
-          {/* left hour gutter */}
           <div className="px-3 py-2 text-xs text-gray-600">{hh}:00</div>
 
-          {/* day cells */}
           {week.days.map((d) => {
             const key = `${d.iso}-${hh}`;
             const ev = indexed.get(key);

@@ -73,7 +73,6 @@ function BookingsListInner() {
   return (
     <div style={{ background: '#fff', minHeight: '100vh', padding: '2.5rem 1.5rem' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
-        {/* Header */}
         <div
           style={{
             display: 'flex',
@@ -119,21 +118,18 @@ function BookingsListInner() {
           </Link>
         </div>
 
-        {/* Success */}
         {justCreated && (
           <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
             Réservation créée.
           </p>
         )}
 
-        {/* Error */}
         {err && (
           <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
             {err}
           </p>
         )}
 
-        {/* Stats */}
         {!loading && !err && (
           <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: '1.5rem' }}>
             {stats.total} total

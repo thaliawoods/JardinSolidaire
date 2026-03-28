@@ -89,7 +89,6 @@ export default function IWantToGardenPage() {
       intro: formData.intro.trim(),
       yearsExperience: formData.yearsExperience ? Number(formData.yearsExperience) : null,
       skills: formData.skills,
-      // photos not uploaded yet—add /api/uploads later and pass URLs here
     };
 
     if (!payload.firstName || !payload.lastName || !payload.intro) {

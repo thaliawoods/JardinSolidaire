@@ -27,7 +27,6 @@ export default function useSession() {
       if (res.ok && data?.user) {
         setUser(data.user);
       } else {
-        // stale/invalid token -> clear it
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);

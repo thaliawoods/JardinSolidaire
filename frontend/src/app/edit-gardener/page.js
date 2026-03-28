@@ -160,7 +160,6 @@ export default function EditGardenerPage() {
     <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '2.5rem 2rem' }}>
 
-        {/* Header */}
         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
             <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)', marginBottom: '0.3rem' }}>Profil</p>
@@ -178,7 +177,6 @@ export default function EditGardenerPage() {
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-            {/* Identity */}
             <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--muted)', margin: '0 0 0.2rem' }}>Identité (depuis le compte)</p>
@@ -187,7 +185,6 @@ export default function EditGardenerPage() {
               <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)' }}>Jardinier·e</span>
             </div>
 
-            {/* Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
                 <label style={LABEL}>Adresse (optionnel)</label>
@@ -252,7 +249,6 @@ export default function EditGardenerPage() {
               </div>
             </div>
 
-            {/* Actions */}
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', paddingTop: '0.5rem' }}>
               <button type="submit" disabled={submitting} style={{ ...BTN_PRIMARY, opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}>
                 {submitting ? 'Enregistrement…' : 'Enregistrer'}

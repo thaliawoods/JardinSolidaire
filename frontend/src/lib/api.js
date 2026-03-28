@@ -13,7 +13,6 @@ function qs(obj = {}) {
   return s ? `?${s}` : '';
 }
 
-/* ---------- auth helpers ---------- */
 function readCookie(name) {
   if (typeof document === 'undefined') return null;
   const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
@@ -22,7 +21,6 @@ function readCookie(name) {
 
 export function getAnyToken() {
   if (typeof window === 'undefined') return null;
-  // 👇 broaden accepted keys
   const keys = ['token', 'accessToken', 'access_token', 'jwt', 'Authorization'];
   for (const k of keys) {
     const v = localStorage.getItem(k);
@@ -54,7 +52,7 @@ export async function apiFetch(
     body: isFormData ? body : body ? JSON.stringify(body) : undefined,
     cache: 'no-store',
     signal,
-    ...(token ? {} : { credentials: 'include' }), // cookie fallback
+    ...(token ? {} : { credentials: 'include' }),
   });
 
   if (raw) return res;

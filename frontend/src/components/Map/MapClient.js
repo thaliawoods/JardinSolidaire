@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 
-// Load react-leaflet only on the client
 const RL = {
   MapContainer: dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false }),
   TileLayer:    dynamic(() => import('react-leaflet').then(m => m.TileLayer),    { ssr: false }),
@@ -12,11 +11,9 @@ const RL = {
 };
 
 export default function MapClient({ center = [48.8566, 2.3522], zoom = 12, markers = [] }) {
-  // Defer any 'window' or 'leaflet' usage until mounted
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Configure Leaflet default icons when in the browser
     (async () => {
       if (typeof window === 'undefined') return;
       const L = (await import('leaflet')).default;
