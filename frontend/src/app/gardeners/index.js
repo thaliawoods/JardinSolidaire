@@ -368,7 +368,7 @@ export default function GardenersList() {
                       <button
                         type="button"
                         onClick={(e) => { e.preventDefault(); toggleFavorite(g); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', padding: 0, color: favbed ? 'var(--green)' : 'var(--muted)', lineHeight: 1 }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: 0, color: favbed ? '#ec4899' : 'var(--border)', lineHeight: 1 }}
                         aria-label={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                         title={favbed ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                       >

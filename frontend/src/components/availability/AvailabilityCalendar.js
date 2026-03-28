@@ -323,8 +323,8 @@ export default function AvailabilityCalendar({
                   <div style={{ position: 'absolute', left: '0.5rem', bottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     {count > 0 ? (
                       <>
-                        <span style={{ display: 'inline-block', width: '6px', height: '6px', background: 'var(--green)', borderRadius: '50%' }} aria-hidden />
-                        <span style={{ fontSize: '0.6875rem', color: 'var(--muted)' }}>{count} créneau{count > 1 ? 'x' : ''}</span>
+                        <span style={{ display: 'inline-block', width: '6px', height: '6px', background: 'var(--green)', borderRadius: '50%', flexShrink: 0 }} aria-hidden />
+                        <span style={{ fontSize: '0.6875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{count}</span>
                       </>
                     ) : (
                       <span style={{ fontSize: '0.6875rem', color: 'var(--border)' }}>—</span>
