@@ -31,7 +31,6 @@ export default function HomeText() {
 
   return (
     <>
-      {/* ── Hero ── flush under navbar ── */}
       <section style={{
         borderBottom: '1px solid var(--border)',
         overflow: 'hidden',
@@ -41,7 +40,6 @@ export default function HomeText() {
         display: 'flex',
         alignItems: 'center',
       }}>
-        {/* Ivy — top-right corner, mirrored, shifted down so top is visible */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/assets/ivy.png"
@@ -94,7 +92,6 @@ export default function HomeText() {
         </div>
       </section>
 
-      {/* ── Stats ─────────────────────────────────────────── */}
       <section style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-5xl mx-auto px-6 md:px-10 py-10">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
@@ -105,7 +102,6 @@ export default function HomeText() {
         </div>
       </section>
 
-      {/* ── About ─────────────────────────────────────────── */}
       <section style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-5xl mx-auto px-6 md:px-10 py-14">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '4rem', alignItems: 'start' }}>
@@ -138,7 +134,6 @@ export default function HomeText() {
         </div>
       </section>
 
-      {/* ── How it works ─────────────────────────────────── */}
       <section style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-5xl mx-auto px-6 md:px-10 py-14">
           <div
@@ -180,7 +175,6 @@ export default function HomeText() {
         </div>
       </section>
 
-      {/* ── Map ──────────────────────────────────────────── */}
       <HomeMapSection />
     </>
   );

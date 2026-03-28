@@ -18,7 +18,7 @@ export default function GardenOwnerCard({ garden, onChanged }) {
         // optional: hard delete a draft
         await apiFetch(path, { method: 'DELETE' });
       }
-      onChanged?.(); // parent should re-fetch the list
+      onChanged?.();
     } catch (e) {
       alert(e?.message || 'Échec de la mise à jour.');
     }

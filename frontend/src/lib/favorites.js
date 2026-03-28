@@ -1,9 +1,5 @@
-// /frontend/src/lib/favorites.js
-
-const LEGACY_KEY = 'js:favorites'; // ancien key global (si tu en avais un)
-const KEY_PREFIX = 'js:favorites:'; // nouveau key par user
-
-/* ---------------- helpers ---------------- */
+const LEGACY_KEY = 'js:favorites';
+const KEY_PREFIX = 'js:favorites:';
 
 function safeJsonParse(s, fallback) {
   try {
@@ -13,14 +9,6 @@ function safeJsonParse(s, fallback) {
   }
 }
 
-/**
- * Essaie de récupérer un userId depuis :
- * - localStorage.user / localStorage.currentUser / localStorage.auth
- * - ou depuis un JWT stocké (token/jwt/accessToken)
- *
- * 👉 adapte les noms si ton projet stocke autrement,
- * mais ce helper couvre pas mal de cas.
- */
 function getCurrentUserId() {
   if (typeof window === 'undefined') return null;
 
@@ -33,7 +21,6 @@ function getCurrentUserId() {
     if (obj?.user?.id != null) return String(obj.user.id);
   }
 
-  // auth object
   const authRaw = window.localStorage.getItem('auth');
   if (authRaw) {
     const auth = safeJsonParse(authRaw, null);
@@ -45,7 +32,6 @@ function getCurrentUserId() {
     }
   }
 
-  // token alone
   const tokenCandidates = ['token', 'jwt', 'accessToken'];
   for (const k of tokenCandidates) {
     const t = window.localStorage.getItem(k);
@@ -76,12 +62,10 @@ function getUserIdFromJwt(token) {
   const obj = safeJsonParse(payload, null);
   if (!obj) return null;
 
-  // champs fréquents
   if (obj.userId != null) return String(obj.userId);
   if (obj.id != null) return String(obj.id);
   if (obj.sub != null) return String(obj.sub);
 
-  // parfois: { user: { id } }
   if (obj.user?.id != null) return String(obj.user.id);
 
   return null;
@@ -97,21 +81,17 @@ function readStore(userId) {
 
   const key = getStorageKey(userId);
 
-  // Migration: si le nouveau key est vide mais l'ancien existe, on copie
   const existing = window.localStorage.getItem(key);
   if (!existing) {
     const legacy = window.localStorage.getItem(LEGACY_KEY);
     if (legacy) {
       window.localStorage.setItem(key, legacy);
-      // option: tu peux laisser l'ancien pour ne rien casser
-      // window.localStorage.removeItem(LEGACY_KEY);
     }
   }
 
   const raw = window.localStorage.getItem(key);
   const parsed = safeJsonParse(raw, null);
 
-  // format attendu: { gardens: [], gardeners: [] }
   if (parsed && typeof parsed === 'object') {
     return {
       gardens: Array.isArray(parsed.gardens) ? parsed.gardens : [],
@@ -133,8 +113,6 @@ function writeStore(next, userId) {
     })
   );
 }
-
-/* ---------------- public API (gardens) ---------------- */
 
 export function getFavGardens(userId) {
   return readStore(userId).gardens;
@@ -163,8 +141,6 @@ export function isFavGarden(id, userId) {
   return store.gardens.some((g) => String(g.id) === String(id));
 }
 
-/* ---------------- public API (gardeners) ---------------- */
-
 export function getFavGardeners(userId) {
   return readStore(userId).gardeners;
 }
@@ -192,13 +168,10 @@ export function isFavGardener(id, userId) {
   return store.gardeners.some((p) => String(p.id) === String(id));
 }
 
-/* ---------------- misc ---------------- */
-
 export function clearAllFavorites(userId) {
   writeStore({ gardens: [], gardeners: [] }, userId);
 }
 
-// si tu veux explicitement connaître l'userId détecté côté UI
 export function getFavoritesOwnerId() {
   return getCurrentUserId() || 'guest';
 }

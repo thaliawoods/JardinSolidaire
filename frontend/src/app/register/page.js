@@ -43,7 +43,6 @@ export default function RegisterPage() {
     e.preventDefault();
     setErr('');
 
-    // sécurité côté front (UX)
     if (!pwd.ok) {
       setErr('password_too_weak');
       return;

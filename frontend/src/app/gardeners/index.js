@@ -10,7 +10,6 @@ const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 const BRAND_GREEN = '#16a34a';
 const BRAND_PINK = '#E3107D';
 
-/* ----- small utils ----- */
 function isAbort(err) {
   return (
     err?.name === 'AbortError' ||
@@ -28,7 +27,6 @@ function useDebounced(value, ms = 300) {
   return v;
 }
 
-/* ----- helpers ----- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -107,7 +105,6 @@ function normalizeGardeners(raw) {
   });
 }
 
-/* ----- robust fetch over multiple endpoints ----- */
 async function fetchGardeners(params) {
   const { search, skill, signal } = params || {};
   const candidates = [
@@ -153,7 +150,6 @@ export default function GardenersList() {
   const [err, setErr] = useState('');
   const [isAuthed, setIsAuthed] = useState(false);
 
-  // avatar cache-buster
   const [avatarV, setAvatarV] = useState(0);
   useEffect(() => {
     const onStorage = (e) => {
@@ -163,7 +159,6 @@ export default function GardenersList() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  // auth watcher
   useEffect(() => {
     const sync = () => setIsAuthed(!!getAnyToken());
     sync();
@@ -240,7 +235,6 @@ export default function GardenersList() {
     <main style={{ minHeight: '100vh', background: '#fff', padding: '48px 24px' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 32 }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
             Les jardinier·es
@@ -256,7 +250,6 @@ export default function GardenersList() {
           )}
         </div>
 
-        {/* Filters */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 40 }}>
           <input
             type="text"
@@ -311,22 +304,18 @@ export default function GardenersList() {
           </button>
         </div>
 
-        {/* Loading */}
         {loading && (
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
         )}
 
-        {/* Error */}
         {!!err && !loading && (
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{err}</p>
         )}
 
-        {/* Empty */}
         {!loading && !err && filtered.length === 0 && (
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Aucun·e jardinier·e trouvé·e.</p>
         )}
 
-        {/* List */}
         <div>
           {filtered.map((g) => {
             const fallback = greenPlaceholder(g.firstName, g.lastName);
@@ -346,7 +335,6 @@ export default function GardenersList() {
                   gap: 16,
                 }}
               >
-                {/* Avatar */}
                 <div style={{ flexShrink: 0, width: 50, height: 50, overflow: 'hidden', borderRadius: 2 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -357,7 +345,6 @@ export default function GardenersList() {
                   />
                 </div>
 
-                {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--foreground)', fontWeight: 400 }}>
@@ -398,7 +385,6 @@ export default function GardenersList() {
                   </div>
                 </div>
 
-                {/* Link */}
                 <Link
                   href={`/gardeners/${g.id}`}
                   style={{ flexShrink: 0, fontSize: '0.8125rem', color: 'var(--muted)', textDecoration: 'none', whiteSpace: 'nowrap' }}

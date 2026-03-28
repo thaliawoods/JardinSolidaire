@@ -17,7 +17,6 @@ export default function BookingStatusBadge({ status }) {
   const s = normalizeStatus(status);
 
   const ui = useMemo(() => {
-    // style + label
     if (s === 'confirmed') {
       return {
         label: STATUS_LABEL_FR.confirmed,
@@ -36,7 +35,6 @@ export default function BookingStatusBadge({ status }) {
         className: 'bg-green-50 text-green-700 ring-1 ring-green-200',
       };
     }
-    // pending + fallback
     return {
       label: STATUS_LABEL_FR.pending,
       className: 'bg-gray-50 text-gray-700 ring-1 ring-gray-200',

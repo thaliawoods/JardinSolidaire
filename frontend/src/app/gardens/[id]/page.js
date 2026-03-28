@@ -1,7 +1,3 @@
-// /Users/thaliawoods/Documents/Ada/JardinSolidaire/JardinSolidaire/frontend/src/app/gardens/[id]/page.js
-// - bouton HERO "Contacter" -> ouvre /messages/[ownerUserId]
-// - "Voir le profil →" as a text link in owner section
-
 'use client';
 
 import React, { use, useEffect, useMemo, useState } from 'react';
@@ -18,7 +14,6 @@ const AvailabilityCalendar = dynamic(
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
-/* ---------- media helpers ---------- */
 function resolveMedia(u) {
   if (!u) return '';
   const s = String(u).trim();
@@ -47,7 +42,6 @@ function greenAvatar(first, last) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/* ---------- normalizer ---------- */
 function normalizeGarden(payload) {
   if (!payload) return null;
 
@@ -91,7 +85,6 @@ function normalizeGarden(payload) {
       payload.ownerDemoId ??
       payload.proprietaireDemoId ??
       null,
-    // si ton API expose ownerUserId sur le jardin
     ownerUserId:
       payload.ownerUserId ??
       payload.id_proprietaire ??
@@ -153,7 +146,6 @@ export default function GardenDetailPage({ params }) {
     return owner.avatarUrl || greenAvatar(owner.firstName, owner.lastName);
   }, [owner]);
 
-  // owner profile link
   const ownerProfileIdRaw =
     garden?.demoOwnerId ??
     owner?.ownerId ??
@@ -163,7 +155,6 @@ export default function GardenDetailPage({ params }) {
 
   const ownerHref = ownerProfileIdRaw ? `/owners/${ownerProfileIdRaw}` : null;
 
-  // userId for chat thread (messages are by USER id)
   const ownerUserIdForChat = useMemo(() => {
     const raw =
       garden?.ownerUserId ?? // best if you have it on garden
@@ -203,14 +194,12 @@ export default function GardenDetailPage({ params }) {
 
   const hero = garden.photos?.[0] || '';
 
-  // Build the meta line: address · kind · needs
   const metaParts = [garden.address, garden.kind, garden.needs].filter(Boolean);
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
       <main style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-        {/* Back link */}
         <div>
           <Link
             href="/gardens"
@@ -221,7 +210,6 @@ export default function GardenDetailPage({ params }) {
           </Link>
         </div>
 
-        {/* HERO IMAGE */}
         <div style={{ position: 'relative' }}>
           {hero ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -252,7 +240,6 @@ export default function GardenDetailPage({ params }) {
             </button>
           )}
 
-          {/* Title and meta below image */}
           <div style={{ paddingTop: '1.25rem' }}>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
               {garden.title}
@@ -266,7 +253,6 @@ export default function GardenDetailPage({ params }) {
           </div>
         </div>
 
-        {/* CTA row */}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '1rem 0' }}>
           <p style={{ fontSize: '0.875rem', color: 'var(--muted)', margin: 0 }}>
             Écris au propriétaire pour poser une question ou proposer un créneau.
@@ -291,10 +277,8 @@ export default function GardenDetailPage({ params }) {
           )}
         </div>
 
-        {/* Content grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)', gap: '1.5rem', alignItems: 'start' }}>
 
-          {/* À propos */}
           <section style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
             <p style={{ fontSize: '0.6875rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.875rem' }}>
               À propos du jardin
@@ -332,7 +316,6 @@ export default function GardenDetailPage({ params }) {
             )}
           </section>
 
-          {/* Propriétaire */}
           <aside style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
             <p style={{ fontSize: '0.6875rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.875rem' }}>
               Propriétaire
@@ -343,7 +326,6 @@ export default function GardenDetailPage({ params }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-                  {/* Avatar */}
                   <div style={{ width: '48px', height: '48px', flexShrink: 0, overflow: 'hidden' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -383,7 +365,6 @@ export default function GardenDetailPage({ params }) {
           </aside>
         </div>
 
-        {/* Availability Calendar — full width */}
         <div>
           <AvailabilityCalendar
             mode="garden"

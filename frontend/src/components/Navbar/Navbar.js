@@ -74,7 +74,6 @@ export default function Navbar() {
     return full || user.email || '';
   }, [user]);
 
-  /* ── close on outside click ── */
   useEffect(() => {
     if (!menuOpen) return;
     function handle(e) {
@@ -84,7 +83,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handle);
   }, [menuOpen]);
 
-  /* ── session hydration ── */
   useEffect(() => {
     let alive = true;
     async function hydrate() {
@@ -114,7 +112,6 @@ export default function Navbar() {
     return () => { alive = false; };
   }, []);
 
-  /* ── role change events ── */
   useEffect(() => {
     const cached = sessionStorage.getItem('role') || localStorage.getItem('role');
     if (cached && !role) setRole(cached);
@@ -168,7 +165,6 @@ export default function Navbar() {
     window.location.href = '/';
   }
 
-  /* ── unread messages ── */
   useEffect(() => {
     let alive = true;
     async function load() {
@@ -184,7 +180,6 @@ export default function Navbar() {
     return () => { alive = false; window.removeEventListener('storage', onStorage); };
   }, [user, role]);
 
-  /* ── owner inbox ── */
   const loadInboxUnread = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -208,12 +203,10 @@ export default function Navbar() {
     return () => { clearInterval(t); window.removeEventListener('storage', onStorage); };
   }, [loadInboxUnread]);
 
-  /* ── render ── */
   return (
     <nav style={NAV_STYLE} role="navigation" aria-label="Navigation principale">
       <div style={INNER}>
 
-        {/* Wordmark */}
         <Link href="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
           <span style={{
             fontFamily: 'var(--font-display)',
@@ -227,10 +220,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Right side — always visible */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', minWidth: 0 }}>
 
-          {/* Role switcher — desktop only */}
           {user && (
             <div className="hidden md:flex" style={{ alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
               <button onClick={() => switchRole('OWNER')} type="button" style={{ ...LINK, textDecoration: role === 'OWNER' ? 'underline' : 'none', textUnderlineOffset: '3px', color: role === 'OWNER' ? 'var(--foreground)' : 'var(--muted)' }}>
@@ -243,11 +234,9 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Nav links — desktop only */}
           <Link href="/gardens" className="hidden md:inline" style={{ ...LINK_MUTED, whiteSpace: 'nowrap', ...(pathname?.startsWith('/gardens') ? { color: 'var(--green)', fontWeight: 600 } : {}) }}>Les jardins</Link>
           <Link href="/gardeners" className="hidden md:inline" style={{ ...LINK_MUTED, whiteSpace: 'nowrap', ...(pathname?.startsWith('/gardeners') ? { color: 'var(--green)', fontWeight: 600 } : {}) }}>Les jardinier·es</Link>
 
-          {/* Auth links (guest) — desktop only */}
           {!loadingMe && !user && (
             <div className="hidden md:flex" style={{ gap: '1.25rem', alignItems: 'center' }}>
               <Link href="/login" style={{ ...LINK, textDecoration: pathname === '/login' ? 'underline' : 'none', textUnderlineOffset: '3px' }}>Se connecter</Link>
@@ -255,12 +244,10 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Connected user name — desktop only */}
           {user && displayName && (
             <span className="hidden md:inline" style={{ fontSize: '0.875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{displayName}</span>
           )}
 
-          {/* Role switcher — mobile only, compact P / J */}
           {user && (
             <div className="flex md:hidden" style={{ alignItems: 'center', gap: '0.375rem', fontSize: '0.8rem' }}>
               <button onClick={() => switchRole('OWNER')} type="button" style={{ ...LINK, fontSize: '0.8rem', letterSpacing: '0.04em', textDecoration: role === 'OWNER' ? 'underline' : 'none', textUnderlineOffset: '3px', color: role === 'OWNER' ? 'var(--foreground)' : 'var(--muted)' }}>
@@ -273,7 +260,6 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Messages icon — always visible when logged in */}
           {user && (
             <Link href="/messages" style={{ ...LINK, position: 'relative', zIndex: 200, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }} title="Messagerie">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -284,7 +270,6 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Inbox badge — desktop only */}
           {user && role === 'OWNER' && (
             <Link href="/owner/inbox" className="hidden md:inline" style={{ ...LINK, position: 'relative', whiteSpace: 'nowrap' }}>
               Demandes
@@ -294,7 +279,6 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Menu toggle — always visible */}
           <div style={{ position: 'relative', flexShrink: 0 }} ref={menuRef}>
             <button
               onClick={() => setMenuOpen(v => !v)}
@@ -355,7 +339,6 @@ function DropdownMenu({ user, displayName, role, unread, inboxUnread, onClose, o
 
   return (
     <div style={panelStyle} role="menu">
-      {/* Nav links — mobile only */}
       <Link href="/gardens" className="md:hidden" style={itemStyle} onClick={onClose}>Les jardins</Link>
       <Link href="/gardeners" className="md:hidden" style={itemStyle} onClick={onClose}>Les jardinier·es</Link>
 

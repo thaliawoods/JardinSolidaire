@@ -54,7 +54,6 @@ export default function OwnerInboxPage() {
       await fn(id);
       await load();
 
-      // ✅ refresh navbar badge (other tabs/windows)
       try {
         localStorage.setItem('bookingRequestsChanged', String(Date.now()));
       } catch {}
@@ -99,7 +98,6 @@ export default function OwnerInboxPage() {
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)', padding: '48px 24px' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
             Demandes
@@ -118,12 +116,10 @@ export default function OwnerInboxPage() {
           </p>
         )}
 
-        {/* Error */}
         {err && (
           <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 20 }}>{err}</p>
         )}
 
-        {/* Tabs */}
         <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 32, marginTop: 24 }}>
           {tabs.map((k) => (
             <button
@@ -148,17 +144,14 @@ export default function OwnerInboxPage() {
           ))}
         </div>
 
-        {/* Loading */}
         {loading && (
           <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>Chargement…</p>
         )}
 
-        {/* Empty */}
         {!loading && !items.length && !err && (
           <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{emptyLabel(filter)}</p>
         )}
 
-        {/* List */}
         {!loading && items.length > 0 && (
           <div>
             {items.map((r) => {
@@ -177,7 +170,6 @@ export default function OwnerInboxPage() {
                     alignItems: 'flex-start',
                   }}
                 >
-                  {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
                       <span style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--foreground)' }}>
@@ -219,7 +211,6 @@ export default function OwnerInboxPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
                     <button
                       type="button"
