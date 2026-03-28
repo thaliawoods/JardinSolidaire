@@ -1,9 +1,8 @@
-// src/lib/auth.js
 export function persistAuth(payload) {
   try {
     if (!payload?.token) return;
-    localStorage.setItem('token', payload.token);   // apiFetch reads this key
-    localStorage.setItem('justRegistered', '1');    // used by Dashboard for first-time form
+    localStorage.setItem('token', payload.token);
+    localStorage.setItem('justRegistered', '1');
   } catch {}
 }
 

@@ -94,7 +94,6 @@ export default function Page() {
           <Link style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }} href="/gardeners">Nos jardinier·es</Link>
         </div>
 
-        {/* FAQ */}
         <div style={{ marginTop: '2rem' }} id="faq">
           {faqs.map((item, i) => (
             <details

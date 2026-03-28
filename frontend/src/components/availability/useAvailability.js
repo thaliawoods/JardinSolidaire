@@ -4,9 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
-/* -------------------------------------------------------
- * Small helpers
- * ----------------------------------------------------- */
 function toISODate(d) {
   const x = new Date(d);
   const y = x.getFullYear();
@@ -17,8 +14,8 @@ function toISODate(d) {
 
 function mondayOf(date) {
   const d = new Date(date);
-  const day = d.getDay(); // 0..6 (Sun..Sat)
-  const diff = (day + 6) % 7; // 0 for Monday, 6 for Sunday
+  const day = d.getDay();
+  const diff = (day + 6) % 7;
   d.setDate(d.getDate() - diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -38,10 +35,6 @@ function labelFor(date) {
   return `${wd}. ${day} ${mo}`;
 }
 
-/* -------------------------------------------------------
- * useWeek(cursorDate)
- * Returns: { start: Date, end: Date, fromISO, toISO, days: [...] }
- * ----------------------------------------------------- */
 export function useWeek(cursor) {
   const start = useMemo(() => mondayOf(cursor || new Date()), [cursor]);
   const end = useMemo(() => addDays(start, 7), [start]);
@@ -63,14 +56,11 @@ export function useWeek(cursor) {
     start,
     end,
     fromISO: toISODate(start),
-    toISO: toISODate(end), // exclusive
+    toISO: toISODate(end),
     days,
   };
 }
 
-/* -------------------------------------------------------
- * Centralized fetch with error surfacing
- * ----------------------------------------------------- */
 async function authFetch(url, opts = {}) {
   const res = await fetch(url, opts);
   let body;
@@ -89,9 +79,6 @@ async function authFetch(url, opts = {}) {
   return body;
 }
 
-/* -------------------------------------------------------
- * Factory for garden/gardener availability hooks
- * ----------------------------------------------------- */
 function makeAvailabilityHook(kind) {
   const plural = kind === 'garden' ? 'gardens' : 'gardeners';
 

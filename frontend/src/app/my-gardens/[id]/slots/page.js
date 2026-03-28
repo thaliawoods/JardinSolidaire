@@ -66,7 +66,6 @@ export default function SlotsPage() {
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)', padding: '48px 24px' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
           <div>
             <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', margin: '0 0 0.75rem' }}>
@@ -89,7 +88,6 @@ export default function SlotsPage() {
           </div>
         </div>
 
-        {/* Feedback */}
         {err && (
           <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626', margin: '1.5rem 0' }}>
             {err}
@@ -101,7 +99,6 @@ export default function SlotsPage() {
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleCreateSlot} style={{ border: '1px solid var(--border)', padding: '1.5rem', marginTop: '2rem' }}>
           <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>
             Nouveau créneau libre
@@ -159,7 +156,6 @@ export default function SlotsPage() {
           </div>
         </form>
 
-        {/* Calendar */}
         <div style={{ border: '1px solid var(--border)', padding: '1.5rem', marginTop: '1.5rem' }}>
           <AvailabilityCalendar
             mode="garden"

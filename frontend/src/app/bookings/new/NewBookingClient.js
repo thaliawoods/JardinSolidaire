@@ -123,7 +123,6 @@ function NewBookingInner() {
   return (
     <div className="min-h-screen px-6 py-10 bg-white">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-green-700">

@@ -11,7 +11,6 @@ const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const BRAND_GREEN = '#16a34a';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
-/* -------- media helpers -------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -41,7 +40,6 @@ function greenPlaceholder(first, last) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/* pick best avatar source consistently */
 function pickAvatar(raw) {
   return (
     raw?.avatarUrl ??
@@ -66,7 +64,6 @@ function normalizeSkills(maybeSkills) {
 export default function GardenerClient({ id: idProp }) {
   const pathname = usePathname();
 
-  // ✅ fallback ultime : /gardeners/33 -> "33"
   const idFromPath = (pathname || '').split('/').filter(Boolean).pop();
   const id = idProp ?? idFromPath;
 
@@ -95,7 +92,6 @@ export default function GardenerClient({ id: idProp }) {
   console.log('ID used:', id);
   console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
 
-  // reload on cross-tab updates
   useEffect(() => {
     const onStorage = (e) => {
       if (e?.key === 'gardenerUpdated' || e?.key === 'userUpdated') {
@@ -109,7 +105,7 @@ export default function GardenerClient({ id: idProp }) {
   }, []);
 
   async function load() {
-    if (!id || !API_BASE) return; // ✅ évite /undefined + évite base vide
+    if (!id || !API_BASE) return;
     try {
       setLoading(true);
       setError('');
@@ -154,7 +150,6 @@ export default function GardenerClient({ id: idProp }) {
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
       <main style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px' }}>
 
-        {/* Back link */}
         <div style={{ marginBottom: 32 }}>
           <Link
             href="/gardeners"
@@ -164,19 +159,16 @@ export default function GardenerClient({ id: idProp }) {
           </Link>
         </div>
 
-        {/* Loading */}
         {loading && (
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
         )}
 
-        {/* Error */}
         {!!error && !loading && (
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{error}</p>
         )}
 
         {gardener && (
           <>
-            {/* Avatar + name + skills */}
             <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', marginBottom: 32 }}>
               <div style={{ flexShrink: 0, width: 80, height: 80, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -237,7 +229,6 @@ export default function GardenerClient({ id: idProp }) {
               </div>
             </div>
 
-            {/* Meta */}
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, marginBottom: 32, display: 'flex', flexWrap: 'wrap', gap: 24 }}>
               <div style={{ fontSize: '0.875rem' }}>
                 <span style={{ color: 'var(--muted)', marginRight: 6 }}>Localisation :</span>
@@ -251,7 +242,6 @@ export default function GardenerClient({ id: idProp }) {
               </div>
             </div>
 
-            {/* Présentation */}
             <section style={{ marginBottom: 40 }}>
               <p style={{ fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--green)', marginBottom: 10, margin: '0 0 10px 0' }}>
                 Présentation
@@ -261,7 +251,6 @@ export default function GardenerClient({ id: idProp }) {
               </p>
             </section>
 
-            {/* Availability */}
             <section>
               <AvailabilityCalendar mode="gardener" ownerId={id} token={getAnyToken()} />
             </section>

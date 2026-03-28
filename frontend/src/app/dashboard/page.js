@@ -12,7 +12,6 @@ const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
 export const dynamic = 'force-dynamic';
 
-/* ---------------- utils ---------------- */
 function resolveMedia(u) {
   if (!u) return '';
   const s = String(u).trim();
@@ -42,7 +41,6 @@ function greenAvatar(first, last) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/** Tell navbar + other tabs about role changes */
 function broadcastRoleChange(role) {
   try {
     window.dispatchEvent(new CustomEvent('role:changed', { detail: role }));
@@ -52,14 +50,11 @@ function broadcastRoleChange(role) {
   } catch {}
 }
 
-/* ---------------- helpers to qualify profiles ---------------- */
 function normalizeProfile(p) {
-  // A profile is real if it came back as an object from the API (it has an id)
   if (!p || typeof p !== 'object') return null;
   return p;
 }
 
-/* ---------------- validators ---------------- */
 function isValidPhone(phone) {
   if (!phone) return true; // optional
   const p = String(phone).trim();
@@ -75,7 +70,6 @@ function clampText(s, max) {
   return v.length > max ? v.slice(0, max) : v;
 }
 
-/* ---------------- page ---------------- */
 export default function Dashboard() {
   const router = useRouter();
   const [me, setMe] = useState(null);
@@ -194,7 +188,6 @@ export default function Dashboard() {
     };
   }, [loadMe]);
 
-  /* -------- role switching -------- */
   async function setActiveRole(next) {
     try {
       await apiFetch('/api/me/role', { method: 'PUT', body: { role: next } });
@@ -207,7 +200,6 @@ export default function Dashboard() {
     }
   }
 
-  /* -------- user form -------- */
   const onUserChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
@@ -340,7 +332,6 @@ export default function Dashboard() {
     }
   }
 
-  /* -------- publish toggles -------- */
   async function togglePublish(kind, next) {
     try {
       setBusy(true);
@@ -363,7 +354,6 @@ export default function Dashboard() {
 
   const hasIdentity = useMemo(() => !!(me?.firstName?.trim() && me?.lastName?.trim()), [me?.firstName, me?.lastName]);
 
-  /* ---------------- styles ---------------- */
   const s = {
     page: {
       minHeight: '100vh',

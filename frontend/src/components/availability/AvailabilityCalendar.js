@@ -1,4 +1,3 @@
-// /Users/thaliawoods/Documents/Ada/JardinSolidaire/JardinSolidaire/frontend/src/components/availability/AvailabilityCalendar.js
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -227,7 +226,6 @@ export default function AvailabilityCalendar({
       ? 'Choisis un jour, puis demande un créneau.'
       : 'Choisis un jour dans le calendrier, puis gère les créneaux.');
 
-  /* ── shared styles ── */
   const flatBtn = {
     background: '#fff',
     border: '1px solid var(--border)',
@@ -254,7 +252,6 @@ export default function AvailabilityCalendar({
 
   return (
     <div style={{ marginTop: '2rem' }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
         <div>
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.2 }}>
@@ -282,12 +279,9 @@ export default function AvailabilityCalendar({
         </div>
       </div>
 
-      {/* Content grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
 
-        {/* Calendar grid */}
         <section style={{ border: '1px solid var(--border)', background: '#fff', overflow: 'hidden' }} aria-label="Calendrier mensuel">
-          {/* Week headers */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
             {weekDays.map((d) => (
               <div key={d} style={{ padding: '0.5rem 0', textAlign: 'center', fontSize: '0.6875rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -296,7 +290,6 @@ export default function AvailabilityCalendar({
             ))}
           </div>
 
-          {/* Day cells */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
             {monthGrid.days.map((d) => {
               const isSelected = d.iso === selectedISO;
@@ -347,7 +340,6 @@ export default function AvailabilityCalendar({
           </div>
         </section>
 
-        {/* Day panel */}
         <section style={{ border: '1px solid var(--border)', background: '#fff', padding: '1.25rem' }} aria-label="Créneaux du jour">
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
             <div>
@@ -375,7 +367,6 @@ export default function AvailabilityCalendar({
             </button>
           </div>
 
-          {/* toast */}
           {toast && (
             <div style={{
               marginBottom: '1rem',
@@ -401,7 +392,6 @@ export default function AvailabilityCalendar({
             </div>
           )}
 
-          {/* form */}
           {addOpen && (
             <div style={{ border: '1px solid var(--border)', padding: '1rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: intent !== 'book' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '0.75rem' }}>
@@ -455,7 +445,6 @@ export default function AvailabilityCalendar({
             </div>
           )}
 
-          {/* list */}
           {!loading && !error && (
             <div>
               {intent === 'book' ? (

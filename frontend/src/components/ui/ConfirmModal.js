@@ -28,7 +28,6 @@ export default function ConfirmModal({
       aria-modal="true"
       role="dialog"
     >
-      {/* overlay */}
       <button
         type="button"
         style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer' }}
@@ -36,7 +35,6 @@ export default function ConfirmModal({
         aria-label="Fermer"
       />
 
-      {/* panel */}
       <div style={{ position: 'relative', width: '100%', maxWidth: 480, background: '#fff', border: '1px solid var(--border)', padding: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
           <div style={{ minWidth: 0 }}>

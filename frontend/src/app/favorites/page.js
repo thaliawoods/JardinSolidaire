@@ -14,7 +14,6 @@ import {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
-/* ---------------- utils ---------------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -91,7 +90,6 @@ async function fetchGardenCoverById(id) {
   return null;
 }
 
-/* ---------------- page ---------------- */
 export default function FavoritesPage() {
   const [gardens, setGardens] = useState([]);
   const [gardeners, setGardeners] = useState([]);
@@ -163,7 +161,6 @@ export default function FavoritesPage() {
 
   return (
     <main style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
-      {/* Header */}
       <div style={{ borderBottom: '1px solid var(--border)', padding: '48px 24px 32px' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
@@ -202,7 +199,6 @@ export default function FavoritesPage() {
             )}
           </div>
 
-          {/* Tabs */}
           <div style={{ marginTop: 28, display: 'flex', gap: 24 }}>
             <button
               onClick={() => setTab('gardens')}
@@ -239,10 +235,8 @@ export default function FavoritesPage() {
         </div>
       </div>
 
-      {/* Content */}
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px' }}>
 
-        {/* Gardens tab */}
         {tab === 'gardens' && (
           <section>
             {gardens.length === 0 ? (
@@ -270,7 +264,6 @@ export default function FavoritesPage() {
                         alignItems: 'flex-start',
                       }}
                     >
-                      {/* Thumbnail */}
                       <Link href={`/gardens/${g.id}`} style={{ flexShrink: 0 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -281,7 +274,6 @@ export default function FavoritesPage() {
                         />
                       </Link>
 
-                      {/* Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <Link
                           href={`/gardens/${g.id}`}
@@ -295,7 +287,6 @@ export default function FavoritesPage() {
                         )}
                       </div>
 
-                      {/* Remove */}
                       <button
                         onClick={() => removeGarden(g.id)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '1rem', padding: '0 0 0 8px', lineHeight: 1, flexShrink: 0 }}
@@ -312,7 +303,6 @@ export default function FavoritesPage() {
           </section>
         )}
 
-        {/* Gardeners tab */}
         {tab === 'gardeners' && (
           <section>
             {gardeners.length === 0 ? (
@@ -340,7 +330,6 @@ export default function FavoritesPage() {
                         gap: 14,
                       }}
                     >
-                      {/* Avatar */}
                       <Link href={`/gardeners/${p.id}`} style={{ flexShrink: 0 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -351,7 +340,6 @@ export default function FavoritesPage() {
                         />
                       </Link>
 
-                      {/* Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <Link
                           href={`/gardeners/${p.id}`}
@@ -367,7 +355,6 @@ export default function FavoritesPage() {
                         )}
                       </div>
 
-                      {/* Remove */}
                       <button
                         onClick={() => removeGardener(p.id)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '1rem', padding: '0 0 0 8px', lineHeight: 1, flexShrink: 0 }}

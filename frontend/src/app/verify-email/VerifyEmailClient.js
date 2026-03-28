@@ -44,7 +44,6 @@ export default function VerifyEmailClient() {
 
         if (!res.ok) {
           const err = data?.error || 'server_error';
-          // petits messages UX
           if (err === 'token_expired') {
             setStatus('error');
             setMessage("Ton lien a expiré. Réinscris-toi pour en recevoir un nouveau.");
@@ -65,7 +64,6 @@ export default function VerifyEmailClient() {
           return;
         }
 
-        // OK
         const msg = data?.message || 'email_verified';
         setStatus('success');
         setMessage(

@@ -137,7 +137,6 @@ export default function ThreadPage() {
     <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '2.5rem 2rem' }}>
 
-        {/* Header */}
         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
             <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)', marginBottom: '0.3rem' }}>Messagerie</p>
@@ -158,7 +157,6 @@ export default function ThreadPage() {
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
         ) : (
           <>
-            {/* Thread */}
             <div style={{ border: '1px solid var(--border)', height: '60vh', overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
               {messages.length === 0 && (
                 <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 'auto' }}>Aucun message pour l&apos;instant.</p>
@@ -189,7 +187,6 @@ export default function ThreadPage() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Composer */}
             <form onSubmit={onSend} style={{ display: 'flex', gap: '0.75rem' }}>
               <input
                 style={{ ...INPUT, flex: 1 }}
