@@ -6,33 +6,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { getThread, sendMessage, markThreadRead } from '@/lib/messages';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const BRAND_GREEN = '#16a34a';
 
-function Skeleton() {
-  return (
-    <div className="animate-pulse space-y-4">
-      <div className="h-10 bg-gray-100 rounded-2xl" />
-      <div className="h-[55vh] bg-gray-100 rounded-2xl" />
-      <div className="h-12 bg-gray-100 rounded-2xl" />
-    </div>
-  );
-}
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const BTN_PRIMARY = { padding: '0.6rem 1.25rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', letterSpacing: '0.01em' };
+const BTN_SECONDARY = { padding: '0.6rem 1.25rem', background: 'none', color: 'var(--foreground)', border: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', letterSpacing: '0.01em' };
 
-/* -----------------------------
-   Fetch "other" profile (name)
-------------------------------*/
 function normalizePerson(raw, fallbackUserId) {
   if (!raw) return null;
-
-  // parfois c’est enveloppé (owner/user/etc.), parfois direct
   const base = raw.user || raw.owner || raw.gardener || raw.utilisateur || raw;
-
   const firstName = base.firstName ?? base.prenom ?? '';
   const lastName = base.lastName ?? base.nom ?? '';
-
-  // certains endpoints retournent userId (ex: owners)
   const uid = base.userId ?? base.user_id ?? base.id ?? fallbackUserId;
-
   return {
     id: String(base.id ?? ''),
     userId: String(uid ?? fallbackUserId ?? ''),
@@ -49,7 +33,6 @@ async function fetchOtherByUserId(userId) {
     `${API_BASE}/api/jardiniers/${userId}`,
     `${API_BASE}/api/proprietaires/${userId}`,
   ];
-
   for (const url of tries) {
     try {
       const res = await fetch(url, { cache: 'no-store' });
@@ -57,19 +40,14 @@ async function fetchOtherByUserId(userId) {
       const data = await res.json();
       const p = normalizePerson(data, userId);
       if (p?.firstName || p?.lastName) return p;
-    } catch {
-      // ignore et on tente le suivant
-    }
+    } catch {}
   }
   return null;
 }
 
 export default function ThreadPage() {
   const params = useParams();
-  // ✅ selon ton dossier: /messages/[userId] -> { userId }
-  // (si c’est /messages/[id], remplace par params?.id)
   const userId = params?.userId;
-
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
@@ -77,27 +55,22 @@ export default function ThreadPage() {
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState('');
   const [err, setErr] = useState('');
-
   const [otherProfile, setOtherProfile] = useState(null);
   const [loadingOther, setLoadingOther] = useState(true);
 
   const bottomRef = useRef(null);
 
-  // Fallback: essayer d'inférer depuis le thread (comme tu faisais)
   const inferredOther = useMemo(() => {
     const uid = Number(userId);
     const m = (messages || []).find(Boolean);
     if (!m || !uid) return { id: uid || 0, firstName: '—', lastName: '' };
-
     const u =
       (m.from?.id === uid ? m.from : null) ||
       (m.to?.id === uid ? m.to : null) ||
       { id: uid, firstName: '—', lastName: '' };
-
     return u;
   }, [messages, userId]);
 
-  // ✅ Nom final affiché: API d’abord, fallback ensuite
   const other = useMemo(() => {
     if (otherProfile?.firstName || otherProfile?.lastName) return otherProfile;
     return inferredOther;
@@ -105,21 +78,12 @@ export default function ThreadPage() {
 
   async function load({ silent = false } = {}) {
     try {
-      if (!silent) {
-        setLoading(true);
-        setErr('');
-      }
-
+      if (!silent) { setLoading(true); setErr(''); }
       const r = await getThread(userId);
       const list = r?.messages || [];
       setMessages(Array.isArray(list) ? list : []);
-
-      // ✅ mark only this thread as read
       await markThreadRead(userId);
-
-      try {
-        localStorage.setItem('messagesChanged', String(Date.now()));
-      } catch {}
+      try { localStorage.setItem('messagesChanged', String(Date.now())); } catch {}
     } catch (e) {
       setErr(e?.message || 'failed');
     } finally {
@@ -127,7 +91,6 @@ export default function ThreadPage() {
     }
   }
 
-  // ✅ charger messages + polling
   useEffect(() => {
     if (!userId) return;
     load();
@@ -136,10 +99,8 @@ export default function ThreadPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // ✅ charger le profil de la personne pour afficher le nom
   useEffect(() => {
     if (!userId) return;
-
     let alive = true;
     (async () => {
       setLoadingOther(true);
@@ -148,10 +109,7 @@ export default function ThreadPage() {
       setOtherProfile(p);
       setLoadingOther(false);
     })();
-
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [userId]);
 
   useEffect(() => {
@@ -161,7 +119,6 @@ export default function ThreadPage() {
   async function onSend(e) {
     e.preventDefault();
     if (!text.trim()) return;
-
     try {
       setBusy(true);
       await sendMessage({ toUserId: Number(userId), content: text.trim() });
@@ -174,90 +131,83 @@ export default function ThreadPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-green-700">Conversation</h1>
-            <p className="text-gray-600 mt-1">
-              Avec{' '}
-              <span className="font-semibold text-gray-900">
-                {loadingOther ? '…' : `${other.firstName} ${other.lastName}`.trim() || '—'}
-              </span>
-            </p>
-          </div>
+  const otherName = loadingOther ? '…' : (`${other.firstName} ${other.lastName}`.trim() || '—');
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.back()}
-              className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-            >
-              ← Retour
-            </button>
+  return (
+    <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '2.5rem 2rem' }}>
+
+        {/* Header */}
+        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem' }}>
+          <div>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--green)', marginBottom: '0.3rem' }}>Messagerie</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 400, color: 'var(--foreground)', margin: 0 }}>
+              {otherName}
+            </h1>
           </div>
+          <button onClick={() => router.back()} style={BTN_SECONDARY}>
+            ← Retour
+          </button>
         </div>
 
         {err && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
-            {err}
-          </div>
+          <p style={{ color: '#c0392b', fontSize: '0.875rem', marginBottom: '1rem', borderLeft: '2px solid #c0392b', paddingLeft: '0.75rem' }}>{err}</p>
         )}
 
         {loading ? (
-          <Skeleton />
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
         ) : (
           <>
-            {/* Messages card */}
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
-              <div className="h-[60vh] overflow-auto pr-2 space-y-3">
-                {(messages || []).map((m) => {
-                  // ⚠️ ton heuristic actuel (je le garde)
-                  const isMine = m.to?.id === Number(userId);
-
-                  return (
-                    <div
-                      key={m.id}
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 border ${
-                        isMine ? 'ml-auto bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      <div className="text-xs text-gray-500 mb-1">
-                        {m.from?.firstName} {m.from?.lastName} •{' '}
-                        {m.sentAt ? new Date(m.sentAt).toLocaleString() : ''}
-                      </div>
-                      <div className="text-gray-900 whitespace-pre-line">{m.content}</div>
-                    </div>
-                  );
-                })}
-                <div ref={bottomRef} />
-              </div>
+            {/* Thread */}
+            <div style={{ border: '1px solid var(--border)', height: '60vh', overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+              {messages.length === 0 && (
+                <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 'auto' }}>Aucun message pour l&apos;instant.</p>
+              )}
+              {messages.map((m) => {
+                const isMine = m.to?.id === Number(userId);
+                return (
+                  <div
+                    key={m.id}
+                    style={{
+                      maxWidth: '80%',
+                      alignSelf: isMine ? 'flex-end' : 'flex-start',
+                      borderLeft: isMine ? 'none' : '2px solid var(--green)',
+                      borderRight: isMine ? '2px solid var(--border)' : 'none',
+                      paddingLeft: isMine ? '0.75rem' : '0.75rem',
+                      paddingRight: isMine ? '0.75rem' : '0',
+                      paddingTop: '0.375rem',
+                      paddingBottom: '0.375rem',
+                    }}
+                  >
+                    <p style={{ fontSize: '0.7rem', color: 'var(--muted)', margin: '0 0 0.2rem' }}>
+                      {m.from?.firstName} {m.from?.lastName} · {m.sentAt ? new Date(m.sentAt).toLocaleString() : ''}
+                    </p>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--foreground)', margin: 0, whiteSpace: 'pre-line' }}>{m.content}</p>
+                  </div>
+                );
+              })}
+              <div ref={bottomRef} />
             </div>
 
             {/* Composer */}
-            <form
-              onSubmit={onSend}
-              className="mt-4 rounded-2xl border border-gray-200 bg-white shadow-sm p-4"
-            >
-              <div className="flex items-center gap-3">
-                <input
-                  className="flex-1 rounded-full border border-gray-200 px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
-                  placeholder="Écrire un message…"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                />
-                <button
-                  disabled={busy || !text.trim()}
-                  className="px-6 py-3 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition disabled:opacity-60"
-                >
-                  {busy ? 'Envoi…' : 'Envoyer'}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Astuce : les messages de cette conversation sont marqués “lus” automatiquement quand tu l’ouvres.
-              </p>
+            <form onSubmit={onSend} style={{ display: 'flex', gap: '0.75rem' }}>
+              <input
+                style={{ ...INPUT, flex: 1 }}
+                placeholder="Écrire un message…"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+              <button
+                type="submit"
+                disabled={busy || !text.trim()}
+                style={{ ...BTN_PRIMARY, opacity: (busy || !text.trim()) ? 0.5 : 1, cursor: (busy || !text.trim()) ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+              >
+                {busy ? 'Envoi…' : 'Envoyer →'}
+              </button>
             </form>
+            <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
+              Les messages de cette conversation sont marqués comme lus automatiquement à l&apos;ouverture.
+            </p>
           </>
         )}
       </div>

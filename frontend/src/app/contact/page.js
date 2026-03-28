@@ -4,6 +4,26 @@ import { useState } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
+const inputStyle = {
+  width: '100%',
+  padding: '0.6rem 0.75rem',
+  border: '1px solid var(--border)',
+  background: '#fff',
+  color: 'var(--foreground)',
+  fontSize: '0.9375rem',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '0.6875rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  color: 'var(--muted)',
+  marginBottom: '0.375rem',
+};
+
 export default function ContactPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -31,7 +51,7 @@ export default function ContactPage() {
         setSubmitting(false);
         return;
       }
-      setOk('Your message has been sent. Thank you! ✅');
+      setOk('Message envoyé. Merci !');
       setName('');
       setEmail('');
       setSubject('');
@@ -45,95 +65,110 @@ export default function ContactPage() {
 
   const errText =
     err === 'validation_error'
-      ? 'Please fill in all fields correctly.'
+      ? 'Veuillez remplir tous les champs correctement.'
       : err === 'server_error'
-      ? 'Server error. Please try again.'
+      ? 'Erreur serveur. Veuillez réessayer.'
       : err === 'network_error'
-      ? 'Network error. Please try again.'
+      ? 'Erreur réseau. Veuillez réessayer.'
       : err || '';
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <main className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-10">
-        <h1 className="text-3xl font-bold text-green-800 mb-6">Contact</h1>
+    <div style={{ background: '#fff', color: 'var(--foreground)', minHeight: '100vh' }}>
+      <main style={{ maxWidth: 800, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
+        <h1
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 400,
+            fontSize: '2rem',
+            color: 'var(--foreground)',
+            marginBottom: '1.5rem',
+          }}
+        >
+          Contact
+        </h1>
 
         {!!errText && (
-          <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+          <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
             {errText}
-          </div>
+          </p>
         )}
         {!!ok && (
-          <div className="mb-4 rounded-md bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+          <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
             {ok}
-          </div>
+          </p>
         )}
 
-        <section
-          className="rounded-2xl p-6 shadow-sm"
-          style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
-        >
-          <form className="space-y-5" onSubmit={onSubmit}>
-            <div>
-              <label className="block text-sm font-medium mb-1">Nom</label>
-              <input
-                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jane Doe"
-                required
-              />
-            </div>
+        <form style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }} onSubmit={onSubmit}>
+          <div>
+            <label style={labelStyle}>Nom</label>
+            <input
+              style={inputStyle}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Jane Doe"
+              required
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input
-                type="email"
-                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="jane@example.com"
-                required
-              />
-            </div>
+          <div>
+            <label style={labelStyle}>Email</label>
+            <input
+              type="email"
+              style={inputStyle}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jane@example.com"
+              required
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Sujet</label>
-              <input
-                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="À propos d'un jardin ou d'un.e jardinier.e…"
-                required
-              />
-            </div>
+          <div>
+            <label style={labelStyle}>Sujet</label>
+            <input
+              style={inputStyle}
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="À propos d'un jardin ou d'un·e jardinier·e…"
+              required
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Message</label>
-              <textarea
-                rows={6}
-                className="w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Dites-nous en plus…"
-                required
-              />
-            </div>
+          <div>
+            <label style={labelStyle}>Message</label>
+            <textarea
+              rows={6}
+              style={{ ...inputStyle, resize: 'vertical' }}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Dites-nous en plus…"
+              required
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-full px-5 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
-            >
-              {submitting ? 'Envoi…' : 'Envoyer le message'}
-            </button>
-          </form>
-        </section>
+          <button
+            type="submit"
+            disabled={submitting}
+            style={{
+              width: '100%',
+              background: 'var(--green)',
+              color: '#fff',
+              border: 'none',
+              padding: '0.6rem 1.25rem',
+              cursor: submitting ? 'default' : 'pointer',
+              fontFamily: 'inherit',
+              fontSize: '0.875rem',
+              opacity: submitting ? 0.6 : 1,
+            }}
+          >
+            {submitting ? 'Envoi…' : 'Envoyer le message'}
+          </button>
+        </form>
 
-        <p className="mt-6 text-sm text-gray-600">
+        <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
           Vous préférez par email ? Écrivez à{' '}
           <a
             href="mailto:hello@jardinsolidaire.test"
-            className="text-pink-500 hover:text-pink-600 underline"
+            style={{ color: 'var(--green)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
           >
             hello@jardinsolidaire.test
           </a>

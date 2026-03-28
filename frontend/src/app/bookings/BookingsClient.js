@@ -6,25 +6,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { getMyBookings } from '@/lib/bookings';
 import BookingStatusBadge from '@/components/booking/BookingStatusBadge';
 
-function Skeleton() {
-  return (
-    <div className="animate-pulse space-y-4">
-      <div className="h-20 bg-gray-100 rounded-2xl" />
-      <div className="h-40 bg-gray-100 rounded-2xl" />
-      <div className="h-40 bg-gray-100 rounded-2xl" />
-    </div>
-  );
-}
-
-function StatPill({ label, value }) {
-  return (
-    <div className="rounded-full px-3 py-1 text-xs font-medium bg-white border border-gray-200 shadow-sm">
-      <span className="text-gray-500">{label}</span>{' '}
-      <span className="text-gray-900">{value}</span>
-    </div>
-  );
-}
-
 function fmt(dt) {
   try {
     return new Date(dt).toLocaleString();
@@ -33,9 +14,15 @@ function fmt(dt) {
   }
 }
 
+function statusStyle(status) {
+  if (status === 'confirmed') return { color: 'var(--green)' };
+  if (status === 'cancelled') return { color: 'var(--muted)', textDecoration: 'line-through' };
+  return { color: 'var(--muted)' };
+}
+
 export default function Page() {
   return (
-    <Suspense fallback={<main className="max-w-5xl mx-auto p-6">chargement…</main>}>
+    <Suspense fallback={<main style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.5rem' }}>Chargement…</main>}>
       <BookingsListInner />
     </Suspense>
   );
@@ -84,22 +71,49 @@ function BookingsListInner() {
   }, [items]);
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-5xl mx-auto">
+    <div style={{ background: '#fff', minHeight: '100vh', padding: '2.5rem 1.5rem' }}>
+      <div style={{ maxWidth: 960, margin: '0 auto' }}>
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            marginBottom: '1.5rem',
+          }}
+        >
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-green-700">
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 400,
+                fontSize: '2rem',
+                color: 'var(--foreground)',
+                margin: 0,
+              }}
+            >
               Mes réservations
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p style={{ color: 'var(--muted)', marginTop: '0.375rem', fontSize: '0.9375rem' }}>
               Suis tes créneaux, consulte les détails et gère tes statuts.
             </p>
           </div>
 
           <Link
             href="/bookings/new"
-            className="shrink-0 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
+            style={{
+              flexShrink: 0,
+              background: 'none',
+              color: 'var(--foreground)',
+              border: '1px solid var(--border)',
+              padding: '0.6rem 1.25rem',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: '0.875rem',
+              textDecoration: 'none',
+              display: 'inline-block',
+            }}
           >
             + Nouvelle réservation
           </Link>
@@ -107,97 +121,110 @@ function BookingsListInner() {
 
         {/* Success */}
         {justCreated && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 mb-6">
-            Réservation créée ✔
-          </div>
+          <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
+            Réservation créée.
+          </p>
         )}
 
         {/* Error */}
         {err && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
+          <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
             {err}
-          </div>
+          </p>
         )}
 
         {/* Stats */}
         {!loading && !err && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            <StatPill label="Total" value={stats.total} />
-            <StatPill label="En attente" value={stats.pending} />
-            <StatPill label="Confirmées" value={stats.confirmed} />
-            <StatPill label="Terminées" value={stats.completed} />
-            <StatPill label="Annulées" value={stats.cancelled} />
-          </div>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: '1.5rem' }}>
+            {stats.total} total
+            {stats.pending > 0 ? ` · ${stats.pending} en attente` : ''}
+            {stats.confirmed > 0 ? ` · ${stats.confirmed} confirmée${stats.confirmed > 1 ? 's' : ''}` : ''}
+            {stats.completed > 0 ? ` · ${stats.completed} terminée${stats.completed > 1 ? 's' : ''}` : ''}
+            {stats.cancelled > 0 ? ` · ${stats.cancelled} annulée${stats.cancelled > 1 ? 's' : ''}` : ''}
+          </p>
         )}
 
         {loading ? (
-          <Skeleton />
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>Chargement…</p>
         ) : items.length === 0 && !err ? (
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-8 text-center">
-            <div className="text-gray-900 font-semibold">Aucune réservation pour le moment.</div>
-            <div className="text-sm text-gray-600 mt-2">
-              Crée une réservation depuis un jardin, ou via le bouton “Nouvelle réservation”.
-            </div>
-            <div className="mt-4">
-              <Link
-                href="/bookings/new"
-                className="inline-flex px-6 py-3 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition text-sm font-semibold"
-              >
-                + Nouvelle réservation
-              </Link>
-            </div>
-
-            <div
-              className="mt-6 h-1 w-full rounded-full"
+          <div style={{ padding: '2.5rem 0' }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--foreground)' }}>Aucune réservation pour le moment.</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: '0.375rem' }}>
+              Crée une réservation depuis un jardin, ou via le bouton &quot;Nouvelle réservation&quot;.
+            </p>
+            <Link
+              href="/bookings/new"
               style={{
-                background:
-                  'linear-gradient(90deg, rgba(22,163,74,0.25), rgba(227,16,125,0.22))',
+                display: 'inline-block',
+                marginTop: '1rem',
+                background: 'var(--green)',
+                color: '#fff',
+                border: 'none',
+                padding: '0.6rem 1.25rem',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                fontSize: '0.875rem',
+                textDecoration: 'none',
               }}
-            />
+            >
+              + Nouvelle réservation
+            </Link>
           </div>
         ) : (
-          <ul className="space-y-4">
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {items.map((r) => (
               <li
                 key={r.id}
-                className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 hover:shadow-md transition"
+                style={{ borderBottom: '1px solid var(--border)', padding: '1.25rem 0' }}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3">
-                      <div className="font-semibold text-gray-900 truncate">
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <span
+                        style={{
+                          fontSize: '0.9375rem',
+                          fontWeight: 500,
+                          color: 'var(--foreground)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {r.title || `Réservation #${r.id}`}
-                      </div>
-                      <BookingStatusBadge status={r.status} />
+                      </span>
+                      <span style={{ fontSize: '0.8125rem', ...statusStyle(r.status) }}>
+                        {r.status === 'pending' && 'En attente'}
+                        {r.status === 'confirmed' && 'Confirmée'}
+                        {r.status === 'cancelled' && 'Annulée'}
+                        {r.status === 'completed' && 'Terminée'}
+                        {!['pending', 'confirmed', 'cancelled', 'completed'].includes(r.status) && r.status}
+                      </span>
                     </div>
 
-                    <div className="mt-2 text-sm text-gray-600">
-                      Jardin <span className="text-gray-900 font-medium">#{r.gardenId}</span>
+                    <div style={{ marginTop: '0.375rem', fontSize: '0.8125rem', color: 'var(--muted)' }}>
+                      Jardin <span style={{ color: 'var(--foreground)' }}>#{r.gardenId}</span>
                     </div>
 
-                    <div className="text-sm text-gray-600 mt-1">
-                      <span className="text-gray-500">Du</span>{' '}
-                      <span className="text-gray-900">{fmt(r.startsAt)}</span>{' '}
-                      <span className="text-gray-500">au</span>{' '}
-                      <span className="text-gray-900">{fmt(r.endsAt)}</span>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+                      <span>Du</span>{' '}
+                      <span style={{ color: 'var(--foreground)' }}>{fmt(r.startsAt)}</span>{' '}
+                      <span>au</span>{' '}
+                      <span style={{ color: 'var(--foreground)' }}>{fmt(r.endsAt)}</span>
                     </div>
                   </div>
 
                   <Link
                     href={`/bookings/${r.id}`}
-                    className="shrink-0 rounded-full px-4 py-2 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
+                    style={{
+                      flexShrink: 0,
+                      fontSize: '0.875rem',
+                      color: 'var(--foreground)',
+                      textDecoration: 'none',
+                    }}
                   >
                     Détails →
                   </Link>
                 </div>
-
-                <div
-                  className="mt-4 h-1 w-full rounded-full"
-                  style={{
-                    background:
-                      'linear-gradient(90deg, rgba(22,163,74,0.18), rgba(227,16,125,0.16))',
-                  }}
-                />
               </li>
             ))}
           </ul>

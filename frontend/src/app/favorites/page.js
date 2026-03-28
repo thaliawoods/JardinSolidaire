@@ -91,37 +91,6 @@ async function fetchGardenCoverById(id) {
   return null;
 }
 
-/* ---------------- small UI bits ---------------- */
-function Pill({ children }) {
-  return (
-    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
-      {children}
-    </span>
-  );
-}
-
-function EmptyCard({ title, subtitle, href, linkText }) {
-  return (
-    <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50 p-6 shadow-sm">
-      <div className="flex items-start gap-4">
-        <div className="h-12 w-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-xl">💚</div>
-        <div className="flex-1">
-          <p className="text-base font-semibold text-emerald-900">{title}</p>
-          <p className="mt-1 text-sm text-emerald-900/70">{subtitle}</p>
-          <div className="mt-4">
-            <Link
-              href={href}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition"
-            >
-              {linkText} <span aria-hidden>→</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ---------------- page ---------------- */
 export default function FavoritesPage() {
   const [gardens, setGardens] = useState([]);
@@ -190,74 +159,101 @@ export default function FavoritesPage() {
     return 'Tes favoris sont enregistrés pour ton compte (et pas pour les autres).';
   }, [ownerId]);
 
+  const total = gardens.length + gardeners.length;
+
   return (
-    <main className="min-h-screen bg-white">
+    <main style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
       {/* Header */}
-      <div className="border-b border-emerald-100 bg-gradient-to-b from-emerald-50 to-white">
-        <div className="max-w-6xl mx-auto px-6 py-10">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div style={{ borderBottom: '1px solid var(--border)', padding: '48px 24px 32px' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-emerald-950">Mes favoris</h1>
-                {hasAny && <Pill>{gardens.length + gardeners.length} total</Pill>}
-              </div>
-              <p className="mt-2 text-sm text-emerald-900/70">{headerSubtitle}</p>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+                Mes favoris
+              </h1>
+              {hasAny && (
+                <p style={{ marginTop: 6, fontSize: '0.875rem', color: 'var(--muted)' }}>
+                  ({total} au total) — {headerSubtitle}
+                </p>
+              )}
+              {!hasAny && (
+                <p style={{ marginTop: 6, fontSize: '0.875rem', color: 'var(--muted)' }}>
+                  {headerSubtitle}
+                </p>
+              )}
             </div>
 
             {hasAny && (
               <button
                 onClick={clearAll}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 transition"
+                style={{
+                  padding: '6px 14px',
+                  border: '1px solid var(--border)',
+                  background: '#fff',
+                  color: 'var(--foreground)',
+                  fontSize: '0.8125rem',
+                  cursor: 'pointer',
+                  borderRadius: 0,
+                }}
                 title="Supprimer tous les favoris"
               >
-                🧹 Tout effacer
+                Tout effacer
               </button>
             )}
           </div>
 
           {/* Tabs */}
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div style={{ marginTop: 28, display: 'flex', gap: 24 }}>
             <button
               onClick={() => setTab('gardens')}
-              className={[
-                'rounded-full px-4 py-2 text-sm font-semibold transition border',
-                tab === 'gardens'
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50',
-              ].join(' ')}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: tab === 'gardens' ? '2px solid var(--foreground)' : '2px solid transparent',
+                padding: '6px 0',
+                fontSize: '0.9375rem',
+                color: tab === 'gardens' ? 'var(--foreground)' : 'var(--muted)',
+                cursor: 'pointer',
+                fontWeight: tab === 'gardens' ? 500 : 400,
+              }}
             >
-              Jardins <span className="ml-2 opacity-90">({gardens.length})</span>
+              Jardins ({gardens.length})
             </button>
 
             <button
               onClick={() => setTab('gardeners')}
-              className={[
-                'rounded-full px-4 py-2 text-sm font-semibold transition border',
-                tab === 'gardeners'
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50',
-              ].join(' ')}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: tab === 'gardeners' ? '2px solid var(--foreground)' : '2px solid transparent',
+                padding: '6px 0',
+                fontSize: '0.9375rem',
+                color: tab === 'gardeners' ? 'var(--foreground)' : 'var(--muted)',
+                cursor: 'pointer',
+                fontWeight: tab === 'gardeners' ? 500 : 400,
+              }}
             >
-              Jardinier.es <span className="ml-2 opacity-90">({gardeners.length})</span>
+              Jardinier·es ({gardeners.length})
             </button>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        {/* Gardens */}
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px' }}>
+
+        {/* Gardens tab */}
         {tab === 'gardens' && (
           <section>
             {gardens.length === 0 ? (
-              <EmptyCard
-                title="Aucun jardin en favoris"
-                subtitle="Ajoute des jardins pour les retrouver ici en 1 clic."
-                href="/gardens"
-                linkText="Explorer les jardins"
-              />
+              <p style={{ fontSize: '0.9375rem', color: 'var(--muted)' }}>
+                Aucun jardin en favoris.{' '}
+                <Link href="/gardens" style={{ color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  Explorer les jardins →
+                </Link>
+              </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
                 {gardens.map((g) => {
                   const title = g.title || `Jardin #${g.id}`;
                   const coverFallback = gardenCoverPlaceholder(title);
@@ -266,48 +262,48 @@ export default function FavoritesPage() {
                   return (
                     <div
                       key={g.id}
-                      className="group rounded-3xl border border-emerald-100 bg-white overflow-hidden shadow-sm hover:shadow-md transition"
+                      style={{
+                        borderBottom: '1px solid var(--border)',
+                        padding: '16px 0',
+                        display: 'flex',
+                        gap: 16,
+                        alignItems: 'flex-start',
+                      }}
                     >
-                      <Link href={`/gardens/${g.id}`} className="block">
+                      {/* Thumbnail */}
+                      <Link href={`/gardens/${g.id}`} style={{ flexShrink: 0 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={firstChoice}
                           alt={title}
-                          className="h-44 w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = coverFallback;
-                          }}
+                          style={{ width: 80, height: 56, objectFit: 'cover', display: 'block' }}
+                          onError={(e) => { e.currentTarget.src = coverFallback; }}
                         />
                       </Link>
 
-                      <div className="p-5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <Link
-                              href={`/gardens/${g.id}`}
-                              className="block font-semibold text-emerald-950 truncate group-hover:underline"
-                              title={title}
-                            >
-                              {title}
-                            </Link>
-                            {!!g.address && <p className="mt-1 text-sm text-emerald-900/70">📍 {g.address}</p>}
-                          </div>
-
-                          <button
-                            onClick={() => removeGarden(g.id)}
-                            className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 text-emerald-700 hover:bg-pink-50 hover:text-pink-700 hover:border-pink-200 transition"
-                            title="Retirer des favoris"
-                            aria-label={`Retirer ${title} des favoris`}
-                          >
-                            ✕
-                          </button>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {!!g.kind && <Pill>{g.kind}</Pill>}
-                          <Pill>💚 Favori</Pill>
-                        </div>
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Link
+                          href={`/gardens/${g.id}`}
+                          style={{ fontSize: '0.9375rem', color: 'var(--foreground)', textDecoration: 'none', fontWeight: 500 }}
+                          title={title}
+                        >
+                          {title}
+                        </Link>
+                        {!!g.address && (
+                          <p style={{ marginTop: 4, fontSize: '0.8125rem', color: 'var(--muted)' }}>{g.address}</p>
+                        )}
                       </div>
+
+                      {/* Remove */}
+                      <button
+                        onClick={() => removeGarden(g.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '1rem', padding: '0 0 0 8px', lineHeight: 1, flexShrink: 0 }}
+                        title="Retirer des favoris"
+                        aria-label={`Retirer ${title} des favoris`}
+                      >
+                        ×
+                      </button>
                     </div>
                   );
                 })}
@@ -316,65 +312,70 @@ export default function FavoritesPage() {
           </section>
         )}
 
-        {/* Gardeners */}
+        {/* Gardeners tab */}
         {tab === 'gardeners' && (
           <section>
             {gardeners.length === 0 ? (
-              <EmptyCard
-                title="Aucun.e jardinier.e en favoris"
-                subtitle="Ajoute des profils pour les recontacter facilement."
-                href="/gardeners"
-                linkText="Explorer les jardinier.es"
-              />
+              <p style={{ fontSize: '0.9375rem', color: 'var(--muted)' }}>
+                Aucun·e jardinier·e en favoris.{' '}
+                <Link href="/gardeners" style={{ color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  Explorer les jardinier·es →
+                </Link>
+              </p>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div>
                 {gardeners.map((p) => {
-                  const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || `Jardinier.e #${p.id}`;
+                  const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || `Jardinier·e #${p.id}`;
                   const avatarFallback = greenAvatarPlaceholder(p.firstName, p.lastName);
                   const src = p.avatarUrl || avatarFallback;
 
                   return (
                     <div
                       key={p.id}
-                      className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm hover:shadow-md transition"
+                      style={{
+                        borderBottom: '1px solid var(--border)',
+                        padding: '14px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                      }}
                     >
-                      <div className="flex items-center gap-4">
-                        <Link href={`/gardeners/${p.id}`} className="shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={src}
-                            alt={name}
-                            className="w-16 h-16 rounded-full object-cover border-4 border-emerald-200 shadow-sm"
-                            onError={(e) => {
-                              e.currentTarget.src = avatarFallback;
-                            }}
-                          />
-                        </Link>
+                      {/* Avatar */}
+                      <Link href={`/gardeners/${p.id}`} style={{ flexShrink: 0 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={src}
+                          alt={name}
+                          style={{ width: 40, height: 40, objectFit: 'cover', display: 'block', borderRadius: 2 }}
+                          onError={(e) => { e.currentTarget.src = avatarFallback; }}
+                        />
+                      </Link>
 
-                        <div className="min-w-0 flex-1">
-                          <Link
-                            href={`/gardeners/${p.id}`}
-                            className="block font-semibold text-emerald-950 truncate hover:underline"
-                            title={name}
-                          >
-                            {name}
-                          </Link>
-                          {!!p.address && <p className="mt-1 text-sm text-emerald-900/70">📍 {p.address}</p>}
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            <Pill>{p.rating != null ? `⭐ ${p.rating}` : '⭐ —'}</Pill>
-                            <Pill>💚 Favori</Pill>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => removeGardener(p.id)}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 text-emerald-700 hover:bg-pink-50 hover:text-pink-700 hover:border-pink-200 transition"
-                          title="Retirer des favoris"
-                          aria-label={`Retirer ${name} des favoris`}
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Link
+                          href={`/gardeners/${p.id}`}
+                          style={{ fontSize: '0.9375rem', color: 'var(--foreground)', textDecoration: 'none', fontWeight: 500 }}
+                          title={name}
                         >
-                          ✕
-                        </button>
+                          {name}
+                        </Link>
+                        {p.rating != null && (
+                          <p style={{ marginTop: 2, fontSize: '0.8125rem', color: 'var(--muted)' }}>
+                            Note : {p.rating}
+                          </p>
+                        )}
                       </div>
+
+                      {/* Remove */}
+                      <button
+                        onClick={() => removeGardener(p.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '1rem', padding: '0 0 0 8px', lineHeight: 1, flexShrink: 0 }}
+                        title="Retirer des favoris"
+                        aria-label={`Retirer ${name} des favoris`}
+                      >
+                        ×
+                      </button>
                     </div>
                   );
                 })}
@@ -382,6 +383,7 @@ export default function FavoritesPage() {
             )}
           </section>
         )}
+
       </div>
     </main>
   );

@@ -7,83 +7,6 @@ import { fetchOwnerInbox, confirmBooking, cancelBooking } from '@/lib/ownerInbox
 
 const BRAND_GREEN = '#16a34a';
 
-function StatusBadge({ status }) {
-  const map = {
-    pending: 'bg-yellow-50 text-yellow-800 ring-yellow-200',
-    confirmed: 'bg-blue-50 text-blue-800 ring-blue-200',
-    cancelled: 'bg-rose-50 text-rose-800 ring-rose-200',
-    completed: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-  };
-
-  const label =
-    status === 'pending'
-      ? 'En attente'
-      : status === 'confirmed'
-      ? 'Confirmée'
-      : status === 'cancelled'
-      ? 'Annulée'
-      : status === 'completed'
-      ? 'Terminée'
-      : status;
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ${
-        map[status] || 'bg-gray-50 text-gray-800 ring-gray-200'
-      }`}
-    >
-      {label}
-    </span>
-  );
-}
-
-function Tab({ active, onClick, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`text-sm px-3 py-1.5 rounded-full border transition ${
-        active
-          ? 'bg-pink-500 text-white border-pink-500'
-          : 'bg-white text-gray-700 border-gray-200 shadow-sm hover:bg-gray-50'
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SkeletonList() {
-  return (
-    <div className="animate-pulse space-y-3">
-      <div className="h-24 bg-gray-100 rounded-2xl" />
-      <div className="h-24 bg-gray-100 rounded-2xl" />
-      <div className="h-24 bg-gray-100 rounded-2xl" />
-    </div>
-  );
-}
-
-function EmptyState({ filter }) {
-  const label =
-    filter === 'pending'
-      ? 'Aucune demande en attente.'
-      : filter === 'confirmed'
-      ? 'Aucune réservation confirmée.'
-      : filter === 'cancelled'
-      ? 'Aucune réservation annulée.'
-      : filter === 'completed'
-      ? 'Aucune réservation terminée.'
-      : 'Aucune demande pour le moment.';
-
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-8 text-center">
-      <div className="text-2xl">💌</div>
-      <div className="mt-2 text-gray-800 font-semibold">{label}</div>
-      <div className="mt-2 text-sm text-gray-500">Les nouvelles demandes apparaîtront ici.</div>
-    </div>
-  );
-}
-
 export default function OwnerInboxPage() {
   const router = useRouter();
 
@@ -142,137 +65,203 @@ export default function OwnerInboxPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-green-700">Demandes</h1>
-            <p className="text-gray-600 mt-1">
-              Gère les demandes de réservation de tes jardins.
-              {filter === 'all' && pendingCount > 0 ? (
-                <span className="ml-2 text-gray-700">
-                  <span className="font-semibold">{pendingCount}</span> en attente.
-                </span>
-              ) : null}
-            </p>
-          </div>
+  function statusLabel(status) {
+    if (status === 'pending') return 'En attente';
+    if (status === 'confirmed') return 'Confirmée';
+    if (status === 'cancelled') return 'Annulée';
+    if (status === 'completed') return 'Terminée';
+    return status;
+  }
 
-          <div className="flex items-center gap-2">
-            <Link
-              href="/my-gardens"
-              className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-              style={{ color: BRAND_GREEN }}
-            >
-              ← Mes jardins
-            </Link>
-          </div>
+  function statusColor(status) {
+    if (status === 'confirmed') return 'var(--green)';
+    return 'var(--muted)';
+  }
+
+  function tabLabel(k) {
+    if (k === 'all') return 'Toutes';
+    if (k === 'pending') return 'En attente';
+    if (k === 'confirmed') return 'Confirmées';
+    if (k === 'cancelled') return 'Annulées';
+    if (k === 'completed') return 'Terminées';
+    return k;
+  }
+
+  function emptyLabel(f) {
+    if (f === 'pending') return 'Aucune demande en attente.';
+    if (f === 'confirmed') return 'Aucune réservation confirmée.';
+    if (f === 'cancelled') return 'Aucune réservation annulée.';
+    if (f === 'completed') return 'Aucune réservation terminée.';
+    return 'Aucune demande.';
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)', padding: '48px 24px' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+            Demandes
+          </h1>
+          <Link
+            href="/my-gardens"
+            style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: 3, whiteSpace: 'nowrap' }}
+          >
+            Mes jardins ←
+          </Link>
         </div>
 
-        {err && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
-            {err}
-          </div>
+        {filter === 'all' && pendingCount > 0 && (
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 24 }}>
+            {pendingCount} en attente.
+          </p>
         )}
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        {/* Error */}
+        {err && (
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 20 }}>{err}</p>
+        )}
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 32, marginTop: 24 }}>
           {tabs.map((k) => (
-            <Tab key={k} active={filter === k} onClick={() => setFilter(k)}>
-              {k === 'all'
-                ? 'Toutes'
-                : k === 'pending'
-                ? 'En attente'
-                : k === 'confirmed'
-                ? 'Confirmées'
-                : k === 'cancelled'
-                ? 'Annulées'
-                : k === 'completed'
-                ? 'Terminées'
-                : k}
-            </Tab>
+            <button
+              key={k}
+              type="button"
+              onClick={() => setFilter(k)}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: filter === k ? '2px solid var(--foreground)' : '2px solid transparent',
+                marginBottom: -1,
+                padding: '8px 0',
+                fontSize: '0.875rem',
+                color: filter === k ? 'var(--foreground)' : 'var(--muted)',
+                cursor: 'pointer',
+                fontWeight: filter === k ? 500 : 400,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {tabLabel(k)}
+            </button>
           ))}
         </div>
 
-        {/* Content */}
-        {loading ? (
-          <SkeletonList />
-        ) : !items.length && !err ? (
-          <EmptyState filter={filter} />
-        ) : (
-          <div className="space-y-3">
+        {/* Loading */}
+        {loading && (
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>Chargement…</p>
+        )}
+
+        {/* Empty */}
+        {!loading && !items.length && !err && (
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{emptyLabel(filter)}</p>
+        )}
+
+        {/* List */}
+        {!loading && items.length > 0 && (
+          <div>
             {items.map((r) => {
               const isPending = r.status === 'pending';
               const name = [r.requester?.firstName, r.requester?.lastName].filter(Boolean).join(' ') || '—';
               const email = r.requester?.email || null;
 
               return (
-                <div key={r.id} className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    {/* Left */}
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="text-gray-900 font-semibold">Réservation #{r.id}</div>
-                        <StatusBadge status={r.status} />
-                      </div>
-
-                      <div className="mt-2 text-sm text-gray-700">
-                        <span className="font-medium">Jardin :</span>{' '}
-                        {r.garden?.title ? r.garden.title : `#${r.garden?.id ?? '—'}`}
-                        {r.garden?.address ? <span className="text-gray-500"> • {r.garden.address}</span> : null}
-                      </div>
-
-                      <div className="text-sm text-gray-700 mt-1">
-                        <span className="font-medium">Créneau :</span>{' '}
-                        {r.startsAt ? new Date(r.startsAt).toLocaleString() : '—'} →{' '}
-                        {r.endsAt ? new Date(r.endsAt).toLocaleString() : '—'}
-                      </div>
-
-                      <div className="text-sm text-gray-700 mt-1">
-                        <span className="font-medium">Demandeur :</span> {name}
-                        {email ? <span className="text-gray-500"> ({email})</span> : null}
-                      </div>
-
-                      {r.notes ? (
-                        <div className="mt-3 rounded-xl bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700 whitespace-pre-line">
-                          {r.notes}
-                        </div>
-                      ) : null}
+                <div
+                  key={r.id}
+                  style={{
+                    borderBottom: '1px solid var(--border)',
+                    padding: '20px 0',
+                    display: 'flex',
+                    gap: 24,
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
+                      <span style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--foreground)' }}>
+                        Réservation #{r.id}
+                      </span>
+                      <span style={{ fontSize: '0.8125rem', color: statusColor(r.status) }}>
+                        {statusLabel(r.status)}
+                      </span>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                      <button
-                        type="button"
-                        disabled={busyId === r.id || !isPending}
-                        onClick={() => act(r.id, confirmBooking)}
-                        className="px-4 py-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition disabled:opacity-60"
-                      >
-                        {busyId === r.id ? '…' : 'Confirmer'}
-                      </button>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--foreground)', marginBottom: 4 }}>
+                      <span style={{ color: 'var(--muted)', marginRight: 4 }}>Jardin :</span>
+                      {r.garden?.title ? r.garden.title : `#${r.garden?.id ?? '—'}`}
+                      {r.garden?.address && (
+                        <span style={{ color: 'var(--muted)' }}> · {r.garden.address}</span>
+                      )}
+                    </div>
 
-                      <button
-                        type="button"
-                        disabled={busyId === r.id || !isPending}
-                        onClick={() => act(r.id, cancelBooking)}
-                        className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition disabled:opacity-60"
-                      >
-                        Annuler
-                      </button>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--foreground)', marginBottom: 4 }}>
+                      <span style={{ color: 'var(--muted)', marginRight: 4 }}>Créneau :</span>
+                      {r.startsAt ? new Date(r.startsAt).toLocaleString() : '—'}{' '}→{' '}
+                      {r.endsAt ? new Date(r.endsAt).toLocaleString() : '—'}
+                    </div>
+
+                    <div style={{ fontSize: '0.875rem', color: 'var(--foreground)', marginBottom: 4 }}>
+                      <span style={{ color: 'var(--muted)', marginRight: 4 }}>Demandeur :</span>
+                      {name}
+                      {email && <span style={{ color: 'var(--muted)' }}> ({email})</span>}
+                    </div>
+
+                    {r.notes && (
+                      <div style={{ marginTop: 10, padding: '10px 12px', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--foreground)', whiteSpace: 'pre-line' }}>
+                        {r.notes}
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 12, fontSize: '0.75rem', color: 'var(--muted)' }}>
+                      Jardin #{r.garden?.id ?? '—'} · Slot #{r.slotId ?? '—'}
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
-                    <div>
-                      Jardin #{r.garden?.id ?? '—'} • Slot #{r.slotId ?? '—'}
-                    </div>
+                  {/* Actions */}
+                  <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                    <button
+                      type="button"
+                      disabled={busyId === r.id || !isPending}
+                      onClick={() => act(r.id, confirmBooking)}
+                      style={{
+                        padding: '7px 16px',
+                        background: isPending ? 'var(--green)' : 'var(--border)',
+                        color: '#fff',
+                        border: 'none',
+                        fontSize: '0.8125rem',
+                        cursor: isPending ? 'pointer' : 'not-allowed',
+                        opacity: busyId === r.id ? 0.6 : 1,
+                        borderRadius: 0,
+                      }}
+                    >
+                      {busyId === r.id ? '…' : 'Confirmer'}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={busyId === r.id || !isPending}
+                      onClick={() => act(r.id, cancelBooking)}
+                      style={{
+                        padding: '7px 16px',
+                        background: '#fff',
+                        color: 'var(--foreground)',
+                        border: '1px solid var(--border)',
+                        fontSize: '0.8125rem',
+                        cursor: isPending ? 'pointer' : 'not-allowed',
+                        opacity: busyId === r.id || !isPending ? 0.5 : 1,
+                        borderRadius: 0,
+                      }}
+                    >
+                      Annuler
+                    </button>
 
                     <Link
                       href={`/bookings/${r.id}`}
-                      className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm text-gray-700"
+                      style={{ fontSize: '0.8125rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: 3, marginTop: 4 }}
                     >
-                      Voir détails
+                      Voir →
                     </Link>
                   </div>
                 </div>
@@ -280,6 +269,7 @@ export default function OwnerInboxPage() {
             })}
           </div>
         )}
+
       </div>
     </div>
   );

@@ -14,20 +14,20 @@ const seed = [
     tags: 'account register signup login',
   },
   {
-    q: 'J’ai oublié mon mot de passe, que faire ?',
+    q: "J'ai oublié mon mot de passe, que faire ?",
     a: 'Sur la page de connexion, cliquez sur « Mot de passe oublié ? » et suivez les instructions.',
     links: [{ href: '/login', label: 'Connexion' }],
     tags: 'password reset email',
   },
   {
     q: 'Comment ajouter mon jardin ?',
-    a: 'Une fois connecté, cliquez sur “Ajouter mon jardin” dans l’en-tête ou visitez /add-garden.',
+    a: "Une fois connecté, cliquez sur \"Ajouter mon jardin\" dans l'en-tête ou visitez /add-garden.",
     links: [{ href: '/add-garden', label: 'Ajouter un jardin' }],
     tags: 'garden create listing owner',
   },
   {
-    q: 'Comment contacter un.e jardinier.e / propriétaire ?',
-    a: 'Ouvrez une page de jardin ou de profil et utilisez “Envoyer un message” ou “Réserver”. Vous devez être connecté.',
+    q: 'Comment contacter un·e jardinier·e / propriétaire ?',
+    a: 'Ouvrez une page de jardin ou de profil et utilisez "Envoyer un message" ou "Réserver". Vous devez être connecté.',
     links: [{ href: '/gardens', label: 'Parcourir les jardins' }],
     tags: 'contact message booking chat',
   },
@@ -49,61 +49,71 @@ export default function Page() {
   }, [query]);
 
   return (
-    <main className="min-h-screen bg-white">
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        <h1 className="text-3xl font-bold text-green-800 text-center">Centre d&apos;aide</h1>
-        <p className="text-center text-gray-600 mt-2">
+    <main style={{ background: '#fff', minHeight: '100vh' }}>
+      <section style={{ maxWidth: 800, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
+        <h1
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 400,
+            fontSize: '2rem',
+            color: 'var(--foreground)',
+            textAlign: 'center',
+          }}
+        >
+          Centre d&apos;aide
+        </h1>
+        <p style={{ textAlign: 'center', color: 'var(--muted)', marginTop: '0.5rem', fontSize: '0.9375rem' }}>
           Trouvez des réponses rapidement ou contactez-nous si vous êtes bloqué.
         </p>
 
-        <div className="mt-6 flex justify-center">
-          <div className="relative w-full max-w-xl">
-            <span className="absolute left-3 top-2.5 text-gray-400" aria-hidden>🔍</span>
-            <input
-              type="text"
-              placeholder="Rechercher de l'aide (compte, mot de passe, jardin, …)"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 bg-white text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400/60"
-              aria-label="Rechercher dans l'aide"
-            />
-          </div>
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+          <input
+            type="text"
+            placeholder="Rechercher de l'aide (compte, mot de passe, jardin, …)"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Rechercher dans l'aide"
+            style={{
+              width: '100%',
+              maxWidth: 560,
+              padding: '0.6rem 0.875rem',
+              border: '1px solid var(--border)',
+              background: '#fff',
+              color: 'var(--foreground)',
+              fontSize: '0.875rem',
+              outline: 'none',
+            }}
+          />
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3 justify-center">
-          <QuickLink href="/contact">Contact</QuickLink>
-          <QuickLink href="/register">Créer un compte</QuickLink>
-          <QuickLink href="/login">Se connecter</QuickLink>
-          <QuickLink href="/gardens">Parcourir les jardins</QuickLink>
-          <QuickLink href="/gardeners">Nos jardinier.es</QuickLink>
+        <div style={{ marginTop: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <Link style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }} href="/contact">Contact</Link>
+          <Link style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }} href="/register">Créer un compte</Link>
+          <Link style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }} href="/login">Se connecter</Link>
+          <Link style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }} href="/gardens">Parcourir les jardins</Link>
+          <Link style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }} href="/gardeners">Nos jardinier·es</Link>
         </div>
 
         {/* FAQ */}
-        <div className="mt-8 space-y-4" id="faq">
+        <div style={{ marginTop: '2rem' }} id="faq">
           {faqs.map((item, i) => (
             <details
               key={i}
-              className="group rounded-2xl p-5"
-              style={{
-                backgroundColor: 'rgba(22,163,74,0.08)',
-                border: '1px solid rgba(22,163,74,0.15)',
-              }}
+              style={{ borderBottom: '1px solid var(--border)', padding: '1rem 0' }}
             >
-              <summary className="cursor-pointer list-none">
-                <div className="flex items-start justify-between gap-4">
-                  <h3 className="text-base font-semibold text-green-900">{item.q}</h3>
-                  <span className="shrink-0 text-green-800 group-open:rotate-180 transition">▾</span>
-                </div>
+              <summary style={{ cursor: 'pointer', listStyle: 'none', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                <span style={{ fontSize: '0.9375rem', color: 'var(--foreground)', fontWeight: 400 }}>{item.q}</span>
+                <span style={{ flexShrink: 0, color: 'var(--muted)' }}>▾</span>
               </summary>
-              <div className="mt-3 text-sm text-gray-700">
+              <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
                 <p>{item.a}</p>
                 {!!item.links?.length && (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                     {item.links.map((l, j) => (
                       <Link
                         key={j}
                         href={l.href}
-                        className="px-3 py-1 rounded-full text-sm bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
+                        style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
                       >
                         {l.label}
                       </Link>
@@ -115,47 +125,37 @@ export default function Page() {
           ))}
 
           {faqs.length === 0 && (
-            <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+            <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
               Pas de résultats. Essayez d&apos;autres mots, ou{' '}
-              <Link href="/contact" className="underline text-pink-500 hover:text-pink-600">
+              <Link href="/contact" style={{ color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
                 contactez-nous
               </Link>.
-            </div>
+            </p>
           )}
         </div>
 
-        <div className="mt-10 rounded-2xl bg-white border p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-green-900">Besoin d&apos;aide supplémentaire ?</h2>
-          <p className="text-sm text-gray-700 mt-2">
-            Nous sommes heureux de vous aider avec les problèmes de compte, les bugs et les demandes de fonctionnalités.
+        <div style={{ marginTop: '2.5rem' }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--foreground)', marginBottom: '0.375rem' }}>
+            Besoin d&apos;aide supplémentaire ?
           </p>
-          <div className="mt-4 flex flex-wrap gap-3">
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>
+            Nous sommes heureux de vous aider avec les problèmes de compte, les bugs et les demandes de fonctionnalités.{' '}
             <Link
               href="/contact"
-              className="px-5 py-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white shadow-sm transition"
+              style={{ color: 'var(--green)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
             >
               Contact
             </Link>
+            {' '}·{' '}
             <a
               href="mailto:support@jardinsolidaire.local"
-              className="px-5 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
+              style={{ color: 'var(--green)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
             >
               Email
             </a>
-          </div>
+          </p>
         </div>
       </section>
     </main>
-  );
-}
-
-function QuickLink({ href, children }) {
-  return (
-    <Link
-      href={href}
-      className="px-4 py-2 rounded-full text-sm bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
-    >
-      {children}
-    </Link>
   );
 }

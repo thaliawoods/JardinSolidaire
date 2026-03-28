@@ -2,16 +2,33 @@ import GardensMap from '@/components/Map/GardensMap';
 
 export default function MapPage() {
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6 min-w-0">
-      <h1 className="text-3xl font-bold text-green-700 mb-4">Carte des jardins</h1>
-      <p className="text-gray-600 mb-4">
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem' }}>
+      <h1
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontWeight: 400,
+          fontSize: '2rem',
+          color: 'var(--foreground)',
+          marginBottom: '0.75rem',
+        }}
+      >
+        Carte des jardins
+      </h1>
+      <p style={{ color: 'var(--muted)', marginBottom: '1.5rem', fontSize: '0.9375rem' }}>
         Retrouvez ici tous les jardins de JardinSolidaire. Activez la localisation pour centrer la carte.
       </p>
 
-      {/* ✅ wrappers anti-dépassement */}
-      <div className="w-full max-w-full min-w-0">
-        <div className="rounded-2xl overflow-hidden shadow border border-gray-100 w-full max-w-full min-w-0">
-          <div className="w-full max-w-full min-w-0">
+      {/* wrappers anti-dépassement */}
+      <div style={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
+        <div
+          style={{
+            border: '1px solid var(--border)',
+            overflow: 'hidden',
+            width: '100%',
+            minWidth: 0,
+          }}
+        >
+          <div style={{ width: '100%', minWidth: 0 }}>
             <GardensMap fullPage={false} height="70vh" />
           </div>
         </div>
