@@ -4,23 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
-
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { useConfirm } from '@/hooks/useConfirm';
 
-function Pill({ ok }) {
-  return (
-    <span
-      className={`text-xs px-2 py-0.5 rounded-full border ${
-        ok
-          ? 'bg-green-50 text-green-700 border-green-200'
-          : 'bg-gray-100 text-gray-700 border-gray-200'
-      }`}
-    >
-      {ok ? 'Publié' : 'Brouillon'}
-    </span>
-  );
-}
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const LABEL = { display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: '0.4rem' };
 
 export default function EditGardenPage() {
   const router = useRouter();
@@ -46,7 +34,6 @@ export default function EditGardenPage() {
 
   useEffect(() => {
     if (!id) return;
-
     (async () => {
       setMsg('');
       setErrorMsg('');
@@ -78,18 +65,18 @@ export default function EditGardenPage() {
     setSaving(true);
     setMsg('');
     setErrorMsg('');
-
     try {
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        address: form.address.trim(),
-        needs: form.needs.trim() || undefined,
-        area: form.area === '' ? null : Number(form.area),
-      };
-
-      await apiFetch(`/api/gardens/${id}`, { method: 'PUT', body: payload });
-      setMsg('Modifications enregistrées ✔');
+      await apiFetch(`/api/gardens/${id}`, {
+        method: 'PUT',
+        body: {
+          title: form.title.trim(),
+          description: form.description.trim() || undefined,
+          address: form.address.trim(),
+          needs: form.needs.trim() || undefined,
+          area: form.area === '' ? null : Number(form.area),
+        },
+      });
+      setMsg('Modifications enregistrées.');
       router.push('/my-gardens?tab=all');
     } catch (e2) {
       console.error(e2);
@@ -114,163 +101,134 @@ export default function EditGardenPage() {
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-      <ConfirmModal
-        open={confirmState.open}
-        title={confirmState.title}
-        description={confirmState.description}
-        confirmText={confirmState.confirmText}
-        cancelText={confirmState.cancelText}
-        danger={confirmState.danger}
-        busy={saving}
-        onClose={closeConfirm}
-        onConfirm={async () => {
-          const fn = confirmState.onConfirm;
-          closeConfirm();
-          if (typeof fn === 'function') await fn();
-        }}
-      />
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)', padding: '48px 24px' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
 
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-green-800">Modifier mon jardin</h1>
-            <Pill ok={!!publishedAt} />
+        <ConfirmModal
+          open={confirmState.open}
+          title={confirmState.title}
+          description={confirmState.description}
+          confirmText={confirmState.confirmText}
+          cancelText={confirmState.cancelText}
+          danger={confirmState.danger}
+          busy={saving}
+          onClose={closeConfirm}
+          onConfirm={async () => {
+            const fn = confirmState.onConfirm;
+            closeConfirm();
+            if (typeof fn === 'function') await fn();
+          }}
+        />
+
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
+          <div>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', margin: '0 0 0.75rem' }}>
+              Propriétaire
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+                Modifier mon jardin
+              </h1>
+              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: publishedAt ? 'var(--green)' : 'var(--muted)', border: '1px solid', borderColor: publishedAt ? 'var(--green)' : 'var(--border)', padding: '2px 8px' }}>
+                {publishedAt ? 'Publié' : 'Brouillon'}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted)', margin: '0.5rem 0 0' }}>
+              Mets à jour ton annonce, puis enregistre.
+            </p>
           </div>
-          <div className="text-sm text-gray-600 mt-1">
-            Mets à jour ton annonce, puis enregistre.
-          </div>
+          <Link href="/my-gardens?tab=all" style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: 3, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            ← Mes jardins
+          </Link>
         </div>
 
-        <Link
-          href="/my-gardens?tab=all"
-          className="shrink-0 rounded-full px-4 py-2 border bg-white hover:bg-gray-50 text-gray-800"
-          style={{ borderColor: 'rgba(22,163,74,0.28)' }}
-        >
-          Retour
-        </Link>
+        {msg && (
+          <div style={{ borderLeft: '2px solid var(--green)', paddingLeft: '0.75rem', fontSize: '0.875rem', color: 'var(--green)', margin: '1.5rem 0' }}>
+            {msg}
+          </div>
+        )}
+        {errorMsg && (
+          <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626', margin: '1.5rem 0' }}>
+            {errorMsg}
+          </div>
+        )}
+
+        {!initialLoaded ? (
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: '2rem' }}>Chargement…</p>
+        ) : (
+          <form onSubmit={onSave} style={{ border: '1px solid var(--border)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '2rem' }}>
+
+            <div>
+              <label style={LABEL}>Titre de l&apos;annonce <span style={{ color: '#dc2626' }}>*</span></label>
+              <input name="title" value={form.title} onChange={onChange} style={INPUT} placeholder="Ex. Mon beau jardin" required />
+            </div>
+
+            <div>
+              <label style={LABEL}>Description</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={onChange}
+                rows={4}
+                style={{ ...INPUT, resize: 'vertical', lineHeight: 1.6 }}
+                placeholder="Parlez un peu de votre jardin…"
+              />
+            </div>
+
+            <div>
+              <label style={LABEL}>Adresse <span style={{ color: '#dc2626' }}>*</span></label>
+              <input name="address" value={form.address} onChange={onChange} style={INPUT} placeholder="Ex. 12 rue des Plantes, Paris" required />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={LABEL}>Surface (m²)</label>
+                <input name="area" value={form.area} onChange={onChange} style={INPUT} placeholder="Ex. 50" inputMode="numeric" />
+              </div>
+              <div>
+                <label style={LABEL}>Besoins du jardin</label>
+                <input name="needs" value={form.needs} onChange={onChange} style={INPUT} placeholder="arrosage, désherbage…" />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{ padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', fontWeight: 600, opacity: saving ? 0.6 : 1 }}
+              >
+                {saving ? 'Enregistrement…' : 'Enregistrer'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  confirm({
+                    title: 'Supprimer ce jardin ?',
+                    description: "Cette action est définitive.\nTout sera supprimé pour ce jardin.",
+                    confirmText: 'Supprimer',
+                    danger: true,
+                    onConfirm: () => doDelete(),
+                  })
+                }
+                disabled={saving}
+                style={{ padding: '0.65rem 1.25rem', background: '#fff', color: '#b91c1c', border: '1px solid #fca5a5', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', opacity: saving ? 0.6 : 1 }}
+              >
+                Supprimer
+              </button>
+
+              <Link href={`/garden/${id}`} style={{ padding: '0.65rem 1.25rem', background: '#fff', color: 'var(--foreground)', border: '1px solid var(--border)', fontSize: '0.875rem', textDecoration: 'none' }}>
+                Voir la page
+              </Link>
+
+              <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                (Publier/retirer se fait depuis &quot;Mes jardins&quot;.)
+              </span>
+            </div>
+
+          </form>
+        )}
       </div>
-
-      {msg && (
-        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {msg}
-        </div>
-      )}
-
-      {errorMsg && (
-        <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-          {errorMsg}
-        </div>
-      )}
-
-      {!initialLoaded ? (
-        <div className="rounded-2xl border bg-white p-6 text-gray-500">Chargement…</div>
-      ) : (
-        <form onSubmit={onSave} className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Titre de l’annonce</label>
-            <input
-              name="title"
-              value={form.title}
-              onChange={onChange}
-              className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-              placeholder="Ex. Mon beau jardin"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={onChange}
-              rows={4}
-              className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900"
-              placeholder="Parlez un peu de votre jardin…"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Adresse</label>
-            <input
-              name="address"
-              value={form.address}
-              onChange={onChange}
-              className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-              placeholder="Ex. 12 rue des Plantes, Paris"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Surface (m²)</label>
-              <input
-                name="area"
-                value={form.area}
-                onChange={onChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-                placeholder="Ex. 50"
-                inputMode="numeric"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Besoins du jardin</label>
-              <input
-                name="needs"
-                value={form.needs}
-                onChange={onChange}
-                className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900"
-                placeholder="Ex. arrosage, désherbage…"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
-            >
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                confirm({
-                  title: 'Supprimer ce jardin ?',
-                  description: "Cette action est définitive.\nTout sera supprimé pour ce jardin.",
-                  confirmText: 'Supprimer',
-                  danger: true,
-                  onConfirm: () => doDelete(),
-                })
-              }
-              disabled={saving}
-              className="rounded-full px-4 py-2 border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-60 font-semibold"
-            >
-              Supprimer
-            </button>
-
-            <Link
-              href={`/garden/${id}`}
-              className="rounded-full px-4 py-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-800"
-            >
-              Voir la page
-            </Link>
-
-            <span className="text-xs text-gray-500">
-              (Publier/retirer se fait depuis “Mes jardins”.)
-            </span>
-          </div>
-
-          <div
-            className="h-1 w-full rounded-full"
-            style={{ background: 'linear-gradient(90deg, rgba(22,163,74,0.25), rgba(227,16,125,0.22))' }}
-          />
-        </form>
-      )}
-    </main>
+    </div>
   );
 }

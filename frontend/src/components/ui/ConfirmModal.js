@@ -13,12 +13,9 @@ export default function ConfirmModal({
   onConfirm,
   onClose,
 }) {
-  // ESC pour fermer
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose?.();
-    };
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
@@ -27,75 +24,59 @@ export default function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+      style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 1rem' }}
       aria-modal="true"
       role="dialog"
     >
       {/* overlay */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/40"
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', border: 'none', cursor: 'pointer' }}
         onClick={onClose}
         aria-label="Fermer"
       />
 
       {/* panel */}
-      <div className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className={`text-lg font-bold ${danger ? 'text-rose-700' : 'text-gray-900'}`}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 480, background: '#fff', border: '1px solid var(--border)', padding: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '1rem', fontWeight: 600, color: danger ? '#b91c1c' : 'var(--foreground)' }}>
               {title}
             </div>
-
             {description ? (
-              <div className="text-sm text-gray-600 mt-1 whitespace-pre-line">
+              <div style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: '0.375rem', whiteSpace: 'pre-line' }}>
                 {description}
               </div>
             ) : null}
           </div>
-
           <button
             type="button"
             onClick={onClose}
-            className="px-2 py-1 rounded-lg hover:bg-gray-50 text-gray-600"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.875rem', padding: '0.25rem', flexShrink: 0 }}
             aria-label="Fermer"
           >
             ✕
           </button>
         </div>
 
-        <div className="mt-5 flex items-center justify-end gap-2">
+        <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
           <button
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="rounded-full px-4 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 shadow-sm transition disabled:opacity-60"
+            style={{ padding: '0.5rem 1.25rem', background: '#fff', color: 'var(--foreground)', border: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', opacity: busy ? 0.6 : 1 }}
           >
             {cancelText}
           </button>
-
           <button
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={`rounded-full px-5 py-2 font-semibold shadow-sm transition disabled:opacity-60 ${
-              danger
-                ? 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'
-                : 'bg-pink-500 hover:bg-pink-600 text-white'
-            }`}
+            style={{ padding: '0.5rem 1.25rem', background: danger ? '#fff' : 'var(--green)', color: danger ? '#b91c1c' : '#fff', border: danger ? '1px solid #fca5a5' : 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', fontWeight: 600, opacity: busy ? 0.6 : 1 }}
           >
             {busy ? '…' : confirmText}
           </button>
         </div>
-
-        {/* petite barre gradient (ton style) */}
-        <div
-          className="mt-4 h-1 w-full rounded-full"
-          style={{
-            background:
-              'linear-gradient(90deg, rgba(22,163,74,0.25), rgba(227,16,125,0.22))',
-          }}
-        />
       </div>
     </div>
   );
