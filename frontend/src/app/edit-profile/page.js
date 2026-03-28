@@ -10,6 +10,10 @@ const UPLOAD_ENDPOINT = process.env.NEXT_PUBLIC_UPLOAD_ENDPOINT || '/api/uploads
 const UPLOAD_FIELD = process.env.NEXT_PUBLIC_UPLOAD_FIELD || 'file';
 const LOCAL_DIRS = ['/assets/', '/images/', '/img/', '/icons/'];
 
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const INPUT_DISABLED = { ...INPUT, background: '#f9f9f9', color: 'var(--muted)', cursor: 'not-allowed' };
+const LABEL = { display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: '0.4rem' };
+
 function resolveMedia(u) {
   if (!u) return '';
   const s = String(u).trim();
@@ -29,16 +33,13 @@ function initials(a = '', b = '') {
   return (`${x}${y}`.toUpperCase() || 'U');
 }
 
-function greenAvatar(first, last) {
+function avatarPlaceholder(first, last) {
   const txt = initials(first, last);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/>
-    </linearGradient></defs>
-    <rect width="256" height="256" rx="24" ry="24" fill="url(#g)"/>
-    <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
-      font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
-  </svg>`;
+  <rect width="256" height="256" fill="#111111"/>
+  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
+        font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
+</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
@@ -105,12 +106,10 @@ export default function EditProfilePage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-
     if (!form.firstName.trim() || !form.lastName.trim()) {
-      alert('First name and last name are required.');
+      alert('Prénom et nom sont requis.');
       return;
     }
-
     try {
       setSubmitting(true);
       await apiFetch('/api/me/profile', {
@@ -127,28 +126,21 @@ export default function EditProfilePage() {
       router.push('/profile');
     } catch (e) {
       console.error('Update profile failed:', e);
-      alert(`Couldn't save your account info. ${e?.message || ''}`);
+      alert(`Impossible d'enregistrer. ${e?.message || ''}`);
     } finally {
       setSubmitting(false);
     }
   };
 
   const avatarSrc = useMemo(() => resolveMedia(form.avatarUrl), [form.avatarUrl]);
-  const avatarFallback = useMemo(
-    () => greenAvatar(form.firstName, form.lastName),
-    [form.firstName, form.lastName]
-  );
+  const avatarFallback = useMemo(() => avatarPlaceholder(form.firstName, form.lastName), [form.firstName, form.lastName]);
 
   function removeAvatar() {
     setForm((p) => ({ ...p, avatarUrl: '' }));
   }
 
   async function postForm(urlPath, fd) {
-    const res = await fetch(`${API_BASE}${urlPath}`, {
-      method: 'POST',
-      body: fd,
-      credentials: 'include',
-    });
+    const res = await fetch(`${API_BASE}${urlPath}`, { method: 'POST', body: fd, credentials: 'include' });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       const error = new Error(`HTTP ${res.status} on ${urlPath}${text ? ` — ${text}` : ''}`);
@@ -177,27 +169,16 @@ export default function EditProfilePage() {
       try {
         const fallbackFd = new FormData();
         fallbackFd.append('avatar', file);
-        const FALLBACKS = [
-          '/api/me/avatar',
-          '/api/upload/avatar',
-          '/api/avatar',
-          '/api/users/me/avatar',
-          '/upload/avatar',
-        ];
+        const FALLBACKS = ['/api/me/avatar', '/api/upload/avatar', '/api/avatar', '/api/users/me/avatar', '/upload/avatar'];
         let url = '';
         for (const p of FALLBACKS) {
-          try {
-            url = await postForm(p, fallbackFd);
-            break;
-          } catch (e) {
-            console.warn('fallback failed:', p, e?.message);
-          }
+          try { url = await postForm(p, fallbackFd); break; } catch (e) { console.warn('fallback failed:', p, e?.message); }
         }
         if (!url) throw err;
         if (url && !/^https?:|^data:|^\//.test(url)) url = `/uploads/${url}`;
         setForm((prev) => ({ ...prev, avatarUrl: url }));
       } catch (finalErr) {
-        alert(`Échec de l’upload de l’avatar.\n${finalErr?.message || 'Failed to fetch'}`);
+        alert(`Échec de l'upload de l'avatar.\n${finalErr?.message || 'Failed to fetch'}`);
         console.error('[avatar upload failed]', finalErr);
       }
     } finally {
@@ -206,183 +187,136 @@ export default function EditProfilePage() {
     }
   }
 
-  return (
-    <div className="min-h-screen px-4 sm:px-6 py-8 bg-white">
-      <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-6">Modifier mon profil</h1>
-
-      {err && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
-          Error: {err}
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fff', padding: '48px 24px' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>Chargement…</p>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {loading ? (
-        <Skeleton />
-      ) : (
-        <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-6">
-          <section
-            className="rounded-2xl p-6 border shadow-sm"
-            style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
-          >
-            <h2 className="text-lg font-semibold text-emerald-900 mb-4">Photo de profil</h2>
-            <div className="flex items-start gap-5">
+  return (
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)', padding: '48px 24px' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+
+        <div style={{ marginBottom: 8 }}>
+          <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', margin: '0 0 0.75rem' }}>
+            Compte
+          </p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+            Modifier mon profil
+          </h1>
+        </div>
+
+        {err && (
+          <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626', margin: '1.5rem 0' }}>
+            {err}
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '2rem' }}>
+
+          {/* Avatar section */}
+          <section>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', margin: '0 0 1rem' }}>
+              Photo de profil
+            </p>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={avatarSrc || avatarFallback}
                 alt="Avatar"
-                className="w-20 h-20 rounded-full object-cover shadow"
-                style={{ border: '4px solid rgba(22,163,74,0.35)' }}
-                onError={(e) => {
-                  e.currentTarget.src = avatarFallback;
-                }}
+                style={{ width: 80, height: 80, objectFit: 'cover', display: 'block', border: '1px solid var(--border)', flexShrink: 0 }}
+                onError={(e) => { e.currentTarget.src = avatarFallback; }}
               />
-              <div className="flex-1 space-y-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center px-4 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition cursor-pointer">
-                    {uploading ? 'Upload…' : 'Télécharger'}
-                    <input type="file" accept="image/*" onChange={handleAvatarFile} className="hidden" />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <label style={{ padding: '0.5rem 1rem', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--foreground)', cursor: 'pointer', background: '#fff' }}>
+                    {uploading ? 'Upload…' : 'Télécharger une photo'}
+                    <input type="file" accept="image/*" onChange={handleAvatarFile} style={{ display: 'none' }} />
                   </label>
-                  {avatarSrc && (
-                    <a
-                      href={avatarSrc}
-                      download
-                      className="px-4 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
-                    >
-                      Télécharger l’avatar
-                    </a>
-                  )}
                   <button
                     type="button"
                     onClick={removeAvatar}
-                    className="px-4 py-2 rounded-full bg-white/80 border border-red-300 text-red-700 hover:bg-red-50 transition"
+                    style={{ padding: '0.5rem 1rem', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--muted)', background: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     Retirer
                   </button>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Avatar URL</label>
+                  <label style={LABEL}>URL de l&apos;avatar</label>
                   <input
                     name="avatarUrl"
                     value={form.avatarUrl}
                     onChange={onChange}
-                    className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                    style={INPUT}
                     placeholder="https://… ou /uploads/mon-avatar.jpg"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Collez une URL directe, ou utilisez “Télécharger” pour choisir un fichier (le lien sera
-                    rempli).
+                  <p style={{ marginTop: '0.35rem', fontSize: '0.75rem', color: 'var(--muted)' }}>
+                    Collez une URL directe, ou utilisez &quot;Télécharger&quot; pour choisir un fichier.
                   </p>
                 </div>
               </div>
             </div>
           </section>
 
-          <section
-            className="rounded-2xl p-6 border shadow-sm"
-            style={{ backgroundColor: 'rgba(22,163,74,0.08)', borderColor: 'rgba(22,163,74,0.15)' }}
-          >
-            <h2 className="text-lg font-semibold text-emerald-900 mb-4">Informations du compte</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Info section */}
+          <section>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', margin: '0 0 1rem' }}>
+              Informations du compte
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Prénom</label>
-                <input
-                  name="firstName"
-                  value={form.firstName}
-                  onChange={onChange}
-                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="Jane"
-                  required
-                />
+                <label style={LABEL}>Prénom <span style={{ color: '#dc2626' }}>*</span></label>
+                <input name="firstName" value={form.firstName} onChange={onChange} style={INPUT} placeholder="Jane" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Nom</label>
-                <input
-                  name="lastName"
-                  value={form.lastName}
-                  onChange={onChange}
-                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="Doe"
-                  required
-                />
+                <label style={LABEL}>Nom <span style={{ color: '#dc2626' }}>*</span></label>
+                <input name="lastName" value={form.lastName} onChange={onChange} style={INPUT} placeholder="Doe" required />
               </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input
-                  name="email"
-                  value={form.email}
-                  disabled
-                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-200 bg-gray-50 text-gray-500"
-                />
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={LABEL}>Email</label>
+                <input name="email" value={form.email} disabled style={INPUT_DISABLED} />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700">Téléphone</label>
-                <input
-                  name="phone"
-                  value={form.phone}
-                  onChange={onChange}
-                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="e.g. 0674096643"
-                />
+                <label style={LABEL}>Téléphone</label>
+                <input name="phone" value={form.phone} onChange={onChange} style={INPUT} placeholder="0674096643" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700">Adresse</label>
-                <input
-                  name="address"
-                  value={form.address}
-                  onChange={onChange}
-                  className="mt-1 w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="Rue, ville…"
-                />
+                <label style={LABEL}>Adresse</label>
+                <input name="address" value={form.address} onChange={onChange} style={INPUT} placeholder="Rue, ville…" />
               </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Bio</label>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={LABEL}>Bio</label>
                 <textarea
                   name="bio"
                   value={form.bio}
                   onChange={onChange}
                   rows={4}
-                  className="mt-1 w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
+                  style={{ ...INPUT, resize: 'vertical', lineHeight: 1.6 }}
                   placeholder="Quelques mots sur vous…"
                 />
               </div>
             </div>
           </section>
 
-          <div className="flex items-center gap-3 pt-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '0.5rem' }}>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
+              style={{ padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', opacity: submitting ? 0.6 : 1 }}
             >
               {submitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
-            <Link
-              href="/profile"
-              className="px-6 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
-            >
+            <Link href="/profile" style={{ padding: '0.65rem 1.5rem', background: '#fff', color: 'var(--foreground)', border: '1px solid var(--border)', fontSize: '0.875rem', textDecoration: 'none' }}>
               Annuler
             </Link>
           </div>
-        </form>
-      )}
-    </div>
-  );
-}
 
-function Skeleton() {
-  return (
-    <div className="max-w-3xl mx-auto animate-pulse space-y-4">
-      <div className="h-5 bg-gray-100 rounded" />
-      <div className="h-10 bg-gray-100 rounded" />
-      <div className="h-10 bg-gray-100 rounded" />
-      <div className="h-10 bg-gray-100 rounded" />
-      <div className="h-10 bg-gray-100 rounded" />
-      <div className="h-24 bg-gray-100 rounded" />
+        </form>
+      </div>
     </div>
   );
 }
