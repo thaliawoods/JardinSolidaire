@@ -312,15 +312,16 @@ export default function GardensList() {
                     }}
                     style={{
                       position: "absolute",
-                      top: "0.625rem",
-                      right: "0.625rem",
+                      top: "0.75rem",
+                      right: "0.75rem",
                       background: "none",
                       border: "none",
-                      padding: "0.25rem",
+                      padding: 0,
                       cursor: "pointer",
-                      fontSize: "1.25rem",
+                      fontSize: "1.375rem",
                       lineHeight: 1,
-                      color: favbed ? "var(--green)" : "var(--muted)",
+                      color: favbed ? "#ec4899" : "#fff",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.35)",
                     }}
                     aria-label={favbed ? "Retirer des favoris" : "Ajouter aux favoris"}
                     title={favbed ? "Retirer des favoris" : "Ajouter aux favoris"}

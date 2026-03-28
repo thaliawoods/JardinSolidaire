@@ -38,7 +38,7 @@ function greenAvatar(first, last) {
     <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/>
     </linearGradient></defs>
-    <rect width="256" height="256" rx="24" ry="24" fill="url(#g)"/>
+    <rect width="256" height="256" fill="url(#g)"/>
     <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
       font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
   </svg>`;
@@ -53,118 +53,6 @@ function broadcastRoleChange(role) {
     sessionStorage.setItem('role', role);
     localStorage.setItem('role', role);
   } catch {}
-}
-
-/* ---------------- small UI helpers (same vibe as gardens) ---------------- */
-function Card({ children, className = '' }) {
-  return (
-    <section className={`rounded-2xl overflow-hidden shadow-md ring-1 ring-black/5 bg-white ${className}`}>
-      <div className="p-6">{children}</div>
-    </section>
-  );
-}
-
-function SoftTitle({ children }) {
-  return <h2 className="text-lg font-semibold text-gray-900">{children}</h2>;
-}
-
-function Pill({ children }) {
-  return (
-    <span className="rounded-full px-3 py-1 text-xs font-medium bg-green-50 text-green-800 ring-1 ring-green-200">
-      {children}
-    </span>
-  );
-}
-
-function MutedPill({ children }) {
-  return (
-    <span className="rounded-full px-3 py-1 text-xs font-medium bg-gray-50 text-gray-700 ring-1 ring-gray-200">
-      {children}
-    </span>
-  );
-}
-
-function TextBtn({ href, children }) {
-  return (
-    <Link
-      href={href}
-      className="px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 transition text-sm shadow-sm"
-    >
-      {children}
-    </Link>
-  );
-}
-
-function PrimaryBtn({ children, ...props }) {
-  return (
-    <button
-      {...props}
-      className={`px-6 py-2.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition disabled:opacity-60 ${
-        props.className || ''
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Input({ className = '', ...props }) {
-  return (
-    <input
-      {...props}
-      className={`w-full px-4 py-2.5 rounded-full border border-gray-200 shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700 ${className}`}
-    />
-  );
-}
-
-function Textarea({ className = '', ...props }) {
-  return (
-    <textarea
-      {...props}
-      className={`w-full px-4 py-2.5 rounded-2xl border border-gray-200 shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700 ${className}`}
-    />
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-medium text-gray-700 mb-2">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function InfoGrid({ children }) {
-  return <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>;
-}
-
-function InfoRow({ label, value }) {
-  return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/40 px-4 py-3">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="mt-1 text-sm font-medium text-gray-900 break-words">{value || '—'}</div>
-    </div>
-  );
-}
-
-function InfoFull({ label, children }) {
-  return (
-    <div className="sm:col-span-2 rounded-xl border border-gray-100 bg-gray-50/40 px-4 py-3">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="mt-1 text-sm text-gray-900">{children}</div>
-    </div>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="space-y-4 animate-pulse">
-      <div className="h-24 bg-gray-100 rounded-2xl" />
-      <div className="h-40 bg-gray-100 rounded-2xl" />
-      <div className="h-40 bg-gray-100 rounded-2xl" />
-    </div>
-  );
 }
 
 /* ---------------- helpers to qualify profiles ---------------- */
@@ -478,80 +366,368 @@ export default function Dashboard() {
 
   const hasIdentity = useMemo(() => !!(me?.firstName?.trim() && me?.lastName?.trim()), [me?.firstName, me?.lastName]);
 
+  /* ---------------- styles ---------------- */
+  const s = {
+    page: {
+      minHeight: '100vh',
+      background: '#fff',
+      padding: '3rem 1.5rem',
+    },
+    inner: {
+      maxWidth: '860px',
+      margin: '0 auto',
+    },
+    topRow: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '1rem',
+      marginBottom: '2rem',
+    },
+    h1: {
+      fontFamily: 'var(--font-display)',
+      fontSize: '2rem',
+      fontWeight: 400,
+      color: 'var(--foreground)',
+      margin: 0,
+    },
+    topActions: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+    },
+    flatBtn: {
+      padding: '0.5rem 1rem',
+      border: '1px solid var(--border)',
+      background: '#fff',
+      color: 'var(--foreground)',
+      fontSize: '0.875rem',
+      cursor: 'pointer',
+      textDecoration: 'none',
+      display: 'inline-block',
+      lineHeight: 1.5,
+    },
+    primaryBtn: {
+      padding: '0.5rem 1.25rem',
+      border: '1px solid var(--foreground)',
+      background: 'var(--foreground)',
+      color: '#fff',
+      fontSize: '0.875rem',
+      cursor: 'pointer',
+      display: 'inline-block',
+      lineHeight: 1.5,
+    },
+    primaryBtnDisabled: {
+      opacity: 0.5,
+      cursor: 'not-allowed',
+    },
+    flash: (type) => ({
+      marginBottom: '1.5rem',
+      border: '1px solid var(--border)',
+      padding: '0.75rem 1rem',
+      fontSize: '0.875rem',
+      whiteSpace: 'pre-wrap',
+      color: type === 'error' ? 'var(--foreground)' : 'var(--green)',
+      background: '#fff',
+    }),
+    skeleton: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1rem',
+    },
+    skeletonBlock: (h) => ({
+      height: h,
+      background: '#f3f4f6',
+      border: '1px solid var(--border)',
+    }),
+    modeRow: {
+      textAlign: 'center',
+      marginBottom: '2.5rem',
+    },
+    modeLabel: {
+      fontSize: '0.75rem',
+      textTransform: 'uppercase',
+      letterSpacing: '0.08em',
+      color: 'var(--muted)',
+      marginBottom: '0.5rem',
+    },
+    modeBtns: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+      fontSize: '0.9375rem',
+    },
+    modeBtn: (active) => ({
+      background: 'none',
+      border: 'none',
+      padding: '0.25rem 0.125rem',
+      cursor: 'pointer',
+      color: 'var(--foreground)',
+      fontSize: '0.9375rem',
+      fontFamily: 'inherit',
+      textDecoration: active ? 'underline' : 'none',
+      textUnderlineOffset: '3px',
+    }),
+    modeSep: {
+      color: 'var(--muted)',
+      padding: '0 0.375rem',
+      userSelect: 'none',
+    },
+    section: {
+      border: '1px solid var(--border)',
+      padding: '1.5rem',
+      marginBottom: '1.5rem',
+      background: '#fff',
+    },
+    sectionHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '0.75rem',
+      marginBottom: '1.25rem',
+    },
+    h2: {
+      fontFamily: 'var(--font-display)',
+      fontSize: '1.1rem',
+      fontWeight: 400,
+      color: 'var(--foreground)',
+      margin: 0,
+    },
+    badgeRow: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+    },
+    badge: {
+      display: 'inline-block',
+      border: '1px solid var(--border)',
+      padding: '0.125rem 0.5rem',
+      fontSize: '0.6875rem',
+      textTransform: 'uppercase',
+      letterSpacing: '0.07em',
+      color: 'var(--muted)',
+      background: '#fff',
+    },
+    profileTop: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '1rem',
+    },
+    avatar: {
+      width: '4rem',
+      height: '4rem',
+      objectFit: 'cover',
+      border: '1px solid var(--border)',
+      flexShrink: 0,
+      display: 'block',
+    },
+    avatarSm: {
+      width: '3rem',
+      height: '3rem',
+      objectFit: 'cover',
+      border: '1px solid var(--border)',
+      display: 'block',
+      flexShrink: 0,
+    },
+    profileBody: {
+      flex: 1,
+    },
+    infoGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '0.75rem',
+      marginTop: '1rem',
+    },
+    infoCell: {
+      border: '1px solid var(--border)',
+      padding: '0.625rem 0.875rem',
+      background: '#fff',
+    },
+    infoCellFull: {
+      gridColumn: '1 / -1',
+      border: '1px solid var(--border)',
+      padding: '0.625rem 0.875rem',
+      background: '#fff',
+    },
+    infoLabel: {
+      fontSize: '0.6875rem',
+      textTransform: 'uppercase',
+      letterSpacing: '0.07em',
+      color: 'var(--muted)',
+      marginBottom: '0.25rem',
+    },
+    infoValue: {
+      fontSize: '0.875rem',
+      color: 'var(--foreground)',
+      wordBreak: 'break-word',
+    },
+    noProfile: {
+      border: '1px solid var(--border)',
+      padding: '1rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '0.75rem',
+      background: '#fff',
+    },
+    noProfileText: {
+      fontSize: '0.875rem',
+      color: 'var(--muted)',
+    },
+    actionRow: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: '0.75rem',
+      marginTop: '1.25rem',
+      paddingTop: '1.25rem',
+      borderTop: '1px solid var(--border)',
+    },
+    skillTag: {
+      display: 'inline-block',
+      border: '1px solid var(--border)',
+      padding: '0.125rem 0.5rem',
+      fontSize: '0.75rem',
+      color: 'var(--foreground)',
+      background: '#fff',
+    },
+    skillWrap: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '0.375rem',
+      marginTop: '0.375rem',
+    },
+    formGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '1rem',
+      marginTop: '1rem',
+    },
+    formColSpan2: {
+      gridColumn: '1 / -1',
+    },
+    fieldLabel: {
+      display: 'block',
+      fontSize: '0.75rem',
+      textTransform: 'uppercase',
+      letterSpacing: '0.07em',
+      color: 'var(--muted)',
+      marginBottom: '0.375rem',
+    },
+    input: {
+      width: '100%',
+      padding: '0.5rem 0.75rem',
+      border: '1px solid var(--border)',
+      background: '#fff',
+      color: 'var(--foreground)',
+      fontSize: '0.875rem',
+      outline: 'none',
+      boxSizing: 'border-box',
+    },
+    inputDisabled: {
+      background: '#fafafa',
+      color: 'var(--muted)',
+    },
+    textarea: {
+      width: '100%',
+      padding: '0.5rem 0.75rem',
+      border: '1px solid var(--border)',
+      background: '#fff',
+      color: 'var(--foreground)',
+      fontSize: '0.875rem',
+      outline: 'none',
+      resize: 'vertical',
+      boxSizing: 'border-box',
+      fontFamily: 'inherit',
+    },
+    hint: {
+      fontSize: '0.75rem',
+      color: 'var(--muted)',
+      marginTop: '0.25rem',
+    },
+    avatarUploadRow: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.75rem',
+    },
+    noIdentityNote: {
+      border: '1px solid var(--border)',
+      padding: '0.75rem 1rem',
+      fontSize: '0.875rem',
+      color: 'var(--muted)',
+      background: '#fff',
+      marginTop: '0.5rem',
+    },
+    mutedNote: {
+      fontSize: '0.75rem',
+      color: 'var(--muted)',
+    },
+  };
+
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-green-700">Mon tableau de bord</h1>
-          <div className="flex items-center gap-2">
-            <TextBtn href="/">Accueil</TextBtn>
-            <button
-              onClick={() => { clearAuth(); router.replace('/login'); }}
-              className="px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition text-sm shadow-sm"
-            >
-              Déconnexion
-            </button>
-          </div>
+    <div style={s.page}>
+      <div style={s.inner}>
+
+        {/* Top bar */}
+        <div style={s.topRow}>
+          <h1 style={s.h1}>Mon tableau de bord</h1>
         </div>
 
+        {/* Flash message */}
         {msg && (
-          <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm whitespace-pre-wrap ${
-            msgType === 'error'
-              ? 'border-red-200 bg-red-50 text-red-800'
-              : 'border-emerald-200 bg-emerald-50 text-emerald-800'
-          }`}>
+          <div style={s.flash(msgType)}>
             {msg}
           </div>
         )}
 
-        {loading && <Skeleton />}
+        {/* Skeleton */}
+        {loading && (
+          <div style={s.skeleton}>
+            <div style={s.skeletonBlock('5rem')} />
+            <div style={s.skeletonBlock('10rem')} />
+            <div style={s.skeletonBlock('10rem')} />
+          </div>
+        )}
 
         {!loading && me && (
           <>
-            {/* Mode selector (gardens-like pill) */}
-            <div className="text-center mb-8" ref={roleSectionRef}>
-              <div className="inline-flex flex-col items-center gap-3">
-                <div className="text-sm font-semibold text-gray-800">Choisis ton mode</div>
-                <div className="inline-flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm">
-                  <button
-                    onClick={() => setActiveRole('OWNER')}
-                    className={`px-4 py-2 rounded-full text-sm transition ${
-                      role === 'OWNER' ? 'bg-pink-500 text-white' : 'hover:bg-gray-50 text-gray-800'
-                    }`}
-                  >
-                    Propriétaire
-                  </button>
-                  <button
-                    onClick={() => setActiveRole('GARDENER')}
-                    className={`px-4 py-2 rounded-full text-sm transition ${
-                      role === 'GARDENER' ? 'bg-pink-500 text-white' : 'hover:bg-gray-50 text-gray-800'
-                    }`}
-                  >
-                    Jardinier.e
-                  </button>
-                </div>
+            {/* Mode selector */}
+            <div style={s.modeRow} ref={roleSectionRef}>
+              <div style={s.modeLabel}>Choisis ton mode</div>
+              <div style={s.modeBtns}>
+                <button
+                  style={s.modeBtn(role === 'OWNER')}
+                  onClick={() => setActiveRole('OWNER')}
+                >
+                  Propriétaire
+                </button>
+                <span style={s.modeSep} aria-hidden>/</span>
+                <button
+                  style={s.modeBtn(role === 'GARDENER')}
+                  onClick={() => setActiveRole('GARDENER')}
+                >
+                  Jardinier.e
+                </button>
               </div>
             </div>
 
             {/* USER PROFILE */}
-            <Card className="mb-8">
-              <div className="flex items-start gap-4">
+            <div style={s.section}>
+              <div style={s.profileTop}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={avatarSrc || userFallback}
                   alt=""
-                  className="w-16 h-16 rounded-full object-cover shadow ring-1 ring-black/5"
-                  onError={(e) => {
-                    e.currentTarget.src = userFallback;
-                  }}
+                  style={s.avatar}
+                  onError={(e) => { e.currentTarget.src = userFallback; }}
                 />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <SoftTitle>Mon profil (compte)</SoftTitle>
+                <div style={s.profileBody}>
+                  <div style={s.sectionHeader}>
+                    <h2 style={s.h2}>Mon profil (compte)</h2>
                     {!showUserForm && (
                       <button
+                        style={s.flatBtn}
                         onClick={() => setShowUserForm(true)}
-                        className="px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 transition text-sm shadow-sm"
                       >
                         Modifier
                       </button>
@@ -559,103 +735,158 @@ export default function Dashboard() {
                   </div>
 
                   {!showUserForm ? (
-                    <InfoGrid>
-                      <InfoRow label="Nom" value={me?.lastName} />
-                      <InfoRow label="Prénom" value={me?.firstName} />
-                      <InfoRow label="Email" value={me?.email} />
-                      <InfoRow label="Téléphone" value={me?.phone} />
-                      <InfoRow label="Adresse" value={me?.address} />
-                      <InfoFull label="Bio">
-                        <div className="whitespace-pre-wrap">{me?.bio || '—'}</div>
-                      </InfoFull>
+                    <>
+                      <div style={s.infoGrid}>
+                        <div style={s.infoCell}>
+                          <div style={s.infoLabel}>Nom</div>
+                          <div style={s.infoValue}>{me?.lastName || '—'}</div>
+                        </div>
+                        <div style={s.infoCell}>
+                          <div style={s.infoLabel}>Prénom</div>
+                          <div style={s.infoValue}>{me?.firstName || '—'}</div>
+                        </div>
+                        <div style={s.infoCell}>
+                          <div style={s.infoLabel}>Email</div>
+                          <div style={s.infoValue}>{me?.email || '—'}</div>
+                        </div>
+                        <div style={s.infoCell}>
+                          <div style={s.infoLabel}>Téléphone</div>
+                          <div style={s.infoValue}>{me?.phone || '—'}</div>
+                        </div>
+                        <div style={s.infoCell}>
+                          <div style={s.infoLabel}>Adresse</div>
+                          <div style={s.infoValue}>{me?.address || '—'}</div>
+                        </div>
+                        <div style={s.infoCellFull}>
+                          <div style={s.infoLabel}>Bio</div>
+                          <div style={{ ...s.infoValue, whiteSpace: 'pre-wrap' }}>{me?.bio || '—'}</div>
+                        </div>
+                      </div>
 
                       {!hasIdentity && (
-                        <div className="sm:col-span-2">
-                          <div className="mt-1 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-                            Ajoute ton <b>prénom</b> et ton <b>nom</b> une seule fois ici : ensuite on les réutilise
-                            automatiquement pour Propriétaire / Jardinier.e.
-                          </div>
+                        <div style={s.noIdentityNote}>
+                          Ajoute ton <strong>prénom</strong> et ton <strong>nom</strong> une seule fois ici : ensuite
+                          on les réutilise automatiquement pour Propriétaire / Jardinier.e.
                         </div>
                       )}
-                    </InfoGrid>
+                    </>
                   ) : (
-                    <form onSubmit={saveUser} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Field label="Prénom">
-                        <Input name="firstName" value={form.firstName} onChange={onUserChange} required />
-                      </Field>
-                      <Field label="Nom">
-                        <Input name="lastName" value={form.lastName} onChange={onUserChange} required />
-                      </Field>
+                    <form onSubmit={saveUser} style={s.formGrid}>
+                      <label style={{ display: 'block' }}>
+                        <span style={s.fieldLabel}>Prénom</span>
+                        <input
+                          style={s.input}
+                          name="firstName"
+                          value={form.firstName}
+                          onChange={onUserChange}
+                          required
+                        />
+                      </label>
 
-                      <Field label="Email">
-                        <Input name="email" value={form.email} disabled className="bg-gray-50 text-gray-500" />
-                      </Field>
+                      <label style={{ display: 'block' }}>
+                        <span style={s.fieldLabel}>Nom</span>
+                        <input
+                          style={s.input}
+                          name="lastName"
+                          value={form.lastName}
+                          onChange={onUserChange}
+                          required
+                        />
+                      </label>
 
-                      <Field label="Téléphone (optionnel)">
-                        <Input
+                      <label style={{ display: 'block' }}>
+                        <span style={s.fieldLabel}>Email</span>
+                        <input
+                          style={{ ...s.input, ...s.inputDisabled }}
+                          name="email"
+                          value={form.email}
+                          disabled
+                        />
+                      </label>
+
+                      <label style={{ display: 'block' }}>
+                        <span style={s.fieldLabel}>Téléphone (optionnel)</span>
+                        <input
+                          style={s.input}
                           name="phone"
                           value={form.phone}
                           onChange={onUserChange}
                           placeholder="06 12 34 56 78"
                           inputMode="tel"
                         />
-                        <div className="mt-1 text-xs text-gray-500">Chiffres + espaces + + ( ) -</div>
-                      </Field>
+                        <div style={s.hint}>Chiffres + espaces + + ( ) -</div>
+                      </label>
 
-                      <Field label="Adresse (optionnel)">
-                        <Input name="address" value={form.address} onChange={onUserChange} placeholder="Paris…" />
-                      </Field>
+                      <label style={{ display: 'block' }}>
+                        <span style={s.fieldLabel}>Adresse (optionnel)</span>
+                        <input
+                          style={s.input}
+                          name="address"
+                          value={form.address}
+                          onChange={onUserChange}
+                          placeholder="Paris…"
+                        />
+                      </label>
 
-                      <div className="sm:col-span-2">
-                        <Field label="Bio (optionnel)">
-                          <Textarea
+                      <div style={s.formColSpan2}>
+                        <label style={{ display: 'block' }}>
+                          <span style={s.fieldLabel}>Bio (optionnel)</span>
+                          <textarea
+                            style={s.textarea}
                             name="bio"
                             value={form.bio}
                             onChange={onUserChange}
                             rows={4}
                             placeholder="Quelques lignes sur toi…"
                           />
-                          <div className="mt-1 text-xs text-gray-500">{String(form.bio || '').length}/400</div>
-                        </Field>
+                          <div style={s.hint}>{String(form.bio || '').length}/400</div>
+                        </label>
                       </div>
 
-                      <div className="sm:col-span-2">
-                        <Field label="Avatar">
-                          <div className="flex items-center gap-3">
+                      <div style={s.formColSpan2}>
+                        <label style={{ display: 'block' }}>
+                          <span style={s.fieldLabel}>Avatar</span>
+                          <div style={s.avatarUploadRow}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={resolveMedia(form.avatarUrl) || greenAvatar(form.firstName, form.lastName)}
                               alt=""
-                              className="w-12 h-12 rounded-full object-cover shadow ring-1 ring-black/5"
-                              onError={(e) => {
-                                e.currentTarget.src = greenAvatar(form.firstName, form.lastName);
-                              }}
+                              style={s.avatarSm}
+                              onError={(e) => { e.currentTarget.src = greenAvatar(form.firstName, form.lastName); }}
                             />
-                            <input type="file" accept="image/*" onChange={onAvatarFile} className="text-sm" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={onAvatarFile}
+                              style={{ fontSize: '0.875rem' }}
+                            />
                           </div>
-
-                          <Input
+                          <input
+                            style={{ ...s.input, marginTop: '0.75rem' }}
                             name="avatarUrl"
                             value={form.avatarUrl}
                             onChange={onUserChange}
-                            className="mt-3"
                             placeholder="https://… ou /uploads/mon-avatar.jpg"
                           />
-                          {uploading && <div className="text-xs text-gray-500 mt-2">Téléversement…</div>}
-                        </Field>
+                          {uploading && <div style={s.hint}>Téléversement…</div>}
+                        </label>
                       </div>
 
-                      <div className="sm:col-span-2 flex items-center gap-3 pt-2">
-                        <PrimaryBtn type="submit" disabled={savingUser}>
+                      <div style={{ ...s.formColSpan2, display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '0.5rem' }}>
+                        <button
+                          type="submit"
+                          disabled={savingUser}
+                          style={{ ...s.primaryBtn, ...(savingUser ? s.primaryBtnDisabled : {}) }}
+                        >
                           {savingUser ? 'Enregistrement…' : 'Enregistrer'}
-                        </PrimaryBtn>
+                        </button>
                         <button
                           type="button"
+                          style={s.flatBtn}
                           onClick={() => {
                             setShowUserForm(false);
                             setMsg('');
                           }}
-                          className="px-6 py-2.5 rounded-full bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 transition text-sm shadow-sm"
                         >
                           Annuler
                         </button>
@@ -664,155 +895,163 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* GARDENER CARD */}
-            <Card className="mb-6">
-              <div className="flex items-center justify-between gap-3">
-                <SoftTitle>Profil Jardinier.e</SoftTitle>
-                <div className="flex items-center gap-2">
+            <div style={s.section}>
+              <div style={s.sectionHeader}>
+                <h2 style={s.h2}>Profil Jardinier.e</h2>
+                <div style={s.badgeRow}>
                   {me?.gardener ? (
-                    me.gardener.published ? <Pill>Publié</Pill> : <MutedPill>Non publié</MutedPill>
+                    me.gardener.published
+                      ? <span style={s.badge}>Publié</span>
+                      : <span style={s.badge}>Non publié</span>
                   ) : (
-                    <MutedPill>Non créé</MutedPill>
+                    <span style={s.badge}>Non créé</span>
                   )}
                 </div>
               </div>
 
-              <div className="mt-4 text-sm text-gray-700">
-                {me?.gardener ? (
-                  <InfoGrid>
-                    <InfoRow label="Identité" value={`${me.firstName || ''} ${me.lastName || ''}`.trim()} />
-                    <InfoRow label="Adresse" value={me.gardener.location} />
-
-                    <InfoFull label="Compétences">
-                      {(me.gardener.skills || []).length ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {me.gardener.skills.slice(0, 10).map((s) => (
-                            <span
-                              key={s}
-                              className="rounded-full px-3 py-1 text-xs font-medium bg-green-50 text-green-800 ring-1 ring-green-200"
-                            >
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500">—</span>
-                      )}
-                    </InfoFull>
-
-                    <InfoRow label="Expérience" value={me.gardener.yearsExperience ?? '—'} />
-
-                    <InfoFull label="Intro">
-                      <div className="whitespace-pre-wrap">{me.gardener.intro || '—'}</div>
-                    </InfoFull>
-                  </InfoGrid>
-                ) : (
-                  <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex items-center justify-between gap-3">
-                    <div className="text-gray-700">Pas de profil jardinier.e encore.</div>
-                    <Link
-                      href="/edit-gardener"
-                      className="px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 transition text-sm shadow-sm"
-                    >
-                      Créer mon profil jardinier.e
-                    </Link>
+              {me?.gardener ? (
+                <div style={s.infoGrid}>
+                  <div style={s.infoCell}>
+                    <div style={s.infoLabel}>Identité</div>
+                    <div style={s.infoValue}>{`${me.firstName || ''} ${me.lastName || ''}`.trim() || '—'}</div>
                   </div>
-                )}
-              </div>
+                  <div style={s.infoCell}>
+                    <div style={s.infoLabel}>Adresse</div>
+                    <div style={s.infoValue}>{me.gardener.location || '—'}</div>
+                  </div>
+                  <div style={s.infoCellFull}>
+                    <div style={s.infoLabel}>Compétences</div>
+                    {(me.gardener.skills || []).length ? (
+                      <div style={s.skillWrap}>
+                        {me.gardener.skills.slice(0, 10).map((sk) => (
+                          <span key={sk} style={s.skillTag}>{sk}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ ...s.infoValue, marginTop: '0.25rem' }}>—</div>
+                    )}
+                  </div>
+                  <div style={s.infoCell}>
+                    <div style={s.infoLabel}>Expérience</div>
+                    <div style={s.infoValue}>{me.gardener.yearsExperience ?? '—'}</div>
+                  </div>
+                  <div style={s.infoCellFull}>
+                    <div style={s.infoLabel}>Intro</div>
+                    <div style={{ ...s.infoValue, whiteSpace: 'pre-wrap' }}>{me.gardener.intro || '—'}</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={s.noProfile}>
+                  <span style={s.noProfileText}>Pas de profil jardinier.e encore.</span>
+                  <Link href="/edit-gardener" style={s.flatBtn}>
+                    Créer mon profil jardinier.e
+                  </Link>
+                </div>
+              )}
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/edit-gardener"
-                  className="px-6 py-2.5 rounded-full bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 transition text-sm shadow-sm"
-                >
+              <div style={s.actionRow}>
+                <Link href="/edit-gardener" style={s.flatBtn}>
                   {me?.gardener ? 'Modifier' : 'Créer'}
                 </Link>
 
                 {me?.gardener && (
-                  <PrimaryBtn
+                  <button
                     type="button"
                     disabled={busy || !hasIdentity}
+                    style={{ ...s.primaryBtn, ...(busy || !hasIdentity ? s.primaryBtnDisabled : {}) }}
                     onClick={() => togglePublish('gardener', !me.gardener.published)}
                     title={!hasIdentity ? "Ajoute prénom/nom dans le profil compte d'abord" : ''}
                   >
                     {me.gardener.published ? 'Retirer' : 'Publier'}
-                  </PrimaryBtn>
+                  </button>
                 )}
 
                 {!hasIdentity && (
-                  <span className="text-xs text-gray-500">(publier nécessite prénom/nom côté compte)</span>
+                  <span style={s.mutedNote}>(publier nécessite prénom/nom côté compte)</span>
                 )}
               </div>
-            </Card>
+            </div>
 
             {/* OWNER CARD */}
-            <Card>
-              <div className="flex items-center justify-between gap-3">
-                <SoftTitle>Profil Propriétaire</SoftTitle>
-                <div className="flex items-center gap-2">
+            <div style={{ ...s.section, marginBottom: 0 }}>
+              <div style={s.sectionHeader}>
+                <h2 style={s.h2}>Profil Propriétaire</h2>
+                <div style={s.badgeRow}>
                   {me?.owner ? (
-                    me.owner.published ? <Pill>Publié</Pill> : <MutedPill>Non publié</MutedPill>
+                    me.owner.published
+                      ? <span style={s.badge}>Publié</span>
+                      : <span style={s.badge}>Non publié</span>
                   ) : (
-                    <MutedPill>Non créé</MutedPill>
+                    <span style={s.badge}>Non créé</span>
                   )}
                 </div>
               </div>
 
-              <div className="mt-4 text-sm text-gray-700">
-                {me?.owner ? (
-                  <InfoGrid>
-                    <InfoRow label="Identité" value={`${me.firstName || ''} ${me.lastName || ''}`.trim()} />
-                    <InfoRow label="Quartier" value={me.owner.district} />
-                    <InfoRow label="Disponibilité" value={me.owner.availability} />
-                    <InfoRow label="Surface" value={me.owner.area ? `${me.owner.area} m²` : '—'} />
-                    <InfoRow label="Type de jardin" value={me.owner.kind} />
-
-                    <InfoFull label="Intro">
-                      <div className="whitespace-pre-wrap">{me.owner.intro || '—'}</div>
-                    </InfoFull>
-
-                    <InfoFull label="Description">
-                      <div className="whitespace-pre-wrap">{me.owner.description || '—'}</div>
-                    </InfoFull>
-                  </InfoGrid>
-                ) : (
-                  <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex items-center justify-between gap-3">
-                    <div className="text-gray-700">Pas de profil propriétaire encore.</div>
-                    <Link
-                      href="/edit-owner"
-                      className="px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 transition text-sm shadow-sm"
-                    >
-                      Créer mon profil propriétaire
-                    </Link>
+              {me?.owner ? (
+                <div style={s.infoGrid}>
+                  <div style={s.infoCell}>
+                    <div style={s.infoLabel}>Identité</div>
+                    <div style={s.infoValue}>{`${me.firstName || ''} ${me.lastName || ''}`.trim() || '—'}</div>
                   </div>
-                )}
-              </div>
+                  <div style={s.infoCell}>
+                    <div style={s.infoLabel}>Quartier</div>
+                    <div style={s.infoValue}>{me.owner.district || '—'}</div>
+                  </div>
+                  <div style={s.infoCell}>
+                    <div style={s.infoLabel}>Disponibilité</div>
+                    <div style={s.infoValue}>{me.owner.availability || '—'}</div>
+                  </div>
+                  <div style={s.infoCell}>
+                    <div style={s.infoLabel}>Surface</div>
+                    <div style={s.infoValue}>{me.owner.area ? `${me.owner.area} m²` : '—'}</div>
+                  </div>
+                  <div style={s.infoCell}>
+                    <div style={s.infoLabel}>Type de jardin</div>
+                    <div style={s.infoValue}>{me.owner.kind || '—'}</div>
+                  </div>
+                  <div style={s.infoCellFull}>
+                    <div style={s.infoLabel}>Intro</div>
+                    <div style={{ ...s.infoValue, whiteSpace: 'pre-wrap' }}>{me.owner.intro || '—'}</div>
+                  </div>
+                  <div style={s.infoCellFull}>
+                    <div style={s.infoLabel}>Description</div>
+                    <div style={{ ...s.infoValue, whiteSpace: 'pre-wrap' }}>{me.owner.description || '—'}</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={s.noProfile}>
+                  <span style={s.noProfileText}>Pas de profil propriétaire encore.</span>
+                  <Link href="/edit-owner" style={s.flatBtn}>
+                    Créer mon profil propriétaire
+                  </Link>
+                </div>
+              )}
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/edit-owner"
-                  className="px-6 py-2.5 rounded-full bg-white border border-gray-200 text-gray-900 hover:bg-gray-50 transition text-sm shadow-sm"
-                >
+              <div style={s.actionRow}>
+                <Link href="/edit-owner" style={s.flatBtn}>
                   {me?.owner ? 'Modifier' : 'Créer'}
                 </Link>
 
                 {me?.owner && (
-                  <PrimaryBtn
+                  <button
                     type="button"
                     disabled={busy || !hasIdentity}
+                    style={{ ...s.primaryBtn, ...(busy || !hasIdentity ? s.primaryBtnDisabled : {}) }}
                     onClick={() => togglePublish('owner', !me.owner.published)}
                     title={!hasIdentity ? "Ajoute prénom/nom dans le profil compte d'abord" : ''}
                   >
                     {me.owner.published ? 'Retirer' : 'Publier'}
-                  </PrimaryBtn>
+                  </button>
                 )}
 
                 {!hasIdentity && (
-                  <span className="text-xs text-gray-500">(publier nécessite prénom/nom côté compte)</span>
+                  <span style={s.mutedNote}>(publier nécessite prénom/nom côté compte)</span>
                 )}
               </div>
-            </Card>
+            </div>
           </>
         )}
       </div>

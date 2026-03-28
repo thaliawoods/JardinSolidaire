@@ -139,7 +139,7 @@ export default function GardenerClient({ id: idProp }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
-      <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px' }}>
+      <main style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px' }}>
 
         {/* Back link */}
         <div style={{ marginBottom: 32 }}>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { unreadCount } from '@/lib/messages';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -54,6 +55,7 @@ const LINK = {
 const LINK_MUTED = { ...LINK, color: 'var(--muted)' };
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [me, setMe] = useState(null);
   const [loadingMe, setLoadingMe] = useState(true);
@@ -61,7 +63,6 @@ export default function Navbar() {
   const [unread, setUnread] = useState(0);
   const [inboxUnread, setInboxUnread] = useState(0);
   const menuRef = useRef(null);
-  const menuRefMobile = useRef(null);
 
   const user = me?.user ?? null;
 
@@ -77,9 +78,7 @@ export default function Navbar() {
   useEffect(() => {
     if (!menuOpen) return;
     function handle(e) {
-      const inDesktop = menuRef.current && menuRef.current.contains(e.target);
-      const inMobile = menuRefMobile.current && menuRefMobile.current.contains(e.target);
-      if (!inDesktop && !inMobile) setMenuOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
     }
     document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
@@ -215,7 +214,7 @@ export default function Navbar() {
       <div style={INNER}>
 
         {/* Wordmark */}
-        <Link href="/" style={{ textDecoration: 'none' }}>
+        <Link href="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
           <span style={{
             fontFamily: 'var(--font-display)',
             fontSize: '1.15rem',
@@ -228,64 +227,62 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop right */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }} className="hidden md:flex">
+        {/* Right side — always visible */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', minWidth: 0 }}>
 
-          {/* Role switcher */}
+          {/* Role switcher — desktop only */}
           {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-              <button
-                onClick={() => switchRole('OWNER')}
-                type="button"
-                style={{
-                  ...LINK,
-                  textDecoration: role === 'OWNER' ? 'underline' : 'none',
-                  textUnderlineOffset: '3px',
-                  color: role === 'OWNER' ? 'var(--foreground)' : 'var(--muted)',
-                }}
-              >
+            <div className="hidden md:flex" style={{ alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+              <button onClick={() => switchRole('OWNER')} type="button" style={{ ...LINK, textDecoration: role === 'OWNER' ? 'underline' : 'none', textUnderlineOffset: '3px', color: role === 'OWNER' ? 'var(--foreground)' : 'var(--muted)' }}>
                 Propriétaire
               </button>
               <span style={{ color: 'var(--border)', userSelect: 'none' }}>/</span>
-              <button
-                onClick={() => switchRole('GARDENER')}
-                type="button"
-                style={{
-                  ...LINK,
-                  textDecoration: role === 'GARDENER' ? 'underline' : 'none',
-                  textUnderlineOffset: '3px',
-                  color: role === 'GARDENER' ? 'var(--foreground)' : 'var(--muted)',
-                }}
-              >
+              <button onClick={() => switchRole('GARDENER')} type="button" style={{ ...LINK, textDecoration: role === 'GARDENER' ? 'underline' : 'none', textUnderlineOffset: '3px', color: role === 'GARDENER' ? 'var(--foreground)' : 'var(--muted)' }}>
                 Jardinier·e
               </button>
             </div>
           )}
 
-          {/* Auth links (guest) */}
+          {/* Nav links — always visible */}
+          <Link href="/gardens" style={{ ...LINK_MUTED, whiteSpace: 'nowrap', ...(pathname?.startsWith('/gardens') ? { color: 'var(--green)', fontWeight: 600 } : {}) }}>Les jardins</Link>
+          <Link href="/gardeners" style={{ ...LINK_MUTED, whiteSpace: 'nowrap', ...(pathname?.startsWith('/gardeners') ? { color: 'var(--green)', fontWeight: 600 } : {}) }}>Les jardinier·es</Link>
+
+          {/* Auth links (guest) — desktop only */}
           {!loadingMe && !user && (
-            <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+            <div className="hidden md:flex" style={{ gap: '1.25rem', alignItems: 'center' }}>
               <Link href="/login" style={LINK}>Se connecter</Link>
-              <Link href="/register" style={{ ...LINK, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
-                S&apos;inscrire
-              </Link>
+              <Link href="/register" style={{ ...LINK, textDecoration: 'underline', textUnderlineOffset: '3px' }}>S&apos;inscrire</Link>
             </div>
           )}
 
-          {/* Inbox badge */}
-          {user && role === 'OWNER' && (
-            <Link href="/owner/inbox" style={{ ...LINK, position: 'relative' }}>
-              Demandes
-              {inboxUnread > 0 && (
-                <sup style={{ fontSize: '0.65rem', color: 'var(--green)', marginLeft: 2 }}>
-                  {inboxUnread > 9 ? '9+' : inboxUnread}
-                </sup>
+          {/* Connected user name — desktop only */}
+          {user && displayName && (
+            <span className="hidden md:inline" style={{ fontSize: '0.875rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{displayName}</span>
+          )}
+
+          {/* Messages icon — always visible when logged in */}
+          {user && (
+            <Link href="/messages" style={{ ...LINK, position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }} title="Messagerie">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/envelope-heart.jpg" alt="Messagerie" style={{ width: '1.75rem', height: 'auto', display: 'block' }} />
+              {unread > 0 && (
+                <sup style={{ fontSize: '0.65rem', color: 'var(--green)' }}>{unread > 9 ? '9+' : unread}</sup>
               )}
             </Link>
           )}
 
-          {/* Menu toggle */}
-          <div style={{ position: 'relative' }} ref={menuRef}>
+          {/* Inbox badge — desktop only */}
+          {user && role === 'OWNER' && (
+            <Link href="/owner/inbox" className="hidden md:inline" style={{ ...LINK, position: 'relative', whiteSpace: 'nowrap' }}>
+              Demandes
+              {inboxUnread > 0 && (
+                <sup style={{ fontSize: '0.65rem', color: 'var(--green)', marginLeft: 2 }}>{inboxUnread > 9 ? '9+' : inboxUnread}</sup>
+              )}
+            </Link>
+          )}
+
+          {/* Menu toggle — always visible */}
+          <div style={{ position: 'relative', flexShrink: 0 }} ref={menuRef}>
             <button
               onClick={() => setMenuOpen(v => !v)}
               type="button"
@@ -306,29 +303,6 @@ export default function Navbar() {
               onLogout={handleLogout}
             />}
           </div>
-        </div>
-
-        {/* Mobile: menu toggle only */}
-        <div className="flex md:hidden" ref={menuRefMobile} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setMenuOpen(v => !v)}
-            type="button"
-            style={{ ...LINK, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-            aria-expanded={menuOpen}
-          >
-            {menuOpen ? 'Fermer' : 'Menu'}
-          </button>
-
-          {menuOpen && <DropdownMenu
-            user={user}
-            displayName={displayName}
-            role={role}
-            unread={unread}
-            inboxUnread={inboxUnread}
-            onClose={() => setMenuOpen(false)}
-            onLogout={handleLogout}
-            mobile
-          />}
         </div>
 
       </div>
@@ -372,8 +346,6 @@ function DropdownMenu({ user, displayName, role, unread, inboxUnread, onClose, o
         <>
           <Link href="/login" style={itemStyle} onClick={onClose}>Se connecter</Link>
           <Link href="/register" style={itemStyle} onClick={onClose}>S&apos;inscrire</Link>
-          <Link href="/gardens" style={itemStyle} onClick={onClose}>Les jardins</Link>
-          <Link href="/gardeners" style={itemStyle} onClick={onClose}>Les jardinier·es</Link>
         </>
       ) : (
         <>
@@ -381,8 +353,6 @@ function DropdownMenu({ user, displayName, role, unread, inboxUnread, onClose, o
             <div style={{ ...muted, cursor: 'default' }}>{displayName}</div>
           )}
           <Link href="/dashboard" style={itemStyle} onClick={onClose}>Tableau de bord</Link>
-          <Link href="/gardens" style={itemStyle} onClick={onClose}>Les jardins</Link>
-          <Link href="/gardeners" style={itemStyle} onClick={onClose}>Les jardinier·es</Link>
           {role === 'OWNER' && (
             <>
               <Link href="/my-gardens" style={itemStyle} onClick={onClose}>Mes jardins</Link>
@@ -391,9 +361,6 @@ function DropdownMenu({ user, displayName, role, unread, inboxUnread, onClose, o
               </Link>
             </>
           )}
-          <Link href="/messages" style={itemStyle} onClick={onClose}>
-            Messagerie{unread > 0 ? ` (${unread})` : ''}
-          </Link>
           {role === 'GARDENER' && (
             <Link href="/bookings" style={itemStyle} onClick={onClose}>Mes réservations</Link>
           )}
