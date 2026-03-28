@@ -92,7 +92,7 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
     return (
       <div
         className={frameClass}
-        style={{ height: mapHeight, width: '100%', maxWidth: '100%' }}
+        style={{ height: mapHeight, width: '100%', maxWidth: '100%', isolation: 'isolate' }}
       >
         <div className="absolute inset-0 grid place-items-center bg-white/60 text-sm">
           Chargement de la carte…
@@ -104,7 +104,7 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
   return (
     <div
       className={frameClass}
-      style={{ height: mapHeight, width: '100%', maxWidth: '100%' }}
+      style={{ height: mapHeight, width: '100%', maxWidth: '100%', isolation: 'isolate' }}
     >
       <MapContainer
         center={center}

@@ -6,8 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-const BRAND_GREEN = "#16a34a";
-const BRAND_PINK = "#E3107D";
 const LOCAL_DIRS = ["/assets/", "/images/", "/img/", "/icons/"];
 
 function resolveMedia(u) {
@@ -29,81 +27,36 @@ function initials(a = "", b = "") {
   return (`${x}${y}`.toUpperCase() || "U");
 }
 
-function greenPlaceholder(first, last) {
+function darkAvatar(first, last) {
   const txt = initials(first, last);
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="24" fill="${BRAND_GREEN}"/>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" fill="#111111"/>
   <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
-        font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
+    font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
 </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 function normalizeOwner(raw) {
   if (!raw) return null;
-
   const base = raw.owner || raw.proprietaire || raw.utilisateur || raw;
-
   const firstName = base.firstName ?? base.prenom ?? "";
   const lastName = base.lastName ?? base.nom ?? "";
-
-  const avatarRaw = base.avatarUrl ?? base.photo_profil ?? base.avatar ?? null;
-  const avatarUrl = resolveMedia(avatarRaw);
-
-  const address = base.address ?? base.localisation ?? base.adresse ?? "—";
+  const avatarUrl = resolveMedia(base.avatarUrl ?? base.photo_profil ?? base.avatar ?? null);
+  const address = base.address ?? base.localisation ?? base.adresse ?? "";
   const availability = base.availability ?? base.disponibilite ?? "";
-  const surface =
-    base.surface ??
-    base.superficie ??
-    base.surface_m2 ??
-    base.superficie_m2 ??
-    "";
+  const surface = base.surface ?? base.superficie ?? base.surface_m2 ?? "";
   const gardenType = base.gardenType ?? base.type_jardin ?? base.kind ?? "";
-  const intro =
-    base.intro ??
-    base.presentation ??
-    base.biographie ??
-    base.description ??
-    "—";
-
-  // ✅ important pour ouvrir la conversation : côté API owners.js tu renvoies userId
+  const intro = base.intro ?? base.presentation ?? base.biographie ?? base.description ?? "";
   const ownerId = base.id != null ? String(base.id) : "";
   const userId = base.userId != null ? String(base.userId) : "";
-
-  return {
-    id: ownerId,
-    userId, // ✅ celui-ci sert à /messages/[userId]
-    firstName,
-    lastName,
-    avatarUrl,
-    address,
-    availability,
-    surface,
-    gardenType,
-    intro,
-  };
-}
-
-function Chip({ children }) {
-  return (
-    <span
-      className="px-3 py-1 rounded-full text-xs font-medium"
-      style={{
-        backgroundColor: "rgba(22,163,74,0.06)",
-        border: "1px solid rgba(22,163,74,0.18)",
-        color: "#14532d",
-      }}
-    >
-      {children}
-    </span>
-  );
+  return { id: ownerId, userId, firstName, lastName, avatarUrl, address, availability, surface, gardenType, intro };
 }
 
 export default function OwnerDetailPage() {
   const router = useRouter();
-  const params = useParams(); // ✅ fix Next.js app router
-  const id = params?.id; // /owners/[id]
+  const params = useParams();
+  const id = params?.id;
 
   const [owner, setOwner] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -111,174 +64,140 @@ export default function OwnerDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-
     let alive = true;
     (async () => {
       try {
         setLoading(true);
         setErr("");
-
         let res = await fetch(`${API_BASE}/api/owners/${id}`, { cache: "no-store" });
         if (!res.ok) res = await fetch(`${API_BASE}/api/proprietaires/${id}`, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
         const data = await res.json();
         if (!alive) return;
         setOwner(normalizeOwner(data));
-      } catch (e) {
-        if (alive) {
-          setErr("Impossible de charger le propriétaire.");
-          setOwner(null);
-        }
+      } catch {
+        if (alive) { setErr("Impossible de charger ce profil."); setOwner(null); }
       } finally {
         if (alive) setLoading(false);
       }
     })();
-
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [id]);
 
-  const fallback = useMemo(
-    () => greenPlaceholder(owner?.firstName, owner?.lastName),
-    [owner?.firstName, owner?.lastName]
-  );
+  const fallback = useMemo(() => darkAvatar(owner?.firstName, owner?.lastName), [owner?.firstName, owner?.lastName]);
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white px-6 py-10">
-        <div className="max-w-6xl mx-auto animate-pulse space-y-4">
-          <div className="h-24 bg-gray-100 rounded-2xl" />
-          <div className="h-36 bg-gray-100 rounded-2xl" />
-        </div>
-      </main>
+      <div style={{ minHeight: '100vh', background: '#fff', padding: '2rem 1.5rem' }}>
+        <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
+      </div>
     );
   }
 
   if (err || !owner) {
     return (
-      <main className="min-h-screen bg-white px-6 py-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
-            {err || "Impossible de charger le propriétaire."}
-          </div>
-          <button
-            onClick={() => router.back()}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition"
-          >
+      <div style={{ minHeight: '100vh', background: '#fff', padding: '2rem 1.5rem' }}>
+        <div style={{ maxWidth: '72rem', margin: '0 auto' }}>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>{err || 'Profil introuvable.'}</p>
+          <button onClick={() => router.back()} style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: '3px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             ← Retour
           </button>
         </div>
-      </main>
+      </div>
     );
   }
 
   const avatarSrc = owner.avatarUrl || fallback;
-
-  // ✅ la conversation est basée sur l'id user (ex: 238), pas l'id owner (ex: 128)
   const threadUserId = owner.userId || String(id);
 
+  const metaItems = [
+    owner.address && { label: 'Localisation', value: owner.address },
+    owner.gardenType && { label: 'Type', value: owner.gardenType },
+    owner.surface && { label: 'Surface', value: String(owner.surface) },
+    owner.availability && { label: 'Disponibilité', value: String(owner.availability) },
+  ].filter(Boolean);
+
   return (
-    <main className="min-h-screen bg-white px-6 py-10">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
+      <main style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+        {/* Back */}
+        <div>
           <button
             onClick={() => router.back()}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white text-green-700 border border-[rgba(22,163,74,0.25)] hover:bg-[rgba(22,163,74,0.04)] shadow-sm transition"
+            style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             ← Retour
           </button>
         </div>
 
-        <section className="rounded-2xl p-6 mb-6 bg-white border border-gray-100 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <div
-              className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full overflow-hidden flex-shrink-0"
-              style={{ border: "4px solid rgba(22,163,74,0.20)" }}
-            >
+        {/* Profile header */}
+        <section style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', alignItems: 'flex-start' }}>
+
+            {/* Avatar */}
+            <div style={{ width: 72, height: 72, flexShrink: 0, overflow: 'hidden' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={avatarSrc}
                 alt={`${owner.firstName} ${owner.lastName}`}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = fallback;
-                }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                onError={(e) => { e.currentTarget.src = fallback; }}
               />
             </div>
 
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl md:text-3xl font-semibold text-green-900 leading-tight">
+            {/* Name + meta */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, margin: 0, lineHeight: 1.1 }}>
                 {owner.firstName} {owner.lastName}
               </h1>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Chip>Propriétaire</Chip>
-                {owner.gardenType ? <Chip>{owner.gardenType}</Chip> : null}
-                {owner.address && owner.address !== "—" ? <Chip>{owner.address}</Chip> : null}
+              <p style={{ marginTop: '0.375rem', fontSize: '0.8125rem', color: 'var(--muted)' }}>Propriétaire</p>
+
+              {metaItems.length > 0 && (
+                <div style={{ marginTop: '0.875rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.8125rem', color: 'var(--muted)' }}>
+                  {metaItems.map(({ label, value }) => (
+                    <span key={label}>
+                      <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '0.6875rem', color: 'var(--green)' }}>{label}</span>
+                      {' '}{value}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* CTAs */}
+              <div style={{ marginTop: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/messages/${threadUserId}`)}
+                  style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: '3px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  Contacter →
+                </button>
+                <Link
+                  href="/gardens"
+                  style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
+                >
+                  Voir les jardins →
+                </Link>
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              <MetaPill label="Localisation" value={owner.address || "—"} />
-              <MetaPill label="Type" value={owner.gardenType || "—"} />
-              {owner.surface ? <MetaPill label="Surface" value={String(owner.surface)} /> : null}
-              {owner.availability ? <MetaPill label="Dispo" value={String(owner.availability)} /> : null}
-            </div>
-          </div>
-
-          {/* ✅ CTA rose -> ouvre la conversation */}
-          <div className="mt-5 flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={() => router.push(`/messages/${threadUserId}`)}
-              className="px-6 py-3 rounded-full text-white shadow-sm hover:opacity-95 transition w-full sm:w-auto"
-              style={{ backgroundColor: BRAND_PINK }}
-            >
-              Contacter
-            </button>
-
-            <Link
-              href="/gardens"
-              className="px-6 py-3 rounded-full border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 transition w-full sm:w-auto text-center"
-            >
-              Voir les jardins
-            </Link>
           </div>
         </section>
 
-        <section>
-          <Card title="Présentation">
-            <p className="mt-3 text-gray-700 whitespace-pre-wrap">{owner.intro || "—"}</p>
-          </Card>
-        </section>
-      </div>
-    </main>
-  );
-}
+        {/* Présentation */}
+        {owner.intro && (
+          <section style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
+            <p style={{ fontSize: '0.6875rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.875rem' }}>
+              Présentation
+            </p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--foreground)', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>
+              {owner.intro}
+            </p>
+          </section>
+        )}
 
-function Card({ title, children }) {
-  return (
-    <div className="rounded-2xl p-6 bg-white border border-gray-100 shadow-sm">
-      <h2 className="text-lg font-semibold text-green-800">{title}</h2>
-      {children}
-    </div>
-  );
-}
-
-function MetaPill({ label, value }) {
-  return (
-    <div
-      className="rounded-full px-4 py-2 text-sm"
-      style={{
-        backgroundColor: "rgba(22,163,74,0.06)",
-        border: "1px solid rgba(22,163,74,0.18)",
-        color: "#14532d",
-      }}
-      title={label}
-    >
-      <span className="opacity-80">{label} :</span> <span className="font-medium">{value}</span>
+      </main>
     </div>
   );
 }

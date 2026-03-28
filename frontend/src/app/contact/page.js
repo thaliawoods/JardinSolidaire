@@ -128,7 +128,7 @@ export default function ContactPage() {
               style={inputStyle}
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="À propos d'un jardin ou d'un.e jardinier.e…"
+              placeholder="À propos d'un jardin ou d'un·e jardinier·e…"
               required
             />
           </div>

@@ -4,28 +4,17 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { getBooking, updateBooking } from '@/lib/bookings';
-import BookingStatusBadge from '@/components/booking/BookingStatusBadge';
-
-/**
- * Statuts attendus côté back:
- * - pending
- * - confirmed
- * - cancelled
- * - completed
- */
-
-function normalizeStatus(s) {
-  return String(s || '').trim().toLowerCase();
-}
 
 function fmt(dt) {
-  try {
-    // si tu veux forcer en FR:
-    // return new Date(dt).toLocaleString('fr-FR');
-    return new Date(dt).toLocaleString();
-  } catch {
-    return '—';
-  }
+  try { return new Date(dt).toLocaleString('fr-FR'); } catch { return '—'; }
+}
+
+function statusLabel(s) {
+  if (s === 'pending') return 'En attente';
+  if (s === 'confirmed') return 'Confirmée';
+  if (s === 'cancelled') return 'Annulée';
+  if (s === 'completed') return 'Terminée';
+  return s || '—';
 }
 
 export default function BookingDetailPage() {
@@ -36,13 +25,10 @@ export default function BookingDetailPage() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // auth guard
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) router.push('/login');
+    if (!localStorage.getItem('token')) router.push('/login');
   }, [router]);
 
-  // load booking
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -53,218 +39,150 @@ export default function BookingDetailPage() {
         if (alive) setErr('Réservation introuvable.');
       }
     })();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [id]);
 
-  const status = useMemo(() => normalizeStatus(data?.status), [data?.status]);
+  const status = String(data?.status || '').toLowerCase();
 
-  const title = useMemo(() => {
-    if (!data) return '';
-    return data.title || `Réservation #${data.id}`;
-  }, [data]);
-
-  // ✅ actions affichées selon le statut (logique UI)
   const actions = useMemo(() => {
-    // On ne montre rien si on n’a pas encore la data
     if (!data) return [];
-
-    // Pending: confirmer ou annuler
-    if (status === 'pending') {
-      return [
-        { key: 'confirm', label: 'Confirmer', patch: { status: 'confirmed' } },
-        { key: 'cancel', label: 'Annuler', patch: { status: 'cancelled' }, danger: true },
-      ];
-    }
-
-    // Confirmed: marquer terminé ou annuler
-    if (status === 'confirmed') {
-      return [
-        { key: 'complete', label: 'Marquer terminé', patch: { status: 'completed' } },
-        { key: 'cancel', label: 'Annuler', patch: { status: 'cancelled' }, danger: true },
-      ];
-    }
-
-    // Cancelled / Completed: pas d’actions
-    if (status === 'cancelled' || status === 'completed') {
-      return [];
-    }
-
-    // fallback (si un statut inattendu arrive)
+    if (status === 'pending') return [
+      { key: 'confirm', label: 'Confirmer', patch: { status: 'confirmed' } },
+      { key: 'cancel', label: 'Annuler', patch: { status: 'cancelled' }, danger: true },
+    ];
+    if (status === 'confirmed') return [
+      { key: 'complete', label: 'Marquer terminé', patch: { status: 'completed' } },
+      { key: 'cancel', label: 'Annuler', patch: { status: 'cancelled' }, danger: true },
+    ];
     return [];
   }, [data, status]);
 
   const statusHint = useMemo(() => {
-    if (status === 'pending') return "En attente de validation. Tu peux confirmer ou annuler.";
-    if (status === 'confirmed') return "Réservation confirmée. Tu peux la marquer comme terminée, ou annuler si besoin.";
-    if (status === 'completed') return "Réservation terminée. Aucune action disponible.";
-    if (status === 'cancelled') return "Réservation annulée. Aucune action disponible.";
+    if (status === 'pending') return 'En attente de validation. Tu peux confirmer ou annuler.';
+    if (status === 'confirmed') return 'Réservation confirmée. Tu peux la marquer comme terminée ou annuler.';
+    if (status === 'completed') return 'Réservation terminée.';
+    if (status === 'cancelled') return 'Réservation annulée.';
     return '';
   }, [status]);
 
   async function doAction(patch) {
-    try {
-      setErr('');
-      setBusy(true);
-      const updated = await updateBooking(id, patch);
-      setData(updated);
-    } catch (e) {
-      setErr(e?.message || 'Erreur.');
-    } finally {
-      setBusy(false);
-    }
+    try { setBusy(true); setErr(''); const u = await updateBooking(id, patch); setData(u); }
+    catch (e) { setErr(e?.message || 'Erreur.'); }
+    finally { setBusy(false); }
   }
 
-  if (err) {
+  const title = data ? (data.title || `Réservation #${data.id}`) : '';
+
+  if (!data && !err) {
     return (
-      <div className="min-h-screen px-6 py-10 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {err}
-          </div>
-          <div className="mt-4">
-            <Link
-              href="/bookings"
-              className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm inline-flex"
-            >
-              ← Mes réservations
-            </Link>
-          </div>
-        </div>
+      <div style={{ minHeight: '100vh', background: '#fff', padding: '2rem 1.5rem' }}>
+        <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
       </div>
     );
   }
 
-  if (!data) {
+  if (err && !data) {
     return (
-      <div className="min-h-screen px-6 py-10 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-20 bg-gray-100 rounded-2xl" />
-            <div className="h-56 bg-gray-100 rounded-2xl" />
-          </div>
+      <div style={{ minHeight: '100vh', background: '#fff', padding: '2rem 1.5rem' }}>
+        <div style={{ maxWidth: '48rem', margin: '0 auto' }}>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>{err}</p>
+          <Link href="/bookings" style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+            ← Mes réservations
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-3xl mx-auto">
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
+      <main style={{ maxWidth: '48rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-green-700">{title}</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, margin: 0, lineHeight: 1.1 }}>
+              {title}
+            </h1>
+            <p style={{ marginTop: '0.375rem', fontSize: '0.8125rem', color: 'var(--muted)' }}>
               Jardin #{data.gardenId} · {fmt(data.startsAt)} → {fmt(data.endsAt)}
             </p>
           </div>
-
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
+            style={{ flexShrink: 0, fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             ← Retour
           </button>
         </div>
 
-        {/* Status card */}
-        <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 mb-6">
-          <div className="flex items-start justify-between gap-4">
+        {/* Status */}
+        <section style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
             <div>
-              <div className="text-xs text-gray-500">Statut</div>
-              <div className="mt-1">
-                <BookingStatusBadge status={data.status} />
-              </div>
+              <p style={{ fontSize: '0.6875rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.5rem' }}>Statut</p>
+              <p style={{ fontSize: '0.9375rem', color: 'var(--foreground)', margin: 0 }}>{statusLabel(status)}</p>
               {!!statusHint && (
-                <div className="mt-2 text-sm text-gray-600">
-                  {statusHint}
-                </div>
+                <p style={{ marginTop: '0.375rem', fontSize: '0.8125rem', color: 'var(--muted)', margin: '0.375rem 0 0' }}>{statusHint}</p>
               )}
             </div>
-
-            <Link
-              href="/bookings"
-              className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-            >
-              Mes réservations
+            <Link href="/bookings" style={{ fontSize: '0.875rem', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: '3px', flexShrink: 0 }}>
+              Mes réservations →
             </Link>
           </div>
+        </section>
 
-          <div
-            className="mt-4 h-1 w-full rounded-full"
-            style={{
-              background:
-                'linear-gradient(90deg, rgba(22,163,74,0.25), rgba(227,16,125,0.22))',
-            }}
-          />
-        </div>
-
-        {/* Details card */}
-        <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-6 space-y-4">
-          <div className="text-sm text-gray-600">
-            <span className="text-gray-500">Jardin :</span>{' '}
-            <span className="text-gray-900 font-medium">#{data.gardenId}</span>
+        {/* Details */}
+        <section style={{ border: '1px solid var(--border)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ fontSize: '0.8125rem' }}>
+            <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '0.6875rem', color: 'var(--green)' }}>Jardin</span>
+            {' '}#{data.gardenId}
           </div>
-
-          <div className="text-sm text-gray-600">
-            <span className="text-gray-500">Créneau :</span>{' '}
-            <span className="text-gray-900">
-              {fmt(data.startsAt)} → {fmt(data.endsAt)}
-            </span>
+          <div style={{ fontSize: '0.8125rem' }}>
+            <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '0.6875rem', color: 'var(--green)' }}>Créneau</span>
+            {' '}{fmt(data.startsAt)} → {fmt(data.endsAt)}
           </div>
-
           {data.notes ? (
-            <div className="pt-1">
-              <div className="text-sm font-medium text-gray-700">Notes</div>
-              <p className="text-sm text-gray-700 whitespace-pre-line mt-1">
-                {data.notes}
-              </p>
+            <div style={{ fontSize: '0.8125rem' }}>
+              <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '0.6875rem', color: 'var(--green)' }}>Notes</span>
+              <p style={{ margin: '0.375rem 0 0', color: 'var(--foreground)', whiteSpace: 'pre-line', lineHeight: 1.6 }}>{data.notes}</p>
             </div>
           ) : (
-            <div className="pt-1 text-sm text-gray-500">Aucune note ajoutée.</div>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', margin: 0 }}>Aucune note ajoutée.</p>
           )}
 
-          {/* Actions (logiques) */}
-          <div className="pt-2">
-            <div className="text-sm font-medium text-gray-700 mb-2">Actions</div>
-
-            {actions.length === 0 ? (
-              <div className="text-sm text-gray-500">
-                Aucune action disponible pour ce statut.
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
+          {/* Actions */}
+          {actions.length > 0 && (
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+              <p style={{ fontSize: '0.6875rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.75rem' }}>Actions</p>
+              {err && <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: '0.75rem' }}>{err}</p>}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                 {actions.map((a) => (
                   <button
                     key={a.key}
                     disabled={busy}
                     onClick={() => doAction(a.patch)}
-                    className={[
-                      'rounded-full px-4 py-2 shadow-sm transition text-sm disabled:opacity-60 border',
-                      a.danger
-                        ? 'bg-white border-red-200 hover:bg-red-50 text-red-700'
-                        : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-800',
-                    ].join(' ')}
+                    style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--foreground)',
+                      background: 'none',
+                      border: '1px solid var(--border)',
+                      padding: '0.5rem 1rem',
+                      cursor: busy ? 'not-allowed' : 'pointer',
+                      fontFamily: 'inherit',
+                      opacity: busy ? 0.5 : 1,
+                    }}
                   >
                     {busy ? '…' : a.label}
                   </button>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </section>
 
-          <div
-            className="mt-4 h-1 w-full rounded-full"
-            style={{
-              background:
-                'linear-gradient(90deg, rgba(22,163,74,0.18), rgba(227,16,125,0.16))',
-            }}
-          />
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

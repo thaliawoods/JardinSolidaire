@@ -35,10 +35,7 @@ function initials(a = '', b = '') {
 function greenAvatar(first, last) {
   const txt = initials(first, last);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/>
-    </linearGradient></defs>
-    <rect width="256" height="256" fill="url(#g)"/>
+    <rect width="256" height="256" fill="#2d6a4f"/>
     <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
       font-family="Inter, Arial" font-weight="700" font-size="110" fill="#fff">${txt}</text>
   </svg>`;
@@ -204,7 +201,7 @@ export default function Dashboard() {
       setRole(next);
       broadcastRoleChange(next);
       await loadMe();
-      flash(`Mode : ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier.e'} activé`);
+      flash(`Mode : ${next === 'OWNER' ? 'Propriétaire' : 'Jardinier·e'} activé`);
     } catch {
       flash("Impossible de changer d'interface.", 'error');
     }
@@ -706,7 +703,7 @@ export default function Dashboard() {
                   style={s.modeBtn(role === 'GARDENER')}
                   onClick={() => setActiveRole('GARDENER')}
                 >
-                  Jardinier.e
+                  Jardinier·e
                 </button>
               </div>
             </div>
@@ -766,7 +763,7 @@ export default function Dashboard() {
                       {!hasIdentity && (
                         <div style={s.noIdentityNote}>
                           Ajoute ton <strong>prénom</strong> et ton <strong>nom</strong> une seule fois ici : ensuite
-                          on les réutilise automatiquement pour Propriétaire / Jardinier.e.
+                          on les réutilise automatiquement pour Propriétaire / Jardinier·e.
                         </div>
                       )}
                     </>
@@ -900,7 +897,7 @@ export default function Dashboard() {
             {/* GARDENER CARD */}
             <div style={s.section}>
               <div style={s.sectionHeader}>
-                <h2 style={s.h2}>Profil Jardinier.e</h2>
+                <h2 style={s.h2}>Profil Jardinier·e</h2>
                 <div style={s.badgeRow}>
                   {me?.gardener ? (
                     me.gardener.published
@@ -945,9 +942,9 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div style={s.noProfile}>
-                  <span style={s.noProfileText}>Pas de profil jardinier.e encore.</span>
+                  <span style={s.noProfileText}>Pas de profil jardinier·e encore.</span>
                   <Link href="/edit-gardener" style={s.flatBtn}>
-                    Créer mon profil jardinier.e
+                    Créer mon profil jardinier·e
                   </Link>
                 </div>
               )}
