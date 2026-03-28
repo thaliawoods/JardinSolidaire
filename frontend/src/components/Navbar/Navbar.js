@@ -250,8 +250,8 @@ export default function Navbar() {
           {/* Auth links (guest) — desktop only */}
           {!loadingMe && !user && (
             <div className="hidden md:flex" style={{ gap: '1.25rem', alignItems: 'center' }}>
-              <Link href="/login" style={LINK}>Se connecter</Link>
-              <Link href="/register" style={{ ...LINK, textDecoration: 'underline', textUnderlineOffset: '3px' }}>S&apos;inscrire</Link>
+              <Link href="/login" style={{ ...LINK, textDecoration: pathname === '/login' ? 'underline' : 'none', textUnderlineOffset: '3px' }}>Se connecter</Link>
+              <Link href="/register" style={{ ...LINK, textDecoration: pathname === '/register' ? 'underline' : 'none', textUnderlineOffset: '3px' }}>S&apos;inscrire</Link>
             </div>
           )}
 

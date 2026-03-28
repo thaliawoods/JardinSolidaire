@@ -7,9 +7,11 @@ import { apiFetch } from '@/lib/api';
 import { uploadImage } from '@/lib/uploads';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-const BRAND = '#16a34a';
 const MAX_MB = 5;
 const MAX_FILES = 8;
+
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const LABEL = { display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: '0.4rem' };
 
 function resolveMedia(u) {
   if (!u) return '';
@@ -20,42 +22,19 @@ function resolveMedia(u) {
   return `${API_BASE}/uploads/${s.replace(/^\.?\/*/, '')}`;
 }
 
-function Field({ label, hint, children }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-end justify-between gap-3">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        {hint ? <span className="text-xs text-gray-500">{hint}</span> : null}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="animate-pulse space-y-4">
-      <div className="h-20 bg-gray-100 rounded-2xl" />
-      <div className="h-96 bg-gray-100 rounded-2xl" />
-    </div>
-  );
-}
-
 export default function AddGardenPage() {
   const router = useRouter();
 
-  // existing gardens (info banner only)
   const [mine, setMine] = useState(null);
   const [loadingMine, setLoadingMine] = useState(true);
 
-  // form
   const [form, setForm] = useState({
     title: '',
     description: '',
     address: '',
     area: '',
     needs: '',
-    photos: [], // array of "/uploads/xxx.jpg"
+    photos: [],
   });
 
   const [busy, setBusy] = useState(false);
@@ -93,50 +72,32 @@ export default function AddGardenPage() {
   async function onAddFiles(e) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-
     setMsg('');
     setErr('');
-
-    // guards
     const left = Math.max(0, MAX_FILES - form.photos.length);
     const batch = files.slice(0, left);
     if (files.length > left) {
       setMsg(`Tu peux ajouter au maximum ${MAX_FILES} photos (il te reste ${left}).`);
     }
-
     const filtered = batch.filter((f) => {
-      if (/\.heic$/i.test(f.name)) {
-        setErr('HEIC non supporté ici : convertis en JPG/PNG/WebP avant upload.');
-        return false;
-      }
-      if (!/^image\//.test(f.type)) {
-        setErr('Choisis uniquement des images (JPG/PNG/WebP).');
-        return false;
-      }
-      if (f.size > MAX_MB * 1024 * 1024) {
-        setErr(`“${f.name}” est trop lourde (max ${MAX_MB} Mo).`);
-        return false;
-      }
+      if (/\.heic$/i.test(f.name)) { setErr('HEIC non supporté ici : convertis en JPG/PNG/WebP avant upload.'); return false; }
+      if (!/^image\//.test(f.type)) { setErr('Choisis uniquement des images (JPG/PNG/WebP).'); return false; }
+      if (f.size > MAX_MB * 1024 * 1024) { setErr(`"${f.name}" est trop lourde (max ${MAX_MB} Mo).`); return false; }
       return true;
     });
-
-    if (!filtered.length) {
-      e.target.value = '';
-      return;
-    }
-
+    if (!filtered.length) { e.target.value = ''; return; }
     setUploading(true);
     try {
       const uploaded = [];
       for (const file of filtered) {
-        const { path } = await uploadImage(file); // => "/uploads/xxx.ext"
+        const { path } = await uploadImage(file);
         uploaded.push(path);
       }
       setForm((p) => ({ ...p, photos: [...p.photos, ...uploaded] }));
-      setMsg((prev) => prev || 'Photo(s) ajoutée(s) ✔');
+      setMsg((prev) => prev || 'Photo(s) ajoutée(s).');
     } catch (error) {
       console.error(error);
-      setErr("Échec d’upload d’une ou plusieurs images.");
+      setErr("Échec d'upload d'une ou plusieurs images.");
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -151,38 +112,26 @@ export default function AddGardenPage() {
     e.preventDefault();
     setMsg('');
     setErr('');
-
-    if (!form.title.trim() || !form.address.trim()) {
-      setErr('Titre et adresse sont requis.');
-      return;
-    }
-
+    if (!form.title.trim() || !form.address.trim()) { setErr('Titre et adresse sont requis.'); return; }
     try {
       setBusy(true);
-
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        address: form.address.trim(),
-        needs: form.needs.trim() || undefined,
-        area: form.area ? Number(form.area) : undefined,
-        photos: form.photos,
-      };
-
-      await apiFetch('/api/gardens', { method: 'POST', body: payload });
-
-      try {
-        localStorage.setItem('gardensChanged', '1');
-        setTimeout(() => localStorage.removeItem('gardensChanged'), 400);
-      } catch {}
-
+      await apiFetch('/api/gardens', {
+        method: 'POST',
+        body: {
+          title: form.title.trim(),
+          description: form.description.trim() || undefined,
+          address: form.address.trim(),
+          needs: form.needs.trim() || undefined,
+          area: form.area ? Number(form.area) : undefined,
+          photos: form.photos,
+        },
+      });
+      try { localStorage.setItem('gardensChanged', '1'); setTimeout(() => localStorage.removeItem('gardensChanged'), 400); } catch {}
       router.push('/my-gardens?tab=drafts');
     } catch (e2) {
       console.error(e2);
       if (e2?.status === 409 && e2?.details?.error === 'owner_already_has_garden') {
-        setErr(
-          "Le serveur a refusé la création (409). Votre configuration limite à un seul jardin."
-        );
+        setErr("Le serveur a refusé la création (409). Votre configuration limite à un seul jardin.");
       } else if (e2?.details?.error) {
         setErr(`Erreur: ${e2.details.error}`);
       } else {
@@ -194,236 +143,158 @@ export default function AddGardenPage() {
   }
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-3xl mx-auto">
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)', padding: '48px 24px' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-green-700">
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', margin: '0 0 0.75rem' }}>
+              Propriétaire
+            </p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
               Ajouter un jardin
             </h1>
-            <p className="text-gray-600 mt-1">
-              Crée ton annonce en brouillon, puis publie-la depuis “Mes jardins”.
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted)', margin: '0.5rem 0 0' }}>
+              Crée ton annonce en brouillon, puis publie-la depuis &quot;Mes jardins&quot;.
             </p>
           </div>
-
-          <Link
-            href="/my-gardens?tab=all"
-            className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-          >
+          <Link href="/my-gardens?tab=all" style={{ fontSize: '0.875rem', color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: 3, whiteSpace: 'nowrap', flexShrink: 0 }}>
             ← Mes jardins
           </Link>
         </div>
 
-        {/* Banner “déjà des jardins” */}
-        {!loadingMine && mine && (
-          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 mb-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs text-gray-500">Info</div>
-                <div className="text-gray-900 font-semibold">
-                  Vous avez déjà {mine.length} jardin{mine.length > 1 ? 's' : ''}.
-                </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  Dont {countPublished} publié{countPublished > 1 ? 's' : ''}. Vous pouvez en ajouter un autre.
-                </div>
-              </div>
-
-              <span
-                className="rounded-full px-3 py-1 text-xs font-medium bg-green-50 text-green-800 ring-1 ring-green-200"
-                style={{ color: BRAND }}
-              >
-                Propriétaire
-              </span>
+        {/* Banner */}
+        {!loadingMine && mine && mine.length > 0 && (
+          <div style={{ border: '1px solid var(--border)', padding: '1rem 1.25rem', margin: '1.5rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>Info</span>
+              <p style={{ fontSize: '0.875rem', color: 'var(--foreground)', margin: '0.25rem 0 0', fontWeight: 500 }}>
+                Vous avez déjà {mine.length} jardin{mine.length > 1 ? 's' : ''}
+                {' '}· {countPublished} publié{countPublished > 1 ? 's' : ''}.
+              </p>
             </div>
-
-            <div
-              className="mt-4 h-1 w-full rounded-full"
-              style={{
-                background:
-                  'linear-gradient(90deg, rgba(22,163,74,0.25), rgba(227,16,125,0.22))',
-              }}
-            />
+            <span style={{ fontSize: '0.75rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Propriétaire</span>
           </div>
         )}
 
-        {loadingMine ? <Skeleton /> : null}
-
-        {/* Messages */}
+        {/* Feedback */}
         {err && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
+          <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626', margin: '1rem 0' }}>
             {err}
           </div>
         )}
         {msg && !err && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 mb-6">
+          <div style={{ borderLeft: '2px solid var(--green)', paddingLeft: '0.75rem', fontSize: '0.875rem', color: 'var(--green)', margin: '1rem 0' }}>
             {msg}
           </div>
         )}
 
         {/* Form */}
         {!loadingMine && (
-          <form onSubmit={onSubmit} className="space-y-5">
-            <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-6">
-              <div className="grid grid-cols-1 gap-4">
-                <Field label="Titre de l’annonce (obligatoire)">
-                  <input
-                    name="title"
-                    value={form.title}
-                    onChange={onChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="Ex. Mon beau jardin"
-                    required
-                  />
-                </Field>
+          <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '2rem' }}>
 
-                <Field label="Adresse (obligatoire)">
-                  <input
-                    name="address"
-                    value={form.address}
-                    onChange={onChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="Ex. 12 rue des Plantes, Paris"
-                    required
-                  />
-                </Field>
+            <div style={{ border: '1px solid var(--border)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="Surface (m²)" hint="optionnel">
-                    <input
-                      name="area"
-                      value={form.area}
-                      onChange={onChange}
-                      inputMode="numeric"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                      placeholder="Ex. 50"
-                    />
-                  </Field>
+              <div>
+                <label style={LABEL}>Titre de l&apos;annonce <span style={{ color: '#dc2626' }}>*</span></label>
+                <input name="title" value={form.title} onChange={onChange} style={INPUT} placeholder="Ex. Mon beau jardin" required />
+              </div>
 
-                  <Field label="Besoins du jardin" hint="optionnel">
-                    <input
-                      name="needs"
-                      value={form.needs}
-                      onChange={onChange}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                      placeholder="Ex. arrosage, désherbage…"
-                    />
-                  </Field>
+              <div>
+                <label style={LABEL}>Adresse <span style={{ color: '#dc2626' }}>*</span></label>
+                <input name="address" value={form.address} onChange={onChange} style={INPUT} placeholder="Ex. 12 rue des Plantes, Paris" required />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={LABEL}>Surface (m²) <span style={{ color: 'var(--muted)', fontWeight: 400 }}>optionnel</span></label>
+                  <input name="area" value={form.area} onChange={onChange} inputMode="numeric" style={INPUT} placeholder="Ex. 50" />
                 </div>
-
-                <Field label="Description" hint="optionnel">
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={onChange}
-                    rows={5}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                    placeholder="Décris ton jardin : ambiance, accès, matériel disponible, contraintes…"
-                  />
-                </Field>
-
-                {/* Photos */}
-                <div className="pt-2">
-                  <div className="flex items-end justify-between gap-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Photos
-                    </label>
-                    <span className="text-xs text-gray-500">
-                      {photoCount}/{MAX_FILES} · il te reste {photoLeft}
-                    </span>
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <label className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm cursor-pointer">
-                      <span>+ Ajouter des photos</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={onAddFiles}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {uploading && (
-                      <span className="text-xs text-gray-600">Téléversement…</span>
-                    )}
-
-                    <span className="text-xs text-gray-500">
-                      JPG/PNG/WebP · {MAX_MB} Mo max
-                    </span>
-                  </div>
-
-                  {form.photos.length > 0 && (
-                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {form.photos.map((p, i) => (
-                        <div key={`${p}-${i}`} className="relative group">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={resolveMedia(p)}
-                            alt=""
-                            className="w-full h-32 object-cover rounded-xl border border-gray-200 shadow-sm"
-                          />
-
-                          <button
-                            type="button"
-                            onClick={() => removePhoto(i)}
-                            className="absolute top-2 right-2 px-3 py-1 text-xs rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition"
-                            title="Retirer"
-                          >
-                            Retirer
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {form.photos.length === 0 && (
-                    <div className="mt-3 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-600">
-                      Ajoute 1 à 3 photos pour rendre ton annonce plus attractive (optionnel).
-                    </div>
-                  )}
+                <div>
+                  <label style={LABEL}>Besoins <span style={{ color: 'var(--muted)', fontWeight: 400 }}>optionnel</span></label>
+                  <input name="needs" value={form.needs} onChange={onChange} style={INPUT} placeholder="arrosage, désherbage…" />
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div>
+                <label style={LABEL}>Description <span style={{ color: 'var(--muted)', fontWeight: 400 }}>optionnel</span></label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={onChange}
+                  rows={5}
+                  style={{ ...INPUT, resize: 'vertical', lineHeight: 1.6 }}
+                  placeholder="Ambiance, accès, matériel disponible, contraintes…"
+                />
+              </div>
+
+              {/* Photos */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                  <label style={{ ...LABEL, marginBottom: 0 }}>Photos</label>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{photoCount}/{MAX_FILES} · {photoLeft} restante{photoLeft !== 1 ? 's' : ''}</span>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <label style={{ display: 'inline-block', padding: '0.5rem 1rem', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--foreground)', cursor: 'pointer', background: '#fff' }}>
+                    + Ajouter des photos
+                    <input type="file" accept="image/*" multiple onChange={onAddFiles} style={{ display: 'none' }} />
+                  </label>
+                  {uploading && <span style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>Téléversement…</span>}
+                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>JPG/PNG/WebP · {MAX_MB} Mo max</span>
+                </div>
+
+                {form.photos.length > 0 && (
+                  <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                    {form.photos.map((p, i) => (
+                      <div key={`${p}-${i}`} style={{ position: 'relative' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={resolveMedia(p)} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block', border: '1px solid var(--border)' }} />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          style={{ position: 'absolute', top: 4, right: 4, padding: '2px 8px', background: '#dc2626', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
+                        >
+                          Retirer
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {form.photos.length === 0 && (
+                  <div style={{ marginTop: '0.75rem', border: '1px dashed var(--border)', padding: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
+                    Ajoute 1 à 3 photos pour rendre ton annonce plus attractive (optionnel).
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '0.5rem' }}>
                 <button
                   type="submit"
                   disabled={busy}
-                  className="px-6 py-3 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition disabled:opacity-60"
+                  style={{ padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', opacity: busy ? 0.6 : 1 }}
                 >
                   {busy ? 'Ajout…' : 'Créer le brouillon'}
                 </button>
-
-                <Link
-                  href="/my-gardens?tab=all"
-                  className="px-6 py-3 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition"
-                >
+                <Link href="/my-gardens?tab=all" style={{ padding: '0.65rem 1.5rem', background: '#fff', color: 'var(--foreground)', border: '1px solid var(--border)', fontSize: '0.875rem', textDecoration: 'none' }}>
                   Annuler
                 </Link>
-
-                <span className="text-xs text-gray-500">
-                  Tu pourras publier ensuite depuis “Mes jardins”.
+                <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                  Tu pourras publier ensuite depuis &quot;Mes jardins&quot;.
                 </span>
               </div>
-
-              <div
-                className="mt-5 h-1 w-full rounded-full"
-                style={{
-                  background:
-                    'linear-gradient(90deg, rgba(22,163,74,0.25), rgba(227,16,125,0.22))',
-                }}
-              />
             </div>
 
-            {/* mini card “conseil” */}
-            <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
-              <div className="text-sm font-semibold text-gray-900">Conseil</div>
-              <div className="text-sm text-gray-600 mt-1">
-                Plus ton annonce est précise (accès, matériel, besoins, photos), plus tu as de chances
-                d’avoir des demandes de réservation.
-              </div>
+            {/* Conseil */}
+            <div style={{ border: '1px solid var(--border)', padding: '1.25rem' }}>
+              <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', margin: '0 0 0.5rem' }}>Conseil</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--foreground)', margin: 0 }}>
+                Plus ton annonce est précise (accès, matériel, besoins, photos), plus tu as de chances d&apos;avoir des demandes de réservation.
+              </p>
             </div>
+
           </form>
         )}
       </div>
