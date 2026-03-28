@@ -8,6 +8,7 @@ import React, { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { getAnyToken } from '@/lib/api';
+import { getFavGardens, addFavGarden, removeFavGarden } from '@/lib/favorites';
 
 const AvailabilityCalendar = dynamic(
   () => import('@/components/availability/AvailabilityCalendar'),
@@ -104,6 +105,19 @@ export default function GardenDetailPage({ params }) {
   const [garden, setGarden] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [isFav, setIsFav] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setIsAuthed(!!getAnyToken());
+    sync();
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
+
+  useEffect(() => {
+    if (id) setIsFav(getFavGardens().some((g) => String(g.id) === String(id)));
+  }, [id, isAuthed]);
 
   useEffect(() => {
     let alive = true;
@@ -208,7 +222,7 @@ export default function GardenDetailPage({ params }) {
         </div>
 
         {/* HERO IMAGE */}
-        <div>
+        <div style={{ position: 'relative' }}>
           {hero ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -218,6 +232,24 @@ export default function GardenDetailPage({ params }) {
             />
           ) : (
             <div style={{ width: '100%', height: '320px', background: '#f5f5f5' }} />
+          )}
+          {isAuthed && (
+            <button
+              type="button"
+              onClick={() => {
+                if (isFav) {
+                  removeFavGarden(String(id));
+                  setIsFav(false);
+                } else {
+                  addFavGarden({ id, title: garden.title, address: garden.address, kind: garden.kind, photos: garden.photos });
+                  setIsFav(true);
+                }
+              }}
+              style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1, color: isFav ? '#ec4899' : '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.4)', padding: 0 }}
+              aria-label={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            >
+              {isFav ? '♥' : '♡'}
+            </button>
           )}
 
           {/* Title and meta below image */}

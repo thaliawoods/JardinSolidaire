@@ -5,33 +5,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { listConversations, listInbox, markAllRead } from '@/lib/messages';
 
-const BRAND_GREEN = '#16a34a';
-
-function Skeleton() {
-  return (
-    <div className="animate-pulse space-y-4">
-      <div className="h-10 bg-gray-100 rounded-2xl" />
-      <div className="h-28 bg-gray-100 rounded-2xl" />
-      <div className="h-40 bg-gray-100 rounded-2xl" />
-    </div>
-  );
-}
-
-function EmptyCard({ title, desc, icon = '💬' }) {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-8 text-center">
-      <div className="text-2xl">{icon}</div>
-      <div className="mt-2 text-gray-900 font-semibold">{title}</div>
-      <div className="mt-2 text-sm text-gray-500">{desc}</div>
-    </div>
-  );
-}
-
 export default function Page() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  // ✅ if /messages?with=239 -> open thread /messages/239
   useEffect(() => {
     const withId = sp.get('with');
     if (withId && String(withId).trim() !== '') {
@@ -60,9 +37,7 @@ export default function Page() {
     }
   }
 
-  useEffect(() => {
-    reload();
-  }, []);
+  useEffect(() => { reload(); }, []);
 
   const unreadTotal = useMemo(() => {
     const convUnread = (convos || []).reduce((sum, c) => sum + Number(c?.unread || 0), 0);
@@ -70,50 +45,59 @@ export default function Page() {
     return convUnread + inboxUnread;
   }, [convos, inbox]);
 
-  return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-green-700">Messagerie</h1>
-            <p className="text-gray-600 mt-1">
-              Retrouvez vos conversations et vos messages non lus.
-              {unreadTotal > 0 ? (
-                <span className="ml-2 text-gray-700">
-                  <span className="font-semibold">{unreadTotal}</span> non lu{unreadTotal > 1 ? 's' : ''}.
-                </span>
-              ) : null}
-            </p>
-          </div>
+  const flatBtn = {
+    background: '#fff',
+    border: '1px solid var(--border)',
+    fontSize: '0.8125rem',
+    color: 'var(--foreground)',
+    cursor: 'pointer',
+    padding: '0.4rem 0.875rem',
+    fontFamily: 'inherit',
+    textDecoration: 'none',
+    display: 'inline-block',
+  };
 
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-            style={{ color: BRAND_GREEN }}
-          >
-            ← Dashboard
-          </Link>
+  return (
+    <div style={{ minHeight: '100vh', background: '#fff', padding: '3rem 1.5rem' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+            Messagerie
+          </h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: '0.4rem' }}>
+            Retrouvez vos conversations et vos messages non lus.
+            {unreadTotal > 0 && (
+              <span style={{ marginLeft: '0.5rem', color: 'var(--foreground)' }}>
+                {unreadTotal} non lu{unreadTotal > 1 ? 's' : ''}.
+              </span>
+            )}
+          </p>
         </div>
 
         {err && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
+          <div style={{ border: '1px solid var(--border)', padding: '0.75rem 1rem', fontSize: '0.875rem', color: 'var(--foreground)', marginBottom: '1.5rem' }}>
             {err}
           </div>
         )}
 
         {loading ? (
-          <Skeleton />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {[80, 160, 120].map((h, i) => (
+              <div key={i} style={{ height: h, background: '#f5f5f5', border: '1px solid var(--border)' }} />
+            ))}
+          </div>
         ) : (
-          <div className="space-y-6">
-            {/* Non lus */}
-            <section className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Non lus</h2>
-                  <p className="text-sm text-gray-500">Messages reçus qui n’ont pas encore été ouverts.</p>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
+            {/* Non lus */}
+            <section style={{ border: '1px solid var(--border)', padding: '1.5rem', background: '#fff' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                <div>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 400, color: 'var(--foreground)', margin: 0 }}>Non lus</h2>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: '0.2rem' }}>Messages reçus qui n&apos;ont pas encore été ouverts.</p>
+                </div>
                 <button
                   type="button"
                   disabled={marking || inbox.length === 0}
@@ -123,44 +107,34 @@ export default function Page() {
                       await markAllRead();
                       const i = await listInbox({ unreadOnly: true });
                       setInbox(i?.messages || []);
-                      try {
-                        localStorage.setItem('messagesChanged', String(Date.now()));
-                      } catch {}
-                    } finally {
-                      setMarking(false);
-                    }
+                      try { localStorage.setItem('messagesChanged', String(Date.now())); } catch {}
+                    } finally { setMarking(false); }
                   }}
-                  className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm disabled:opacity-60"
+                  style={{ ...flatBtn, opacity: (marking || inbox.length === 0) ? 0.5 : 1, cursor: inbox.length === 0 ? 'not-allowed' : 'pointer' }}
                 >
                   {marking ? '…' : 'Tout marquer comme lu'}
                 </button>
               </div>
 
               {inbox.length === 0 ? (
-                <EmptyCard icon="✅" title="Aucun message non lu" desc="Quand vous recevrez un nouveau message, il apparaîtra ici." />
+                <p style={{ fontSize: '0.875rem', color: 'var(--muted)', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                  Aucun message non lu.
+                </p>
               ) : (
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {inbox.map((m) => (
-                    <div key={m.id} className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-sm text-gray-700">
-                            De{' '}
-                            <Link className="underline" href={`/messages/${m.from?.id}`}>
-                              {m.from?.firstName} {m.from?.lastName}
-                            </Link>
-                            <span className="text-gray-500"> • {new Date(m.sentAt).toLocaleString()}</span>
-                          </div>
-                          <div className="mt-2 text-gray-900 whitespace-pre-line">{m.content}</div>
+                    <div key={m.id} style={{ border: '1px solid var(--border)', padding: '1rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>
+                          De{' '}
+                          <Link href={`/messages/${m.from?.id}`} style={{ color: 'var(--foreground)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+                            {m.from?.firstName} {m.from?.lastName}
+                          </Link>
+                          <span style={{ marginLeft: '0.5rem' }}>· {new Date(m.sentAt).toLocaleString()}</span>
                         </div>
-
-                        <Link
-                          href={`/messages/${m.from?.id}`}
-                          className="shrink-0 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-                        >
-                          Ouvrir
-                        </Link>
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--foreground)', whiteSpace: 'pre-line' }}>{m.content}</div>
                       </div>
+                      <Link href={`/messages/${m.from?.id}`} style={flatBtn}>Ouvrir →</Link>
                     </div>
                   ))}
                 </div>
@@ -168,50 +142,42 @@ export default function Page() {
             </section>
 
             {/* Conversations */}
-            <section className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Conversations</h2>
-                <p className="text-sm text-gray-500">Toutes vos discussions en cours.</p>
+            <section style={{ border: '1px solid var(--border)', padding: '1.5rem', background: '#fff' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 400, color: 'var(--foreground)', margin: 0 }}>Conversations</h2>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: '0.2rem' }}>Toutes vos discussions en cours.</p>
               </div>
 
               {convos.length === 0 ? (
-                <EmptyCard icon="💬" title="Aucune conversation" desc="Dès que vous envoyez ou recevez un message, la conversation apparaîtra ici." />
+                <p style={{ fontSize: '0.875rem', color: 'var(--muted)', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                  Aucune conversation. Dès que vous envoyez ou recevez un message, elle apparaîtra ici.
+                </p>
               ) : (
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {convos.map((c) => {
                     const other = c.user || {};
                     const last = c.lastMessage || null;
                     const isFromOther = last?.from?.id === other.id;
-                    const previewPrefix = isFromOther ? `${other.firstName || '—'}: ` : 'Vous: ';
+                    const previewPrefix = isFromOther ? `${other.firstName || '—'}: ` : 'Vous : ';
                     const preview = last?.content || '';
 
                     return (
-                      <div
-                        key={other.id}
-                        className="rounded-2xl border border-gray-200 bg-white p-5 flex items-center justify-between gap-4 hover:bg-gray-50 transition"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-gray-900 font-semibold">
+                      <div key={other.id} style={{ border: '1px solid var(--border)', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '0.9375rem', color: 'var(--foreground)' }}>
                             {other.firstName} {other.lastName}
                           </div>
-                          <div className="text-sm text-gray-600 line-clamp-1 mt-1">
-                            {previewPrefix}
-                            {preview}
+                          <div style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '40ch' }}>
+                            {previewPrefix}{preview}
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
                           {Number(c.unread || 0) > 0 && (
-                            <span className="inline-flex items-center text-xs px-3 py-1 rounded-full bg-pink-100 text-pink-800 border border-pink-200">
+                            <span style={{ fontSize: '0.75rem', color: 'var(--foreground)', border: '1px solid var(--border)', padding: '0.1rem 0.5rem' }}>
                               {c.unread} non lu{c.unread > 1 ? 's' : ''}
                             </span>
                           )}
-                          <Link
-                            href={`/messages/${other.id}`}
-                            className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
-                          >
-                            Ouvrir
-                          </Link>
+                          <Link href={`/messages/${other.id}`} style={flatBtn}>Ouvrir →</Link>
                         </div>
                       </div>
                     );
@@ -219,6 +185,7 @@ export default function Page() {
                 </div>
               )}
             </section>
+
           </div>
         )}
       </div>
