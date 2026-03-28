@@ -427,7 +427,7 @@ export default function MyGardensClient() {
                       confirm({
                         title: "Retirer cette annonce ?",
                         description:
-                          "Elle ne sera plus visible par les jardinier.es.\nTu pourras la republier plus tard.",
+                          "Elle ne sera plus visible par les jardinier·es.\nTu pourras la republier plus tard.",
                         confirmText: "Retirer",
                         danger: false,
                         onConfirm: () => doUnpublish(g.id),

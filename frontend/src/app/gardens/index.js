@@ -321,12 +321,12 @@ export default function GardensList() {
                       fontSize: "1.375rem",
                       lineHeight: 1,
                       color: favbed ? "#ec4899" : "#fff",
-                      textShadow: "0 1px 3px rgba(0,0,0,0.35)",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.4)",
                     }}
                     aria-label={favbed ? "Retirer des favoris" : "Ajouter aux favoris"}
                     title={favbed ? "Retirer des favoris" : "Ajouter aux favoris"}
                   >
-                    {favbed ? "♥" : "♡"}
+                    ♥
                   </button>
                 )}
               </div>
