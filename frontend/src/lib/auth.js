@@ -3,6 +3,7 @@ export function persistAuth(payload) {
     if (!payload?.token) return;
     localStorage.setItem('token', payload.token);
     localStorage.setItem('justRegistered', '1');
+    window.dispatchEvent(new Event('auth:changed'));
   } catch {}
 }
 

@@ -109,7 +109,15 @@ export default function Navbar() {
       }
     }
     hydrate();
-    return () => { alive = false; };
+
+    function onAuthChanged() { hydrate(); }
+    window.addEventListener('auth:changed', onAuthChanged);
+    window.addEventListener('storage', (e) => { if (e.key === 'token') hydrate(); });
+
+    return () => {
+      alive = false;
+      window.removeEventListener('auth:changed', onAuthChanged);
+    };
   }, []);
 
   useEffect(() => {
