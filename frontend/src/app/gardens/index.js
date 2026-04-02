@@ -153,9 +153,10 @@ export default function GardensList() {
   };
 
   const filtered = useMemo(() => {
-    if (!search) return gardens;
+    const withPhotos = gardens.filter((g) => g.photos.length > 0);
+    if (!search) return withPhotos;
     const q = search.toLowerCase();
-    return gardens.filter((g) =>
+    return withPhotos.filter((g) =>
       [g.title, g.description, g.address, g.kind]
         .join(" ")
         .toLowerCase()
