@@ -35,19 +35,17 @@ function normalizeGardens(data) {
 }
 
 const uiToApiKind = {
-  vegetable: "potager",
-  greenhouse: "serre",
-  flowers: "fleurs",
-  mowing: "tondre",
+  potager: "potager",
+  urbain: "urbain",
+  verger: "verger",
 };
 
 function kindLabel(kind) {
   const k = String(kind || "").toLowerCase();
   if (!k) return "";
-  if (k === "potager" || k === "vegetable") return "Potager";
-  if (k === "serre" || k === "greenhouse") return "Serre";
-  if (k === "fleurs" || k === "flowers") return "Fleurs";
-  if (k === "tondre" || k === "mowing") return "Tonte";
+  if (k === "potager") return "Potager";
+  if (k === "urbain") return "Urbain";
+  if (k === "verger") return "Verger";
   return kind; // fallback
 }
 
@@ -220,10 +218,9 @@ export default function GardensList() {
           }}
         >
           <option value="">Tous les types</option>
-          <option value="vegetable">Jardin potager</option>
-          <option value="greenhouse">Serre</option>
-          <option value="flowers">Fleurs</option>
-          <option value="mowing">Tonte</option>
+          <option value="potager">Potager</option>
+          <option value="urbain">Urbain</option>
+          <option value="verger">Verger</option>
         </select>
 
         <button
