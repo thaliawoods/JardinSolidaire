@@ -5,30 +5,79 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBooking, canBook } from '@/lib/bookings';
 
+const INPUT = {
+  display: 'block',
+  width: '100%',
+  border: '1px solid var(--border)',
+  padding: '0.6rem 0.75rem',
+  background: '#fff',
+  color: 'var(--foreground)',
+  fontFamily: 'inherit',
+  fontSize: '0.875rem',
+  outline: 'none',
+  boxSizing: 'border-box',
+  borderRadius: 0,
+};
+
+const TEXTAREA = { ...INPUT, resize: 'vertical' };
+
+const LABEL = {
+  display: 'block',
+  fontSize: '0.75rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  color: 'var(--muted)',
+  marginBottom: '0.4rem',
+};
+
+const HINT = {
+  fontSize: '0.7rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  color: 'var(--muted)',
+};
+
+const BTN_PRIMARY = {
+  display: 'inline-block',
+  padding: '0.65rem 1.5rem',
+  background: 'var(--green)',
+  color: '#fff',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  fontSize: '0.875rem',
+  letterSpacing: '0.01em',
+  borderRadius: 0,
+};
+
+const BTN_SECONDARY = {
+  display: 'inline-block',
+  padding: '0.65rem 1.5rem',
+  background: '#fff',
+  color: 'var(--foreground)',
+  border: '1px solid var(--border)',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  fontSize: '0.875rem',
+  letterSpacing: '0.01em',
+  borderRadius: 0,
+};
+
 function Field({ label, hint, children }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-end justify-between gap-3">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        {hint ? <span className="text-xs text-gray-500">{hint}</span> : null}
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.4rem' }}>
+        <span style={LABEL}>{label}</span>
+        {hint && <span style={HINT}>{hint}</span>}
       </div>
       {children}
     </div>
   );
 }
 
-function Skeleton() {
-  return (
-    <div className="animate-pulse space-y-4">
-      <div className="h-20 bg-gray-100 rounded-2xl" />
-      <div className="h-96 bg-gray-100 rounded-2xl" />
-    </div>
-  );
-}
-
 export default function Page() {
   return (
-    <Suspense fallback={<main className="max-w-3xl mx-auto p-6">chargement…</main>}>
+    <Suspense fallback={<main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}><p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p></main>}>
       <NewBookingInner />
     </Suspense>
   );
@@ -50,7 +99,7 @@ function NewBookingInner() {
   const [msg, setMsg] = useState('');
 
   const [checking, setChecking] = useState(false);
-  const [can, setCan] = useState(null); // { ok, reasons }
+  const [can, setCan] = useState(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -59,7 +108,6 @@ function NewBookingInner() {
     setReady(true);
   }, [router]);
 
-  // keep gardenId in sync if URL param changes
   useEffect(() => {
     if (prefilledGardenId && prefilledGardenId !== gardenId) {
       setGardenId(prefilledGardenId);
@@ -112,171 +160,166 @@ function NewBookingInner() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen px-6 py-10 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <Skeleton />
+      <div style={{ minHeight: '100vh', background: '#fff', padding: '3rem 1.5rem' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-white">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-green-700">
-              Nouvelle réservation
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Choisis un jardin + un créneau. On vérifie si c’est réservable.
-            </p>
-          </div>
+    <div style={{ minHeight: '100vh', background: '#fff', padding: '3rem 1.5rem' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
 
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.5rem' }}>
+          <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', margin: 0 }}>
+            Réservation
+          </p>
           <Link
             href="/bookings"
-            className="px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition text-sm"
+            style={{ fontSize: '0.8125rem', color: 'var(--muted)', textDecoration: 'none' }}
           >
             ← Mes réservations
           </Link>
         </div>
 
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--foreground)', margin: '0 0 0.5rem' }}>
+          Nouvelle réservation
+        </h1>
+
+        <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: '2.5rem' }}>
+          Choisis un jardin et un créneau. On vérifie si c'est réservable.
+        </p>
+
         {err && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
+          <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626', marginBottom: '1.5rem' }}>
             {err}
           </div>
         )}
         {msg && !err && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 mb-6">
+          <div style={{ borderLeft: '2px solid var(--green)', paddingLeft: '0.75rem', fontSize: '0.875rem', color: 'var(--green)', marginBottom: '1.5rem' }}>
             {msg}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-6">
-            <div className="grid grid-cols-1 gap-4">
-              <Field label="Jardin (ID)" hint="obligatoire">
-                <input
-                  value={gardenId}
-                  onChange={(e) => {
-                    setGardenId(e.target.value);
-                    runCheck(startsAt, endsAt, e.target.value);
-                  }}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                  placeholder="ex: 42"
-                />
-              </Field>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-              <Field label="Titre" hint="optionnel">
-                <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                  placeholder="ex: tonte + taille"
-                />
-              </Field>
-
-              <Field label="Notes" hint="optionnel">
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                  placeholder="Ce que tu comptes faire, matériel, infos utiles…"
-                />
-              </Field>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Début" hint="obligatoire">
-                  <input
-                    type="datetime-local"
-                    value={startsAt}
-                    onChange={(e) => {
-                      setStartsAt(e.target.value);
-                      runCheck(e.target.value, endsAt, gardenId);
-                    }}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                  />
-                </Field>
-
-                <Field label="Fin" hint="obligatoire">
-                  <input
-                    type="datetime-local"
-                    value={endsAt}
-                    onChange={(e) => {
-                      setEndsAt(e.target.value);
-                      runCheck(startsAt, e.target.value, gardenId);
-                    }}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-700"
-                  />
-                </Field>
-              </div>
-
-              {checking && (
-                <div className="text-sm text-gray-500">
-                  Vérification du créneau…
-                </div>
-              )}
-
-              {can &&
-                (can.ok ? (
-                  <div className="text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 text-sm">
-                    Créneau disponible ✅
-                  </div>
-                ) : (
-                  <div className="text-red-800 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm">
-                    Créneau indisponible ❌
-                    {can.reasons?.length ? (
-                      <ul className="list-disc ml-5 mt-2 text-red-700">
-                        {can.reasons.map((r, i) => (
-                          <li key={i}>{r}</li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                ))}
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                disabled={submitting || can?.ok === false}
-                className="px-6 py-3 rounded-full bg-pink-500 hover:bg-pink-600 text-white transition disabled:opacity-60 font-semibold"
-              >
-                {submitting ? 'Création…' : 'Créer la réservation'}
-              </button>
-
-              <button
-                type="button"
-                className="px-6 py-3 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50 transition"
-                onClick={() => router.back()}
-              >
-                Annuler
-              </button>
-
-              <span className="text-xs text-gray-500">
-                Si le créneau est indisponible, le bouton est désactivé.
-              </span>
-            </div>
-
-            <div
-              className="mt-5 h-1 w-full rounded-full"
-              style={{
-                background:
-                  'linear-gradient(90deg, rgba(22,163,74,0.25), rgba(227,16,125,0.22))',
+          <Field label="Jardin (ID)" hint="obligatoire">
+            <input
+              value={gardenId}
+              onChange={(e) => {
+                setGardenId(e.target.value);
+                runCheck(startsAt, endsAt, e.target.value);
               }}
+              style={INPUT}
+              placeholder="ex: 42"
             />
+          </Field>
+
+          <Field label="Titre" hint="optionnel">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={INPUT}
+              placeholder="ex: tonte + taille"
+            />
+          </Field>
+
+          <Field label="Notes" hint="optionnel">
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+              style={TEXTAREA}
+              placeholder="Ce que tu comptes faire, matériel, infos utiles…"
+            />
+          </Field>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <Field label="Début" hint="obligatoire">
+              <input
+                type="datetime-local"
+                value={startsAt}
+                onChange={(e) => {
+                  setStartsAt(e.target.value);
+                  runCheck(e.target.value, endsAt, gardenId);
+                }}
+                style={INPUT}
+              />
+            </Field>
+
+            <Field label="Fin" hint="obligatoire">
+              <input
+                type="datetime-local"
+                value={endsAt}
+                onChange={(e) => {
+                  setEndsAt(e.target.value);
+                  runCheck(startsAt, e.target.value, gardenId);
+                }}
+                style={INPUT}
+              />
+            </Field>
           </div>
 
-          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
-            <div className="text-sm font-semibold text-gray-900">Conseil</div>
-            <div className="text-sm text-gray-600 mt-1">
-              Pense à ajouter un titre clair (ex: “désherbage + arrosage”) et une note
-              courte pour faciliter la validation.
-            </div>
+          {checking && (
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted)', margin: 0 }}>
+              Vérification du créneau…
+            </p>
+          )}
+
+          {can && (
+            can.ok ? (
+              <div style={{ borderLeft: '2px solid var(--green)', paddingLeft: '0.75rem', fontSize: '0.875rem', color: 'var(--green)' }}>
+                Créneau disponible
+              </div>
+            ) : (
+              <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626' }}>
+                Créneau indisponible
+                {can.reasons?.length > 0 && (
+                  <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem' }}>
+                    {can.reasons.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )
+          )}
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <button
+              type="submit"
+              disabled={submitting || can?.ok === false}
+              style={{ ...BTN_PRIMARY, opacity: submitting || can?.ok === false ? 0.5 : 1 }}
+            >
+              {submitting ? 'Création…' : 'Créer la réservation'}
+            </button>
+
+            <button
+              type="button"
+              style={BTN_SECONDARY}
+              onClick={() => router.back()}
+            >
+              Annuler
+            </button>
+
+            <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+              Si le créneau est indisponible, le bouton est désactivé.
+            </span>
           </div>
         </form>
+
+        <div style={{ borderTop: '1px solid var(--border)', marginTop: '2.5rem', paddingTop: '1.25rem' }}>
+          <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', margin: '0 0 0.25rem' }}>
+            Conseil
+          </p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--foreground)', margin: 0, lineHeight: 1.5 }}>
+            Pense à ajouter un titre clair (ex: "désherbage + arrosage") et une note
+            courte pour faciliter la validation.
+          </p>
+        </div>
+
       </div>
     </div>
   );

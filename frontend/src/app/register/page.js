@@ -43,7 +43,6 @@ export default function RegisterPage() {
     e.preventDefault();
     setErr('');
 
-    // sécurité côté front (UX)
     if (!pwd.ok) {
       setErr('password_too_weak');
       return;
@@ -95,8 +94,8 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
-      <div style={{ maxWidth: 480, margin: '0 auto', padding: '4rem 2rem' }}>
+    <div style={{ height: 'calc(100vh - 56px)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+      <div style={{ width: '100%', maxWidth: 480 }}>
 
         <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', marginBottom: '1.25rem' }}>
           Compte

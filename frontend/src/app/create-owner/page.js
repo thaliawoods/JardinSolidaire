@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
+const INPUT = { display: 'block', width: '100%', border: '1px solid var(--border)', padding: '0.6rem 0.75rem', background: '#fff', color: 'var(--foreground)', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
+const LABEL = { display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: '0.4rem' };
+
 export default function CreateOwnerPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -28,7 +31,7 @@ export default function CreateOwnerPage() {
         setLoading(true);
         setErr('');
         const me = await apiFetch('/api/me');
-        const o = me?.user?.proprietaire || me?.user?.owner; // support both keys
+        const o = me?.user?.proprietaire || me?.user?.owner;
         if (o) {
           setForm({
             firstName: o.firstName || '',
@@ -56,188 +59,131 @@ export default function CreateOwnerPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-
     if (!form.firstName.trim() || !form.lastName.trim()) {
-      alert('First name and last name are required.');
+      alert('Prénom et nom sont requis.');
       return;
     }
-
-    const areaInt =
-      form.area === '' || form.area == null ? null : Number.parseInt(form.area, 10);
-
-    const payload = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      district: form.district.trim(),
-      availability: form.availability.trim(),
-      area: Number.isFinite(areaInt) ? areaInt : null,
-      kind: form.kind.trim(),
-      intro: form.intro.trim(),
-      description: form.description.trim(),
-    };
-
+    const areaInt = form.area === '' || form.area == null ? null : Number.parseInt(form.area, 10);
     try {
       setSubmitting(true);
       await apiFetch('/api/me/owner', {
         method: 'POST',
-        body: payload,
+        body: {
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          district: form.district.trim(),
+          availability: form.availability.trim(),
+          area: Number.isFinite(areaInt) ? areaInt : null,
+          kind: form.kind.trim(),
+          intro: form.intro.trim(),
+          description: form.description.trim(),
+        },
       });
       router.push('/profile');
     } catch (e) {
       console.error('Create/Update owner failed:', e);
-      alert(`Couldn't save your owner profile. ${e?.message || ''}`);
+      alert(`Impossible d'enregistrer le profil propriétaire. ${e?.message || ''}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
-    <div className="min-h-screen px-4 sm:px-6 py-10 bg-white">
-      <h1 className="text-3xl font-bold text-green-800 mb-6 text-center">
-        Créer votre profil de propriétaire
-      </h1>
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fff', padding: '48px 24px' }}>
+        <p style={{ fontSize: '0.875rem', color: 'var(--muted)', maxWidth: 720, margin: '0 auto' }}>Chargement…</p>
+      </div>
+    );
+  }
 
-      {err && (
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 mb-6 max-w-3xl mx-auto">
-          {err}
+  return (
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)', padding: '48px 24px' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+
+        <div style={{ marginBottom: 8 }}>
+          <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', margin: '0 0 0.75rem' }}>
+            Propriétaire
+          </p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.25rem', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+            Profil propriétaire
+          </h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)', margin: '0.5rem 0 0' }}>
+            Ces informations apparaissent sur ton profil public.
+          </p>
         </div>
-      )}
 
-      {loading ? (
-        <Skeleton />
-      ) : (
-        <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-5">
-          <section
-            className="rounded-2xl p-6 shadow-sm"
-            style={{ backgroundColor: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.15)' }}
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Prénom">
-                <input
-                  name="firstName"
-                  value={form.firstName}
-                  onChange={onChange}
-                  required
-                  className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="Jane"
-                />
-              </Field>
-              <Field label="Nom de famille">
-                <input
-                  name="lastName"
-                  value={form.lastName}
-                  onChange={onChange}
-                  required
-                  className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="Doe"
-                />
-              </Field>
+        {err && (
+          <div style={{ borderLeft: '2px solid #dc2626', paddingLeft: '0.75rem', fontSize: '0.875rem', color: '#dc2626', margin: '1.5rem 0' }}>
+            {err}
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '2rem', border: '1px solid var(--border)', padding: '1.5rem' }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={LABEL}>Prénom <span style={{ color: '#dc2626' }}>*</span></label>
+              <input name="firstName" value={form.firstName} onChange={onChange} required style={INPUT} placeholder="Jane" />
             </div>
-
-            <Field label="Quartier">
-              <input
-                name="district"
-                value={form.district}
-                onChange={onChange}
-                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                placeholder="e.g., Belleville"
-              />
-            </Field>
-
-            <Field label="Disponibilité">
-              <input
-                name="availability"
-                value={form.availability}
-                onChange={onChange}
-                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                placeholder="e.g., evenings and weekends"
-              />
-            </Field>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Surface (m²)">
-                <input
-                  name="area"
-                  type="number"
-                  min="0"
-                  value={form.area}
-                  onChange={onChange}
-                  className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="e.g., 50"
-                />
-              </Field>
-              <Field label="Type de jardin">
-                <input
-                  name="kind"
-                  value={form.kind}
-                  onChange={onChange}
-                  className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                  placeholder="e.g., cour intérieure, potager…"
-                />
-              </Field>
+            <div>
+              <label style={LABEL}>Nom de famille <span style={{ color: '#dc2626' }}>*</span></label>
+              <input name="lastName" value={form.lastName} onChange={onChange} required style={INPUT} placeholder="Doe" />
             </div>
+          </div>
 
-            <Field label="Introduction">
-              <input
-                name="intro"
-                value={form.intro}
-                onChange={onChange}
-                className="w-full h-11 rounded-xl px-3 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                placeholder="A quick intro…"
-              />
-            </Field>
+          <div>
+            <label style={LABEL}>Quartier</label>
+            <input name="district" value={form.district} onChange={onChange} style={INPUT} placeholder="Ex. Belleville" />
+          </div>
 
-            <Field label="Description">
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={onChange}
-                rows={4}
-                className="w-full rounded-xl px-3 py-2 border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgba(22,163,74,0.35)]"
-                placeholder="Tell gardeners about your space, expectations, access, tools, etc."
-              />
-            </Field>
+          <div>
+            <label style={LABEL}>Disponibilité</label>
+            <input name="availability" value={form.availability} onChange={onChange} style={INPUT} placeholder="Ex. soirées et week-ends" />
+          </div>
 
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-full px-6 py-2 font-semibold text-white shadow-sm transition bg-pink-500 hover:bg-pink-600 disabled:opacity-60"
-              >
-                {submitting ? 'Enregistrement…' : 'Enregistrer mon profil de propriétaire'}
-              </button>
-              <Link
-                href="/profile"
-                className="px-6 py-2 rounded-full bg-white/80 border border-green-600/25 text-green-700 hover:bg-green-50 transition"
-              >
-                Annuler
-              </Link>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={LABEL}>Surface (m²)</label>
+              <input name="area" type="number" min="0" value={form.area} onChange={onChange} style={INPUT} placeholder="Ex. 50" />
             </div>
-          </section>
+            <div>
+              <label style={LABEL}>Type de jardin</label>
+              <input name="kind" value={form.kind} onChange={onChange} style={INPUT} placeholder="cour intérieure, potager…" />
+            </div>
+          </div>
+
+          <div>
+            <label style={LABEL}>Introduction</label>
+            <input name="intro" value={form.intro} onChange={onChange} style={INPUT} placeholder="Une courte présentation…" />
+          </div>
+
+          <div>
+            <label style={LABEL}>Description</label>
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={onChange}
+              rows={4}
+              style={{ ...INPUT, resize: 'vertical', lineHeight: 1.6 }}
+              placeholder="Accès, matériel, contraintes, attentes envers les jardinier·es…"
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '0.5rem' }}>
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{ padding: '0.65rem 1.5rem', background: 'var(--green)', color: '#fff', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', fontSize: '0.875rem', opacity: submitting ? 0.6 : 1 }}
+            >
+              {submitting ? 'Enregistrement…' : 'Enregistrer le profil propriétaire'}
+            </button>
+            <Link href="/profile" style={{ padding: '0.65rem 1.5rem', background: '#fff', color: 'var(--foreground)', border: '1px solid var(--border)', fontSize: '0.875rem', textDecoration: 'none' }}>
+              Annuler
+            </Link>
+          </div>
+
         </form>
-      )}
-    </div>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="max-w-3xl mx-auto animate-pulse space-y-4">
-      <div className="h-5 bg-gray-100 rounded" />
-      <div className="h-10 bg-gray-100 rounded" />
-      <div className="h-10 bg-gray-100 rounded" />
-      <div className="h-10 bg-gray-100 rounded" />
-      <div className="h-10 bg-gray-100 rounded" />
-      <div className="h-24 bg-gray-100 rounded" />
+      </div>
     </div>
   );
 }

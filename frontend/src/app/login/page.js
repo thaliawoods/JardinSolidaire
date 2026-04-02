@@ -48,13 +48,14 @@ export default function LoginPage() {
   const errorMsg =
     error === 'email_and_password_required' ? 'Email et mot de passe requis.' :
     error === 'invalid_credentials' ? 'Email ou mot de passe incorrect.' :
+    error === 'email_not_verified' ? 'Vérifie ta boîte mail et clique sur le lien de confirmation avant de te connecter.' :
     error === 'server_misconfigured' ? 'Erreur de configuration serveur.' :
     error === 'network_error' ? 'Erreur réseau. Réessaie.' :
     error ? 'Connexion impossible.' : '';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fff', paddingTop: 56 }}>
-      <div style={{ maxWidth: 480, margin: '0 auto', padding: '4rem 2rem' }}>
+    <div style={{ height: 'calc(100vh - 56px)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+      <div style={{ width: '100%', maxWidth: 480 }}>
 
         <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--green)', marginBottom: '1.25rem' }}>
           Compte

@@ -1,4 +1,3 @@
-// /Users/thaliawoods/Documents/Ada/JardinSolidaire/JardinSolidaire/frontend/src/app/gardens/index.js
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -10,7 +9,6 @@ import { getAnyToken } from "@/lib/api";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 const LOCAL_DIRS = ["/assets/", "/images/", "/img/", "/icons/"];
 
-/* ---------- media helper ---------- */
 function resolveMedia(u) {
   if (!u) return null;
   const s = String(u).trim();
@@ -24,7 +22,6 @@ function resolveMedia(u) {
   return `${API_BASE}/uploads/${clean}`;
 }
 
-/* ---------- normalizer ---------- */
 function normalizeGardens(data) {
   if (!Array.isArray(data)) return [];
   return data.map((g) => ({
@@ -38,19 +35,17 @@ function normalizeGardens(data) {
 }
 
 const uiToApiKind = {
-  vegetable: "potager",
-  greenhouse: "serre",
-  flowers: "fleurs",
-  mowing: "tondre",
+  potager: "potager",
+  urbain: "urbain",
+  verger: "verger",
 };
 
 function kindLabel(kind) {
   const k = String(kind || "").toLowerCase();
   if (!k) return "";
-  if (k === "potager" || k === "vegetable") return "Potager";
-  if (k === "serre" || k === "greenhouse") return "Serre";
-  if (k === "fleurs" || k === "flowers") return "Fleurs";
-  if (k === "tondre" || k === "mowing") return "Tonte";
+  if (k === "potager") return "Potager";
+  if (k === "urbain") return "Urbain";
+  if (k === "verger") return "Verger";
   return kind; // fallback
 }
 
@@ -63,7 +58,6 @@ export default function GardensList() {
   const [err, setErr] = useState("");
   const [isAuthed, setIsAuthed] = useState(false);
 
-  // auth watcher
   useEffect(() => {
     const sync = () => setIsAuthed(!!getAnyToken());
     sync();
@@ -71,13 +65,11 @@ export default function GardensList() {
     return () => window.removeEventListener("storage", sync);
   }, []);
 
-  // favorites only when logged in
   useEffect(() => {
     if (isAuthed) setFavorites(getFavGardens().map((g) => String(g.id)));
     else setFavorites([]);
   }, [isAuthed]);
 
-  // data load
   useEffect(() => {
     const ac = new AbortController();
     let alive = true;
@@ -159,9 +151,10 @@ export default function GardensList() {
   };
 
   const filtered = useMemo(() => {
-    if (!search) return gardens;
+    const withPhotos = gardens.filter((g) => g.photos.length > 0);
+    if (!search) return withPhotos;
     const q = search.toLowerCase();
-    return gardens.filter((g) =>
+    return withPhotos.filter((g) =>
       [g.title, g.description, g.address, g.kind]
         .join(" ")
         .toLowerCase()
@@ -172,7 +165,6 @@ export default function GardensList() {
   return (
     <div style={{ minHeight: "100vh", padding: "2.5rem 1.5rem", background: "#fff" }}>
 
-      {/* Header row */}
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "1rem", marginBottom: "2rem" }}>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2.25rem", fontWeight: 400, color: "var(--foreground)", margin: 0, lineHeight: 1.1 }}>
           Les jardins
@@ -189,7 +181,6 @@ export default function GardensList() {
         )}
       </div>
 
-      {/* Filters */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "2.5rem", alignItems: "center" }}>
         <input
           type="text"
@@ -227,10 +218,9 @@ export default function GardensList() {
           }}
         >
           <option value="">Tous les types</option>
-          <option value="vegetable">Jardin potager</option>
-          <option value="greenhouse">Serre</option>
-          <option value="flowers">Fleurs</option>
-          <option value="mowing">Tonte</option>
+          <option value="potager">Potager</option>
+          <option value="urbain">Urbain</option>
+          <option value="verger">Verger</option>
         </select>
 
         <button
@@ -249,7 +239,6 @@ export default function GardensList() {
         </button>
       </div>
 
-      {/* States */}
       {loading && (
         <p style={{ color: "var(--muted)", fontSize: "0.875rem" }} aria-live="polite">
           Chargement…
@@ -261,7 +250,6 @@ export default function GardensList() {
         </p>
       )}
 
-      {/* Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
         {filtered.map((g) => {
           const favbed = favorites.includes(String(g.id));
@@ -272,7 +260,6 @@ export default function GardensList() {
               key={g.id}
               style={{ border: "1px solid var(--border)", background: "#fff", display: "flex", flexDirection: "column" }}
             >
-              {/* Image area */}
               <div style={{ position: "relative", height: "200px", overflow: "hidden", flexShrink: 0 }}>
                 {g.photos.length > 0 ? (
                   <div style={{ height: "200px", overflow: "hidden" }}>
@@ -303,7 +290,6 @@ export default function GardensList() {
                   />
                 )}
 
-                {/* Favorite button */}
                 {isAuthed && (
                   <button
                     onClick={(e) => {
@@ -331,7 +317,6 @@ export default function GardensList() {
                 )}
               </div>
 
-              {/* Card body */}
               <div style={{ padding: "1rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.375rem" }}>
                 <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 400, color: "var(--foreground)", margin: 0, lineHeight: 1.2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
                   {g.title}

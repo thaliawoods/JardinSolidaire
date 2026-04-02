@@ -12,5 +12,5 @@ export async function uploadImage(file) {
   });
 
   if (!res.ok) throw new Error('upload_failed');
-  return res.json(); // { path, url, ... }
+  return res.json();
 }

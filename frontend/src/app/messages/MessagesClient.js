@@ -61,7 +61,6 @@ export default function Page() {
     <div style={{ minHeight: '100vh', background: '#fff', padding: '3rem 1.5rem' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 400, color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
             Messagerie
@@ -91,7 +90,6 @@ export default function Page() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-            {/* Non lus */}
             <section style={{ border: '1px solid var(--border)', padding: '1.5rem', background: '#fff' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
                 <div>
@@ -141,7 +139,6 @@ export default function Page() {
               )}
             </section>
 
-            {/* Conversations */}
             <section style={{ border: '1px solid var(--border)', padding: '1.5rem', background: '#fff' }}>
               <div style={{ marginBottom: '1.25rem' }}>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 400, color: 'var(--foreground)', margin: 0 }}>Conversations</h2>

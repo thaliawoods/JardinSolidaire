@@ -1,4 +1,3 @@
-// /frontend/src/app/owners/[id]/page.js
 "use client";
 
 import Link from "next/link";
@@ -121,7 +120,6 @@ export default function OwnerDetailPage() {
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
       <main style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-        {/* Back */}
         <div>
           <button
             onClick={() => router.back()}
@@ -131,11 +129,9 @@ export default function OwnerDetailPage() {
           </button>
         </div>
 
-        {/* Profile header */}
         <section style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', alignItems: 'flex-start' }}>
 
-            {/* Avatar */}
             <div style={{ width: 72, height: 72, flexShrink: 0, overflow: 'hidden' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -146,7 +142,6 @@ export default function OwnerDetailPage() {
               />
             </div>
 
-            {/* Name + meta */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, margin: 0, lineHeight: 1.1 }}>
                 {owner.firstName} {owner.lastName}
@@ -165,7 +160,6 @@ export default function OwnerDetailPage() {
                 </div>
               )}
 
-              {/* CTAs */}
               <div style={{ marginTop: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
                 <button
                   type="button"
@@ -185,7 +179,6 @@ export default function OwnerDetailPage() {
           </div>
         </section>
 
-        {/* Présentation */}
         {owner.intro && (
           <section style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
             <p style={{ fontSize: '0.6875rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.875rem' }}>

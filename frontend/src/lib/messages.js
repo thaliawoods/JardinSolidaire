@@ -28,7 +28,6 @@ export async function markAllRead() {
   });
 }
 
-/** ✅ NEW: mark only messages coming from one user as read */
 export async function markThreadRead(fromUserId) {
   return apiFetch('/api/messages/mark-read', {
     method: 'POST',

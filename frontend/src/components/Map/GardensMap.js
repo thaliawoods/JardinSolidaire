@@ -1,4 +1,3 @@
-// GardensMap.js
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -84,7 +83,6 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
 
   const mapHeight = fullPage ? 'calc(100vh - 64px)' : height;
 
-  // ✅ wrapper anti overflow horizontal (important)
   const frameClass =
     'relative w-full max-w-full min-w-0 overflow-hidden border border-gray-200';
 
