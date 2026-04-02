@@ -201,6 +201,8 @@ export default function GardenersList() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return gardeners.filter((g) => {
+      if (!g.avatarUrl) return false;
+
       const matchesSearch =
         !q || [g.firstName, g.lastName, ...(g.skills || [])].join(' ').toLowerCase().includes(q);
 
