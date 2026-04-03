@@ -11,8 +11,8 @@ export default function OwnerBookingsPage() {
   }, [router]);
 
   return (
-    <main className="max-w-3xl mx-auto p-6 text-gray-600">
+    <div className="max-w-3xl mx-auto p-6 text-gray-600">
       redirection…
-    </main>
+    </div>
   );
 }

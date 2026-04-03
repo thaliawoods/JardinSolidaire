@@ -157,9 +157,9 @@ export default function GardenDetailPage({ params }) {
 
   const ownerUserIdForChat = useMemo(() => {
     const raw =
-      garden?.ownerUserId ?? // best if you have it on garden
-      (typeof owner?.id !== 'undefined' ? owner.id : null) ?? // often user id
-      owner?.ownerId ?? // fallback
+      garden?.ownerUserId ??
+      (typeof owner?.id !== 'undefined' ? owner.id : null) ??
+      owner?.ownerId ??
       null;
 
     const n = Number(raw);
@@ -198,7 +198,7 @@ export default function GardenDetailPage({ params }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
-      <main style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
         <div>
           <Link
@@ -277,7 +277,7 @@ export default function GardenDetailPage({ params }) {
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr]" style={{ gap: '1.5rem', alignItems: 'start' }}>
 
           <section style={{ border: '1px solid var(--border)', padding: '1.5rem' }}>
             <p style={{ fontSize: '0.6875rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 0.875rem' }}>
@@ -374,7 +374,7 @@ export default function GardenDetailPage({ params }) {
           />
         </div>
 
-      </main>
+      </div>
     </div>
   );
 }

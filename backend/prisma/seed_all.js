@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcrypt");
 const prisma = new PrismaClient();
 
 /* ---------------- config ---------------- */
@@ -165,6 +166,7 @@ async function main() {
   console.log("👥 Seeding users…");
   const ownerUsers = [];
   const gardenerUsers = [];
+  const demoHash = await bcrypt.hash("Demo1234", 10);
 
   // --- owners users ---
   for (let i = 0; i < OWNER_COUNT; i++) {
@@ -176,8 +178,9 @@ async function main() {
         firstName: fn,
         lastName: ln,
         email: `owner${i + 1}@example.com`,
-        passwordHash: "bcrypt$demo",
-        role: "proprietaire",
+        passwordHash: demoHash,
+        emailVerifiedAt: new Date(),
+        role: "OWNER",
         avatarUrl: avatar(i),
         bio: `J’habite à ${pick(districts)}. J’aime partager mon jardin et avancer étape par étape.`,
         phone: `0600${String(i).padStart(6, "0")}`,
@@ -204,8 +207,9 @@ async function main() {
         firstName: fn,
         lastName: ln,
         email: `gardener${i + 1}@example.com`,
-        passwordHash: "bcrypt$demo",
-        role: "ami_du_vert",
+        passwordHash: demoHash,
+        emailVerifiedAt: new Date(),
+        role: "GARDENER",
         avatarUrl: avatar(100 + i),
         bio: pick(GARDENER_BIOS),
         phone: `0700${String(i).padStart(6, "0")}`,

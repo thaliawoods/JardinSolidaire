@@ -13,7 +13,8 @@ export default function HomeText() {
   useEffect(() => {
     setIsLoggedIn(!!localStorage.getItem('token'));
 
-    async function loadStats() {
+    let cancelled = false;
+    async function loadStats(attempt = 0) {
       try {
         const [gRes, jRes] = await Promise.all([
           fetch(`${API_BASE}/api/gardens`, { cache: 'no-store' }),
@@ -23,10 +24,15 @@ export default function HomeText() {
         const jData = await jRes.json().catch(() => null);
         const gardens = Array.isArray(gData?.gardens) ? gData.gardens.length : Array.isArray(gData) ? gData.length : null;
         const gardeners = Array.isArray(jData?.gardeners) ? jData.gardeners.length : Array.isArray(jData) ? jData.length : null;
-        setStats({ gardens, gardeners });
-      } catch {}
+        if (!cancelled) setStats({ gardens, gardeners });
+      } catch {
+        if (!cancelled && attempt < 2) {
+          setTimeout(() => loadStats(attempt + 1), 3000);
+        }
+      }
     }
     loadStats();
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -35,7 +41,7 @@ export default function HomeText() {
         borderBottom: '1px solid var(--border)',
         overflow: 'hidden',
         position: 'relative',
-        marginTop: 'calc(-4rem + 56px)',  /* cancel layout pt-16, offset fixed navbar height */
+        marginTop: 'calc(-4rem + 56px)',
         minHeight: '72vh',
         display: 'flex',
         alignItems: 'center',
@@ -104,7 +110,7 @@ export default function HomeText() {
 
       <section style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-5xl mx-auto px-6 md:px-10 py-14">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '4rem', alignItems: 'start' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr]" style={{ gap: '2rem', alignItems: 'start' }}>
             <div
               style={{
                 fontFamily: 'var(--font-display)',
@@ -149,7 +155,7 @@ export default function HomeText() {
             Comment ça marche
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: '3rem' }}>
             <div>
               <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', marginBottom: '2rem', color: 'var(--foreground)' }}>
                 Vous avez un jardin
@@ -214,7 +220,7 @@ function Stat({ value, label }) {
           marginBottom: '0.4rem',
         }}
       >
-        {value ?? '—'}
+        {value ?? '…'}
       </div>
       <div style={{ fontSize: '0.85rem', color: 'var(--muted)', letterSpacing: '0.03em' }}>{label}</div>
     </div>

@@ -25,7 +25,7 @@ export default function MySpacePage() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen max-w-5xl mx-auto px-4 py-10">
+    <div className="min-h-screen max-w-5xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold text-green-800 mb-6">Mon espace</h1>
 
       <section className="grid gap-6 sm:grid-cols-2">
@@ -47,6 +47,6 @@ export default function MySpacePage() {
           </Link>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

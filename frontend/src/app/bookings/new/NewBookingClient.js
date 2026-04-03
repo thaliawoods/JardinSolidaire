@@ -77,7 +77,7 @@ function Field({ label, hint, children }) {
 
 export default function Page() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}><p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p></main>}>
+    <Suspense fallback={<div style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}><p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Chargement…</p></div>}>
       <NewBookingInner />
     </Suspense>
   );
@@ -140,6 +140,11 @@ function NewBookingInner() {
       return;
     }
 
+    if (new Date(endsAt) <= new Date(startsAt)) {
+      setErr('La date de fin doit être après la date de début.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       await createBooking({
@@ -152,7 +157,6 @@ function NewBookingInner() {
       router.push('/bookings?created=1');
     } catch (e2) {
       setErr(e2?.message || 'Erreur lors de la création.');
-      setSubmitting(false);
     } finally {
       setSubmitting(false);
     }

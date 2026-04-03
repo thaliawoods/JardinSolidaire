@@ -85,7 +85,7 @@ export default function ThreadPage() {
       await markThreadRead(userId);
       try { localStorage.setItem('messagesChanged', String(Date.now())); } catch {}
     } catch (e) {
-      setErr(e?.message || 'failed');
+      if (!silent) setErr(e?.message || 'failed');
     } finally {
       if (!silent) setLoading(false);
     }

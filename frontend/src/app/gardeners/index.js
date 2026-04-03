@@ -178,7 +178,6 @@ export default function GardenersList() {
       setGardeners(list);
     } catch (e) {
       if (isAbort(e)) return;
-      console.error('[gardeners] load failed:', e);
       setErr('Impossible de charger les jardinier·es.');
       setGardeners([]);
     } finally {
@@ -234,7 +233,7 @@ export default function GardenersList() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: '#fff', padding: '48px 24px' }}>
+    <div style={{ minHeight: '100vh', background: '#fff', padding: '48px 24px' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 32 }}>
@@ -399,6 +398,6 @@ export default function GardenersList() {
         </div>
 
       </div>
-    </main>
+    </div>
   );
 }

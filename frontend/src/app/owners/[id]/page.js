@@ -118,7 +118,7 @@ export default function OwnerDetailPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
-      <main style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
         <div>
           <button
@@ -190,7 +190,7 @@ export default function OwnerDetailPage() {
           </section>
         )}
 
-      </main>
+      </div>
     </div>
   );
 }
