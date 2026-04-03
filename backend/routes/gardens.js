@@ -156,7 +156,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const me = await prisma.user.findUnique({ where: { id: BigInt(req.userId) }, select: { role: true } });
-    if (!me || String(me.role || '').toUpperCase() !== 'OWNER') {
+    const role = String(me?.role || '').toUpperCase();
+    if (!me || !['OWNER', 'PROPRIETAIRE'].includes(role)) {
       return res.status(403).json({ error: 'forbidden_owner_only' });
     }
     const { title, description, address, area, kind, needs, photos, lat, lng } = req.body || {};
