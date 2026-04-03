@@ -46,7 +46,7 @@ function kindLabel(kind) {
   if (k === "potager") return "Potager";
   if (k === "urbain") return "Urbain";
   if (k === "verger") return "Verger";
-  return kind; // fallback
+  return kind;
 }
 
 export default function GardensList() {
@@ -276,6 +276,7 @@ export default function GardensList() {
                         <img
                           src={photo}
                           alt={`Photo ${index + 1} de ${g.title}`}
+                          loading="lazy"
                           style={{ height: "200px", width: "100%", objectFit: "cover", display: "block" }}
                         />
                       </div>

@@ -66,7 +66,7 @@ export default function GardenerPage({ params }) {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
-      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 flex-1">
         <h1 className="sr-only">Gardener profile</h1>
 
         {loading && (
@@ -170,7 +170,7 @@ export default function GardenerPage({ params }) {
             </section>
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }

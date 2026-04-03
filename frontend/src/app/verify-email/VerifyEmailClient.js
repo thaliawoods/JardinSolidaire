@@ -13,7 +13,7 @@ export default function VerifyEmailClient() {
   const email = sp.get('email') || '';
   const token = sp.get('token') || '';
 
-  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
 
   const canVerify = useMemo(() => Boolean(email && token), [email, token]);
@@ -86,7 +86,7 @@ export default function VerifyEmailClient() {
   }, [canVerify, email, token]);
 
   return (
-    <main className="min-h-screen bg-white px-6 py-10 flex items-center justify-center">
+    <div className="min-h-screen bg-white px-6 py-10 flex items-center justify-center">
       <div className="w-full max-w-md rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
         <h1 className="text-2xl font-bold text-green-700">Vérification email ✅</h1>
 
@@ -116,6 +116,6 @@ export default function VerifyEmailClient() {
           </button>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

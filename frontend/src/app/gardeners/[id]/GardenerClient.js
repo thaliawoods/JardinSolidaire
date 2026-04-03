@@ -85,13 +85,6 @@ export default function GardenerClient({ id: idProp }) {
     if (id) setIsFav(getFavGardeners().some((g) => String(g.id) === String(id)));
   }, [id, isAuthed]);
 
-  console.log('API_BASE runtime:', API_BASE);
-  console.log('pathname:', pathname);
-  console.log('ID prop:', idProp);
-  console.log('ID from path:', idFromPath);
-  console.log('ID used:', id);
-  console.log('Fetching:', `${API_BASE}/api/gardeners/${id}`);
-
   useEffect(() => {
     const onStorage = (e) => {
       if (e?.key === 'gardenerUpdated' || e?.key === 'userUpdated') {
@@ -127,7 +120,6 @@ export default function GardenerClient({ id: idProp }) {
         intro: data.intro || data.presentation || data.description || '—',
       });
     } catch (e) {
-      console.error('Gardener fetch failed:', e);
       setError('Impossible de charger le profil jardinier·e.');
       setGardener(null);
     } finally {
@@ -148,7 +140,7 @@ export default function GardenerClient({ id: idProp }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
-      <main style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px' }}>
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px' }}>
 
         <div style={{ marginBottom: 32 }}>
           <Link
@@ -256,7 +248,7 @@ export default function GardenerClient({ id: idProp }) {
             </section>
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }

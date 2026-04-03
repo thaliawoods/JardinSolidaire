@@ -154,9 +154,9 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            style={{ ...BTN_PRIMARY, opacity: !canSubmit ? 0.5 : 1, cursor: !canSubmit ? 'not-allowed' : 'pointer' }}
+            style={{ ...BTN_PRIMARY, opacity: !canSubmit ? 0.7 : 1, cursor: !canSubmit ? 'default' : 'pointer' }}
             disabled={!canSubmit}
-            title={!pwd.ok ? 'Mot de passe trop faible' : undefined}
+            title={!canSubmit ? 'Remplis tous les champs pour continuer' : undefined}
           >
             {submitting ? 'Création…' : 'Créer mon compte'}
           </button>

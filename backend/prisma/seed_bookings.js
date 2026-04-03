@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 function atHour(baseDate, hh, mm = 0) {
@@ -18,7 +19,8 @@ function atHour(baseDate, hh, mm = 0) {
         email: 'seed@example.com',
         firstName: 'Seed',
         lastName: 'User',
-        passwordHash: 'bcrypt$dummy', 
+        passwordHash: await bcrypt.hash('Demo1234', 10),
+        emailVerifiedAt: new Date(),
       },
     });
 

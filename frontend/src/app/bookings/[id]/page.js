@@ -96,7 +96,7 @@ export default function BookingDetailPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
-      <main style={{ maxWidth: '48rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{ maxWidth: '48rem', margin: '0 auto', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
           <div>
@@ -178,7 +178,7 @@ export default function BookingDetailPage() {
           )}
         </section>
 
-      </main>
+      </div>
     </div>
   );
 }

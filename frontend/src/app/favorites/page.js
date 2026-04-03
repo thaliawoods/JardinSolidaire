@@ -93,7 +93,7 @@ async function fetchGardenCoverById(id) {
 export default function FavoritesPage() {
   const [gardens, setGardens] = useState([]);
   const [gardeners, setGardeners] = useState([]);
-  const [tab, setTab] = useState('gardens'); // 'gardens' | 'gardeners'
+  const [tab, setTab] = useState('gardens');
   const [ownerId, setOwnerId] = useState('guest');
 
   useEffect(() => {
@@ -160,7 +160,7 @@ export default function FavoritesPage() {
   const total = gardens.length + gardeners.length;
 
   return (
-    <main style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
+    <div style={{ minHeight: '100vh', background: '#fff', color: 'var(--foreground)' }}>
       <div style={{ borderBottom: '1px solid var(--border)', padding: '48px 24px 32px' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
@@ -372,6 +372,6 @@ export default function FavoritesPage() {
         )}
 
       </div>
-    </main>
+    </div>
   );
 }

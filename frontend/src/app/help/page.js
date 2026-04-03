@@ -49,7 +49,7 @@ export default function Page() {
   }, [query]);
 
   return (
-    <main style={{ background: '#fff', minHeight: '100vh' }}>
+    <div style={{ background: '#fff', minHeight: '100vh' }}>
       <section style={{ maxWidth: 800, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
         <h1
           style={{
@@ -147,7 +147,7 @@ export default function Page() {
             </Link>
             {' '}·{' '}
             <a
-              href="mailto:support@jardinsolidaire.local"
+              href="mailto:contact@jardinsolidaire.fr"
               style={{ color: 'var(--green)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
             >
               Email
@@ -155,6 +155,6 @@ export default function Page() {
           </p>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
