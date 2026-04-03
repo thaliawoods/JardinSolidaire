@@ -56,7 +56,6 @@ export default function MyGardensClient() {
       const data = await apiFetch("/api/gardens", { query });
       setRows(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error(e);
       setRows([]);
       setErrorMsg("Impossible de charger vos jardins.");
     } finally {
@@ -118,7 +117,6 @@ export default function MyGardensClient() {
       pushToast("Annonce retirée.");
       await load();
     } catch (e) {
-      console.error(e);
       setErrorMsg("Impossible de retirer l'annonce.");
     } finally {
       setBusyId(null);
@@ -132,7 +130,6 @@ export default function MyGardensClient() {
       pushToast("Annonce publiée.");
       await load();
     } catch (e) {
-      console.error(e);
       setErrorMsg("Impossible de publier l'annonce.");
     } finally {
       setBusyId(null);
@@ -147,7 +144,6 @@ export default function MyGardensClient() {
       setOpenAvailId((prev) => (prev === id ? null : prev));
       await load();
     } catch (e) {
-      console.error(e);
       setErrorMsg("Impossible de supprimer le jardin.");
     } finally {
       setBusyId(null);
@@ -161,7 +157,7 @@ export default function MyGardensClient() {
   ];
 
   return (
-    <main style={{ maxWidth: 960, margin: "0 auto", padding: "2rem 1.5rem" }}>
+    <div style={{ maxWidth: 960, margin: "0 auto", padding: "2rem 1.5rem" }}>
       <ConfirmModal
         open={confirmState.open}
         title={confirmState.title}
@@ -494,9 +490,8 @@ export default function MyGardensClient() {
                   <AvailabilityCalendar
                     mode="garden"
                     intent="form"
-                    gardenId={gardenId}
+                    gardenId={g.id}
                     title="Calendrier"
-                    onDateSelect={(iso) => setDate(iso)}
                   />
                 </div>
               )}
@@ -508,6 +503,6 @@ export default function MyGardensClient() {
           );
         })}
       </div>
-    </main>
+    </div>
   );
 }

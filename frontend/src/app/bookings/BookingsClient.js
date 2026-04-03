@@ -22,7 +22,7 @@ function statusStyle(status) {
 
 export default function Page() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.5rem' }}>Chargement…</main>}>
+    <Suspense fallback={<div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.5rem' }}>Chargement…</div>}>
       <BookingsListInner />
     </Suspense>
   );

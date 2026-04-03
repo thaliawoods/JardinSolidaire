@@ -74,7 +74,7 @@ export default function ContactPage() {
 
   return (
     <div style={{ background: '#fff', color: 'var(--foreground)', minHeight: '100vh' }}>
-      <main style={{ maxWidth: 800, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
         <h1
           style={{
             fontFamily: 'var(--font-display)',
@@ -167,13 +167,13 @@ export default function ContactPage() {
         <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
           Vous préférez par email ? Écrivez à{' '}
           <a
-            href="mailto:hello@jardinsolidaire.test"
+            href="mailto:contact@jardinsolidaire.fr"
             style={{ color: 'var(--green)', textDecoration: 'underline', textUnderlineOffset: '3px' }}
           >
-            hello@jardinsolidaire.test
+            contact@jardinsolidaire.fr
           </a>
         </p>
-      </main>
+      </div>
     </div>
   );
 }

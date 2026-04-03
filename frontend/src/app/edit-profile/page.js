@@ -65,6 +65,10 @@ export default function EditProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
 
+  useEffect(() => {
+    if (!localStorage.getItem('token')) router.replace('/login?next=/edit-profile');
+  }, [router]);
+
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
