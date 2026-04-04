@@ -85,7 +85,7 @@ router.get('/:id', async (req, res) => {
       // use select so we can project user.avatarUrl and comment fields precisely
       select: {
         id: true,
-        user: { select: { id: true, email: true, avatarUrl: true } }, // ⭐ add avatarUrl
+        user: { select: { id: true, avatarUrl: true } },
         firstName: true,
         lastName: true,
         avatarUrl: true,

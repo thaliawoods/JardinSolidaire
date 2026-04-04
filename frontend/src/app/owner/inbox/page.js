@@ -157,7 +157,6 @@ export default function OwnerInboxPage() {
             {items.map((r) => {
               const isPending = r.status === 'pending';
               const name = [r.requester?.firstName, r.requester?.lastName].filter(Boolean).join(' ') || '—';
-              const email = r.requester?.email || null;
 
               return (
                 <div
@@ -197,7 +196,6 @@ export default function OwnerInboxPage() {
                     <div style={{ fontSize: '0.875rem', color: 'var(--foreground)', marginBottom: 4 }}>
                       <span style={{ color: 'var(--muted)', marginRight: 4 }}>Demandeur :</span>
                       {name}
-                      {email && <span style={{ color: 'var(--muted)' }}> ({email})</span>}
                     </div>
 
                     {r.notes && (

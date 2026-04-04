@@ -133,7 +133,7 @@ router.get('/inbox', requireAuth, async (req, res) => {
       include: {
         slot: true,
         garden: { select: { id: true, title: true, address: true, ownerUserId: true } },
-        user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },
+        user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
       },
     });
 
@@ -382,7 +382,7 @@ router.post('/:id/confirm', requireAuth, async (req, res) => {
         include: {
           slot: true,
           garden: { select: { id: true, title: true, address: true, ownerUserId: true } },
-          user: true,
+          user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
         },
       });
 
@@ -412,7 +412,7 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
       include: {
         slot: true,
         garden: { select: { id: true, title: true, address: true, ownerUserId: true } },
-        user: true,
+        user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
       },
     });
     if (!booking) return res.status(404).json({ error: 'not_found' });
@@ -426,7 +426,11 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
       const b = await tx.booking.update({
         where: { id },
         data: { status: 'cancelled' },
-        include: { slot: true, garden: true, user: true },
+        include: {
+          slot: true,
+          garden: { select: { id: true, title: true, address: true, ownerUserId: true } },
+          user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        },
       });
 
       if (b.slotId) {

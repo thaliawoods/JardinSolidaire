@@ -115,7 +115,7 @@ router.get('/:id', async (req, res) => {
       where: { id: BigInt(id) },
       include: {
         ownerUser: {
-          select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true },
+          select: { id: true, firstName: true, lastName: true, avatarUrl: true },
         },
       },
     });

@@ -30,7 +30,6 @@ function shapeMsg(m) {
           id: Number(m.senderUser.id),
           firstName: m.senderUser.firstName ?? '',
           lastName: m.senderUser.lastName ?? '',
-          email: m.senderUser.email ?? null,
           avatarUrl: m.senderUser.avatarUrl ?? null,
         }
       : null,
@@ -39,7 +38,6 @@ function shapeMsg(m) {
           id: Number(m.targetUser.id),
           firstName: m.targetUser.firstName ?? '',
           lastName: m.targetUser.lastName ?? '',
-          email: m.targetUser.email ?? null,
           avatarUrl: m.targetUser.avatarUrl ?? null,
         }
       : null,
@@ -143,7 +141,6 @@ router.get('/conversations', requireAuth, async (req, res) => {
             id: otherId,
             firstName: other.firstName ?? '',
             lastName: other.lastName ?? '',
-            email: other.email ?? null,
             avatarUrl: other.avatarUrl ?? null,
           },
           lastMessage: shapeMsg(m),
