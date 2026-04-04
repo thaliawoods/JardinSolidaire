@@ -46,7 +46,7 @@ Le projet est réalisé dans une démarche **professionnelle et orientée produc
 - Git
 
 ### nvm (recommandé)
-Si tu utilises `nvm`, tu peux te caler sur la version du projet :
+Pour utiliser `nvm` et se caler sur la version du projet :
 
 ~~~bash
 cd frontend
@@ -105,7 +105,7 @@ http://localhost:5050
 cd backend
 npm ci
 npx prisma generate
-# migrations / schema selon ton setup :
+# migrations / schema selon le setup :
 npx prisma migrate deploy || npx prisma db push
 npm run dev
 ~~~
@@ -143,7 +143,7 @@ lsof -ti :5001 | xargs kill -9
 ~~~
 
 ### “Node.js >= 20.9 required”
-Tu es sur Node 18. Mets Node 20 :
+Si Node 18 est installé, passer à Node 20 :
 
 ~~~bash
 cd frontend
