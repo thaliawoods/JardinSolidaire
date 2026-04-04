@@ -86,6 +86,16 @@ const GARDEN_PHOTOS = [
 
 const paris = { lat: 48.8566, lng: 2.3522 };
 
+const emailDomains = ["gmail.com","outlook.fr","yahoo.fr","hotmail.com","free.fr","orange.fr","protonmail.com"];
+
+function fakeEmail(first, last, i) {
+  const f = first.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const l = last.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").toLowerCase();
+  const domain = emailDomains[i % emailDomains.length];
+  const variants = [`${f}.${l}`, `${f}${l}`, `${f}.${l}${rint(1,99)}`, `${l}.${f}`];
+  return `${variants[i % variants.length]}@${domain}`;
+}
+
 /* ---------------- helpers ---------------- */
 function rand(min, max) { return Math.random() * (max - min) + min; }
 function rint(min, max) { return Math.floor(rand(min, max + 1)); }
@@ -177,13 +187,13 @@ async function main() {
       data: {
         firstName: fn,
         lastName: ln,
-        email: `owner${i + 1}@example.com`,
+        email: fakeEmail(fn, ln, i),
         passwordHash: demoHash,
         emailVerifiedAt: new Date(),
         role: "OWNER",
         avatarUrl: avatar(i),
         bio: `J’habite à ${pick(districts)}. J’aime partager mon jardin et avancer étape par étape.`,
-        phone: `0600${String(i).padStart(6, "0")}`,
+        phone: `06${String(rint(10000000, 99999999))}`,
         address: `${rint(1, 180)} rue des Jardins, Paris`,
         averageRating: null, // ✅ no ratings feature yet
       },
@@ -206,13 +216,13 @@ async function main() {
       data: {
         firstName: fn,
         lastName: ln,
-        email: `gardener${i + 1}@example.com`,
+        email: fakeEmail(fn, ln, 50 + i),
         passwordHash: demoHash,
         emailVerifiedAt: new Date(),
         role: "GARDENER",
         avatarUrl: avatar(100 + i),
         bio: pick(GARDENER_BIOS),
-        phone: `0700${String(i).padStart(6, "0")}`,
+        phone: `07${String(rint(10000000, 99999999))}`,
         address: `${rint(1, 200)} avenue Verte, Paris`,
         averageRating: null, // ✅ no ratings feature yet
       },
