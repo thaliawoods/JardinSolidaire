@@ -15,6 +15,8 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
   const [loading, setLoading] = useState(true);
   const [userPos, setUserPos] = useState(null);
   const [ready, setReady] = useState(false);
+  const [geoAsked, setGeoAsked] = useState(false);
+  const [showGeoBanner, setShowGeoBanner] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -68,12 +70,38 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !navigator.geolocation) return;
+    // Check if permission was already granted
+    navigator.permissions?.query({ name: 'geolocation' }).then(result => {
+      if (result.state === 'granted') {
+        navigator.geolocation.getCurrentPosition(
+          pos => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => {},
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+        );
+        setGeoAsked(true);
+      } else if (result.state === 'prompt') {
+        setShowGeoBanner(true);
+      }
+    }).catch(() => {
+      // permissions API not supported, show banner
+      if (!geoAsked) setShowGeoBanner(true);
+    });
+  }, [geoAsked]);
+
+  function handleGeoAccept() {
+    setShowGeoBanner(false);
+    setGeoAsked(true);
     navigator.geolocation.getCurrentPosition(
       pos => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
     );
-  }, []);
+  }
+
+  function handleGeoDismiss() {
+    setShowGeoBanner(false);
+    setGeoAsked(true);
+  }
 
   const center = useMemo(() => {
     if (userPos) return [userPos.lat, userPos.lng];
@@ -140,6 +168,60 @@ export default function GardensMap({ height = '360px', fullPage = false }) {
       {loading && (
         <div className="absolute inset-0 grid place-items-center bg-white/60 text-sm">
           Chargement de la carte…
+        </div>
+      )}
+
+      {showGeoBanner && (
+        <div style={{
+          position: 'absolute',
+          bottom: '1rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          background: '#fff',
+          border: '1px solid var(--border, #d4d4d4)',
+          borderRadius: '8px',
+          padding: '0.85rem 1.1rem',
+          maxWidth: '360px',
+          width: 'calc(100% - 2rem)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+          fontSize: '0.875rem',
+          lineHeight: 1.5,
+          color: 'var(--foreground, #111)',
+        }}>
+          <p style={{ margin: '0 0 0.6rem' }}>
+            <strong style={{ color: 'var(--green, #2d6a4f)' }}>Localisation</strong>{' — '}
+            Pour vous montrer les jardins proches de chez vous, nous avons besoin de votre position.
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleGeoDismiss}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--muted, #6b7280)',
+                fontSize: '0.8125rem',
+                cursor: 'pointer',
+                padding: '0.35rem 0.6rem',
+              }}
+            >
+              Non merci
+            </button>
+            <button
+              onClick={handleGeoAccept}
+              style={{
+                background: 'var(--green, #2d6a4f)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '5px',
+                fontSize: '0.8125rem',
+                cursor: 'pointer',
+                padding: '0.35rem 0.85rem',
+              }}
+            >
+              Autoriser
+            </button>
+          </div>
         </div>
       )}
     </div>
