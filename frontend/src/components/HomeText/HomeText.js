@@ -208,6 +208,7 @@ function ArrowLink({ href, children, muted }) {
 }
 
 function Stat({ value, label }) {
+  const isLoading = value == null;
   return (
     <div>
       <div
@@ -218,11 +219,15 @@ function Stat({ value, label }) {
           color: 'var(--green)',
           lineHeight: 1,
           marginBottom: '0.4rem',
+          ...(isLoading ? { animation: 'stat-pulse 1.5s ease-in-out infinite' } : {}),
         }}
       >
         {value ?? '…'}
       </div>
       <div style={{ fontSize: '0.85rem', color: 'var(--muted)', letterSpacing: '0.03em' }}>{label}</div>
+      {isLoading && (
+        <style>{`@keyframes stat-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
+      )}
     </div>
   );
 }

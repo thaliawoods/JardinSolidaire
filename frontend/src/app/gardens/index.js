@@ -240,9 +240,30 @@ export default function GardensList() {
       </div>
 
       {loading && (
-        <p style={{ color: "var(--muted)", fontSize: "0.875rem" }} aria-live="polite">
-          Chargement…
-        </p>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}
+          aria-live="polite"
+          aria-label="Chargement des jardins"
+        >
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ border: "1px solid var(--border)", background: "#fff" }}>
+              <div
+                style={{
+                  height: "200px",
+                  background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                  backgroundSize: "200% 100%",
+                  animation: "skeleton-pulse 1.5s ease-in-out infinite",
+                }}
+              />
+              <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div style={{ height: "1rem", width: "60%", borderRadius: "4px", background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)", backgroundSize: "200% 100%", animation: "skeleton-pulse 1.5s ease-in-out infinite" }} />
+                <div style={{ height: "0.75rem", width: "80%", borderRadius: "4px", background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)", backgroundSize: "200% 100%", animation: "skeleton-pulse 1.5s ease-in-out infinite" }} />
+                <div style={{ height: "0.75rem", width: "40%", borderRadius: "4px", background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)", backgroundSize: "200% 100%", animation: "skeleton-pulse 1.5s ease-in-out infinite" }} />
+              </div>
+            </div>
+          ))}
+          <style>{`@keyframes skeleton-pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+        </div>
       )}
       {!!err && (
         <p style={{ color: "var(--muted)", fontSize: "0.875rem", marginBottom: "1rem" }} role="alert">
