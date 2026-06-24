@@ -8,7 +8,7 @@ Le projet est réalisé dans une démarche **professionnelle et orientée produc
 
 ---
 
-## Objectifs
+## Objectifs 
 
 - Concevoir une application (front-end / back-end) répondant à un besoin identifié
 - Structurer une API maintenable (routes, contrôleurs, séparation des responsabilités)
